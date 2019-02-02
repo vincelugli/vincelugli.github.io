@@ -96,7 +96,7 @@ document.onkeyup = function(e) {
         GodzamokAuto.buyBackItems();
     }
     else if (e.which === 83 /* s */) {
-        GodzamokAuto.sellItems(numberPressed);
+        GodzamokAuto.sellItems();
     }
 }
 
