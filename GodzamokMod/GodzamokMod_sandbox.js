@@ -13,7 +13,7 @@ GodzamokAuto.createCheckbox = function(itemId) {
 
     // create parent div, with display = flex
     const itemParent = document.createElement('div');
-    itemParent.display = 'flex';
+    itemParent.style.display = 'flex';
 
     // append checkbox to parent div
     itemParent.appendChild(checkbox);
@@ -82,7 +82,7 @@ GodzamokAuto.init = function() {
         // check for new checkboxes to insert into document.
         const unlockedItems = document.getElementsByClassName('product unlocked');
 
-        if (unlockedItesm.length > GodzamokAuto.unlockedElements) {
+        if (unlockedItems.length > GodzamokAuto.unlockedElements) {
             for (let i = GodzamokAuto.unlockedElements; i < unlockedItems.length; i++) {
                 GodzamokAuto.createCheckbox(i);
                 GodzamokAuto.unlockedElements++;
