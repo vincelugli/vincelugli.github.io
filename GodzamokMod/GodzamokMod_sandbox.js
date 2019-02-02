@@ -51,7 +51,7 @@ GodzamokAuto.sellItems = function() {
             GodzamokAuto.itemsSold[itemId] |= numberOfItems;
     
             // click item to sell all
-            l(`product${i}`).click();
+            l(`product${itemId}`).click();
         });
 }
 
