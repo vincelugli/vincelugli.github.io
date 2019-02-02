@@ -31,8 +31,14 @@ GodzamokAuto.createCheckbox = function(itemId) {
 GodzamokAuto.getItemsToSell = function() {
     const godzamokCheckboxes = document.getElementsByName('GodzamokCheck');
 
-    return godzamokCheckboxes.filter((checkboxElement) => checkbox.checked)
-        .map((checkboxElement) => checkboxElement.id.split('-')[1]);
+    const itemIdsSelected = [];
+    for (let checkboxElement of godzamokCheckboxes) {
+        if (checkboxElement.checked) {
+            itemIdsSelected.push(checkboxElement.id.split('-')[1]);
+        }
+    }
+
+    return itemIdsSelected;
 }
 
 GodzamokAuto.sellItems = function() {
