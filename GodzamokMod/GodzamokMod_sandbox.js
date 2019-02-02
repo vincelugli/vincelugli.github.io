@@ -99,3 +99,5 @@ document.onkeyup = function(e) {
         GodzamokAuto.sellItems(numberPressed);
     }
 }
+
+GodzamokAuto.init();
