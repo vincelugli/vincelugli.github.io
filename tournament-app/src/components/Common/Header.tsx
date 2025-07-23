@@ -36,7 +36,7 @@ const NavLink = styled(Link)`
 const Header: React.FC = () => {
   return (
     <HeaderContainer>
-      <Logo to="/">Tournament Platform</Logo>
+      <Logo to="/">GRumble 2025</Logo>
       <Nav>
         <NavLink to="/">Home</NavLink>
       </Nav>
@@ -48,6 +48,9 @@ const Header: React.FC = () => {
       </Nav>
       <Nav>
         <NavLink to="/teams">Teams</NavLink>
+      </Nav>
+      <Nav>
+        <NavLink to="/draft">Draft</NavLink>
       </Nav>
     </HeaderContainer>
   );

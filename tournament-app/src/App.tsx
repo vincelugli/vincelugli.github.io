@@ -9,6 +9,7 @@ import TeamsPage from './components/Team/TeamsPage';
 import MatchHistory from './components/MatchHistory/MatchHistory';
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
+import DraftPage from './components/Draft/DraftPage';
 import { mockTeams, mockGroups, mockBracket } from './data/mockData';
 
 const GlobalStyle = createGlobalStyle`
@@ -64,6 +65,7 @@ const App: React.FC = () => {
               path="/teams" 
               element={<TeamsPage teams={mockTeams} />} 
             />
+            <Route path="/draft" element={<DraftPage />} />
             <Route 
               path="/match-history/:teamId" 
               element={<MatchHistory teams={mockTeams} />} 

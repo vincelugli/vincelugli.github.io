@@ -59,7 +59,7 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ teams }) => {
     <HistoryContainer>
       <TeamName>{team.name}'s Match History</TeamName>
       <MatchList>
-        {team.matchHistory.map((match, index) => (
+        {team.matchHistory!.map((match, index) => (
           <MatchItem key={index}>
             <MatchInfo>
               <span>vs</span>
