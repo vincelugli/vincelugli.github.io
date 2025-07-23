@@ -79,7 +79,16 @@ interface TeamsPageProps {
   teams: Team[];
 }
 
-const TeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
+const AllTeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
+  // Order the teams by best record
+  teams = teams.sort((t1, t2) => {
+    const result = t2.wins - t1.wins;
+    if (result === 0) {
+      return t1.losses - t2.losses;
+    }
+    return result;
+  });
+
   return (
     <TeamsContainer>
       <Title>All Teams</Title>
@@ -95,7 +104,7 @@ const TeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
             <tr key={team.id}>
               <td>
                 {/* Each team name links to their detailed match history */}
-                <TeamNameLink to={`/match-history/${team.id}`}>
+                <TeamNameLink to={`/teams/${team.id}`}>
                   {team.name}
                 </TeamNameLink>
               </td>
@@ -110,4 +119,4 @@ const TeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
   );
 };
 
-export default TeamsPage;
+export default AllTeamsPage;

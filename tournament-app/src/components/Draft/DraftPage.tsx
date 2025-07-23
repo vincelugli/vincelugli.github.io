@@ -106,6 +106,8 @@ const initializeDraft = (): DraftState => {
     name: `Team ${captain.name}`,
     captainId: captain.id,
     players: [captain],
+    wins: 0,
+    losses: 0
   }));
 
   const numRounds = 5; // To get to 5 players total

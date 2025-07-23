@@ -63,9 +63,9 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ teams }) => {
           <MatchItem key={index}>
             <MatchInfo>
               <span>vs</span>
-              <Opponent>{teams.find(t => t.id === match.opponentId)?.name}</Opponent>
+              <Opponent>{teams.find(t => t.id === match.team1Id)?.name}</Opponent>
             </MatchInfo>
-            <Score win={match.result === 'W'}>{match.score}</Score>
+            <Score win={match.winnerId ? match.winnerId === match.team1Id : false}>{match.score}</Score>
           </MatchItem>
         ))}
       </MatchList>

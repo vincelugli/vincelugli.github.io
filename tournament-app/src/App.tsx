@@ -5,12 +5,13 @@ import styled, { createGlobalStyle } from 'styled-components';
 import Tournament from './components/Tournament';
 import SwissStage from './components/Swiss/SwissStage';
 import DoubleEliminationBracket from './components/Brackets/DoubleEliminationBracket';
-import TeamsPage from './components/Team/TeamsPage';
+import AllTeamsPage from './components/Team/AllTeamsPage';
 import MatchHistory from './components/MatchHistory/MatchHistory';
+import TeamPage from './components/Team/TeamPage'; 
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
 import DraftPage from './components/Draft/DraftPage';
-import { mockTeams, mockGroups, mockBracket } from './data/mockData';
+import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -63,7 +64,11 @@ const App: React.FC = () => {
             />
             <Route 
               path="/teams" 
-              element={<TeamsPage teams={mockTeams} />} 
+              element={<AllTeamsPage teams={mockTeams} />} 
+            />
+            <Route 
+              path="/teams/:teamId" 
+              element={<TeamPage teams={mockTeams} matches={mockMatches} />} 
             />
             <Route path="/draft" element={<DraftPage />} />
             <Route 

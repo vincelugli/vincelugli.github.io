@@ -1,16 +1,21 @@
-
 export interface Match {
-  opponentId: number;
-  score: string;
-  result: 'W' | 'L';
+  id: string; // Use a string for unique IDs like from a DB
+  team1Id: number;
+  team2Id: number;
+  status: 'upcoming' | 'completed';
+  tournamentCode: string; // The code for players to join
+  winnerId?: number | null; // Only for 'completed' status
+  score?: string; // e.g., "2-1", only for 'completed' status
 }
 
+// Update the Team type to be simpler, as matches are now separate
 export interface Team {
   id: number;
   name: string;
-  captainId?: number;
-  players?: Player[];
-  // Previous properties like record and matchHistory can still exist
+  captainId: number;
+  players: Player[];
+  wins: number;
+  losses: number;
   record?: string;
   matchHistory?: Match[];
 }

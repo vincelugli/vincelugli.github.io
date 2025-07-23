@@ -32,7 +32,11 @@ const Tournament: React.FC<TournamentProps> = ({ teams, groups, bracket }) => {
         <SwissStage groups={groups} teams={teams} />
       </div>
       <div>
-        <SectionTitle>Double-Elimination Bracket</SectionTitle>
+        <SectionTitle>Upper Bracket</SectionTitle>
+        <DoubleEliminationBracket bracket={bracket} />
+      </div>
+      <div>
+        <SectionTitle>Lower Bracket</SectionTitle>
         <DoubleEliminationBracket bracket={bracket} />
       </div>
     </TournamentContainer>

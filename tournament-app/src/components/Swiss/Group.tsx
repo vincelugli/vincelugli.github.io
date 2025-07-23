@@ -65,7 +65,7 @@ const GroupComponent: React.FC<GroupProps> = ({ group, teams }) => {
           if (!team) return null; // Or some fallback UI
           return (
             <TeamItem key={team.id}>
-              <TeamName to={`/match-history/${team.id}`}>{team.name}</TeamName>
+              <TeamName to={`/teams/${team.id}`}>{team.name}</TeamName>
               <TeamRecord>{team.record}</TeamRecord>
             </TeamItem>
           );

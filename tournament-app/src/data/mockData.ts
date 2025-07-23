@@ -1,4 +1,44 @@
-import { Player, Team, Group, BracketRound } from '../types';
+import { Player, Team, Match, Group, BracketRound } from '../types';
+
+export const mockTeams: Team[] = [
+  { id: 1, name: 'Team Viper', captainId: 1, players: [], record: '2-0', wins: 2, losses: 0 },
+  { id: 2, name: 'Team Ghost', captainId: 2, players: [], record: '0-2', wins: 0, losses: 2 },
+  { id: 3, name: 'Team Phoenix', captainId: 3, players: [], record: '2-1', wins: 2, losses: 1 },
+  { id: 4, name: 'Team Shadow', captainId: 4, players: [], record: '0-1', wins: 0, losses: 1 },
+  { id: 5, name: 'Team Five', captainId: 1, players: [], record: '1-0', wins: 1, losses: 0 },
+  { id: 6, name: 'Team Six', captainId: 2, players: [], record: '0-1', wins: 0, losses: 1 },
+  { id: 7, name: 'Team Seven', captainId: 3, players: [], record: '1-0', wins: 1, losses: 0 },
+  { id: 8, name: 'Team Eight', captainId: 4, players: [], record: '0-1', wins: 0, losses: 1 },
+];
+
+export const mockMatches: Match[] = [
+  // A completed match
+  {
+    id: 'm1',
+    team1Id: 1,
+    team2Id: 2,
+    status: 'completed',
+    tournamentCode: 'XYZ123',
+    winnerId: 1,
+    score: '2-1',
+  },
+  // An upcoming match
+  {
+    id: 'm2',
+    team1Id: 1,
+    team2Id: 3,
+    status: 'upcoming',
+    tournamentCode: 'ABC789',
+  },
+  // Another upcoming match for a different team
+  {
+    id: 'm3',
+    team1Id: 2,
+    team2Id: 4,
+    status: 'upcoming',
+    tournamentCode: 'DEF456',
+  }
+];
 
 // Let's create a pool of players. 4 captains, 16 regular players.
 export const mockPlayers: Player[] = [
@@ -28,17 +68,6 @@ export const mockPlayers: Player[] = [
 
 export const draftedTeams: Team[] = [
   // This could be populated after a draft for other pages to use.
-];
-
-export const mockTeams: Team[] = [
-  { id: 1, name: 'Cybernetic Champions', record: '2-1', matchHistory: [{ opponentId: 2, score: '2-1', result: 'W' }, { opponentId: 3, score: '1-2', result: 'L' }, { opponentId: 4, score: '2-0', result: 'W' }] },
-  { id: 2, name: 'Quantum Questers', record: '2-1', matchHistory: [{ opponentId: 1, score: '1-2', result: 'L' }, { opponentId: 4, score: '2-1', result: 'W' }, { opponentId: 3, score: '2-0', result: 'W' }] },
-  { id: 3, name: 'Digital Dynamos', record: '1-2', matchHistory: [{ opponentId: 4, score: '0-2', result: 'L' }, { opponentId: 1, score: '2-1', result: 'W' }, { opponentId: 2, score: '0-2', result: 'L' }] },
-  { id: 4, name: 'Virtual Vanguards', record: '1-2', matchHistory: [{ opponentId: 3, score: '2-0', result: 'W' }, { opponentId: 2, score: '1-2', result: 'L' }, { opponentId: 1, score: '0-2', result: 'L' }] },
-  { id: 5, name: 'Phoenix Phantoms', record: '3-0', matchHistory: [] },
-  { id: 6, name: 'Goliath Gamers', record: '2-1', matchHistory: [] },
-  { id: 7, name: 'Titanium Titans', record: '1-2', matchHistory: [] },
-  { id: 8, name: 'Shadow Strikers', record: '0-3', matchHistory: [] },
 ];
 
 export const mockGroups: Group[] = [
@@ -89,19 +118,19 @@ export const mockBracket: BracketRound[] = [
     seeds: [
       {
         id: 1,
-        teams: [{ name: 'Cybernetic Champions' }, { name: 'Goliath Gamers' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
       {
         id: 2,
-        teams: [{ name: 'Quantum Questers' }, { name: 'Phoenix Phantoms' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
       {
         id: 3,
-        teams: [{ name: 'team 3' }, { name: 'three' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
       {
         id: 4,
-        teams: [{ name: 'team 4' }, { name: 'four' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
     ],
   },
@@ -110,11 +139,11 @@ export const mockBracket: BracketRound[] = [
     seeds: [
       {
         id: 1,
-        teams: [{ name: 'Cybernetic Champions' }, { name: 'Goliath Gamers' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
       {
         id: 2,
-        teams: [{ name: 'Quantum Questers' }, { name: 'Phoenix Phantoms' }],
+        teams: [{ name: '-' }, { name: '-' }],
       },
     ],
   },
@@ -123,7 +152,7 @@ export const mockBracket: BracketRound[] = [
     seeds: [
         {
           id: 3,
-          teams: [ { name: 'TBD' }, { name: 'TBD' } ]
+          teams: [ { name: '-' }, { name: '-' } ]
         }
     ]
   }
