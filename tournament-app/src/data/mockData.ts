@@ -118,19 +118,19 @@ export const mockBracket: BracketRound[] = [
     seeds: [
       {
         id: 1,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
       {
         id: 2,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
       {
         id: 3,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
       {
         id: 4,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
     ],
   },
@@ -139,11 +139,11 @@ export const mockBracket: BracketRound[] = [
     seeds: [
       {
         id: 1,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
       {
         id: 2,
-        teams: [{ name: '-' }, { name: '-' }],
+        teams: [],
       },
     ],
   },
@@ -152,7 +152,7 @@ export const mockBracket: BracketRound[] = [
     seeds: [
         {
           id: 3,
-          teams: [ { name: '-' }, { name: '-' } ]
+          teams: [  ]
         }
     ]
   }

@@ -50,8 +50,8 @@ const DoubleEliminationBracket: React.FC<BracketProps> = ({ bracket }) => {
             <Seed mobileBreakpoint={0}>
               <SeedItem>
                 <div>
-                  <SeedTeam>{props.seed.teams[0]?.name || 'NO TEAM '}</SeedTeam>
-                  <SeedTeam>{props.seed.teams[1]?.name || 'NO TEAM '}</SeedTeam>
+                  <SeedTeam>{props.seed.teams[0]?.name || '- '}</SeedTeam>
+                  <SeedTeam>{props.seed.teams[1]?.name || '- '}</SeedTeam>
                 </div>
               </SeedItem>
             </Seed>

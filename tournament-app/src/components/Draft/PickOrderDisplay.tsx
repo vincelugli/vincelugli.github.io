@@ -80,7 +80,7 @@ const SkippedText = styled.div`
 // --- Component Definition ---
 
 interface PickOrderDisplayProps {
-  pickOrder: (number | null)[];
+  pickOrder: (number | string)[];
   teams: Team[];
   players: Player[];
   currentPickIndex: number;
@@ -110,9 +110,9 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
         {pickOrder.map((teamId, index) => {
           const isCurrent = index === currentPickIndex;
           const isCompleted = index < currentPickIndex;
-          const isSkipped = teamId === null;
+          const isSkipped = typeof(teamId) === "string";
           
-          const team = isSkipped ? null : getTeamById(teamId!);
+          const team = isSkipped ? null : getTeamById(teamId as number);
           const draftedPlayerId = completedPicks[index];
           const draftedPlayer = draftedPlayerId ? getPlayerById(draftedPlayerId) : null;
 
@@ -126,7 +126,10 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
             >
               <PickNumber>PICK {index + 1}</PickNumber>
               {isSkipped ? (
-                <SkippedText>SKIPPED</SkippedText>
+                <>
+                  <SkippedText>SKIPPED</SkippedText>
+                  <PlayerName>{teamId}</PlayerName>
+                </>
               ) : (
                 <>
                   <TeamName>{team?.name || 'N/A'}</TeamName>

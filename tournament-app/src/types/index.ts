@@ -8,7 +8,6 @@ export interface Match {
   score?: string; // e.g., "2-1", only for 'completed' status
 }
 
-// Update the Team type to be simpler, as matches are now separate
 export interface Team {
   id: number;
   name: string;
@@ -26,7 +25,6 @@ export interface Group {
   teams: number[]; // Array of team IDs
 }
 
-// Types for the react-brackets library
 export interface BracketTeam {
   name?: string;
 }
@@ -46,5 +44,5 @@ export interface Player {
   name: string;
   elo: number;
   isCaptain: boolean;
-  teamId?: number | null; // Use optional or null to indicate they are undrafted
+  teamId?: number | null;
 }

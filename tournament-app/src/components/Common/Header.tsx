@@ -50,7 +50,7 @@ const Header: React.FC = () => {
         <NavLink to="/teams">Teams</NavLink>
       </Nav>
       <Nav>
-        <NavLink to="/draft">Draft</NavLink>
+        <NavLink to="/draft-access">Draft</NavLink>
       </Nav>
     </HeaderContainer>
   );

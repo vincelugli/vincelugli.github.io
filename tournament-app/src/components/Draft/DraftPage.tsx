@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { Player, Team } from '../../types';
 import { mockPlayers } from '../../data/mockData';
@@ -6,6 +7,7 @@ import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; // We will create this next
 import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { getAuth, User } from 'firebase/auth';
 
 // --- Main Layout Components ---
 const DraftPageContainer = styled.div`
@@ -80,7 +82,7 @@ const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
 
 interface DraftState {
   teams: Team[];
-  pickOrder: (number | null)[];
+  pickOrder: (number | string)[];
   availablePlayers: Player[];
   completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
   currentPickIndex: number; // Index of the current pick in the pickOrder
@@ -112,7 +114,7 @@ const initializeDraft = (): DraftState => {
 
   const numRounds = 5; // To get to 5 players total
   const numTeams = teams.length;
-  const pickOrder: (number|null)[] = [];
+  const pickOrder: (number|string)[] = [];
   for (let i = 0; i < numRounds; i++) {
     const roundOrder = Array.from({ length: numTeams }, (_, j) => teams[j].id);
     if ((i + 1) % 2 === 0) { // Snake draft reverse order for even rounds
@@ -137,30 +139,30 @@ const initializeDraft = (): DraftState => {
         const captainPercent = playerSkipSlot[captain.id];
         if (captainPercent <= 0.2) {
             // skip the first round pick
-            pickOrder[calculatePickIndex(1, numTeams, captain.teamId!) - 1] = null;
+            pickOrder[calculatePickIndex(1, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.4) {
             // skip the second round pick
-            pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) - 1] = null;
+            pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.6) {
             // skip the third round pick
-            pickOrder[calculatePickIndex(3, numTeams, captain.teamId!) - 1] = null;
+            pickOrder[calculatePickIndex(3, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.8) {
             // skip the fourth round pick
-            pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) - 1] = null;
+            pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 1) {
             // skip the fifth round pick
-            pickOrder[calculatePickIndex(5, numTeams, captain.teamId!) - 1] = null;
+            pickOrder[calculatePickIndex(5, numTeams, captain.teamId!) - 1] = captain.name;
         }
     }
   });
 
   let currentPickIndex = 0;
   // Update skipped picks
-  while (pickOrder[currentPickIndex] === null && currentPickIndex < pickOrder.length) {
+  while (typeof(pickOrder[currentPickIndex]) === 'string' && currentPickIndex < pickOrder.length) {
     currentPickIndex++;
   }
 
@@ -168,15 +170,46 @@ const initializeDraft = (): DraftState => {
 };
 
 const DraftPage: React.FC = () => {
-//   const [draftState, setDraftState] = useState<DraftState>(initializeDraft);
+  const navigate = useNavigate();
+  const auth = getAuth();
 
-  //////// Firebase Setup //////////
+  const [user, setUser] = useState<User | null>(auth.currentUser);
+  const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
   const [isLoading, setIsLoading] = useState(true);
   const [draftState, setDraftState] = useState<DraftState>(initializeDraft);
 
   const { teams, pickOrder, availablePlayers, currentPickIndex } = draftState;
 
   const [nextPickIndex, setNextPickIndex] = useState(currentPickIndex);
+  const [authTeamId, setAuthTeamId] = useState<string | null>(null);
+
+  useEffect(() => {
+    user?.getIdTokenResult().then(idTokenResult => {
+      const claims = idTokenResult.claims;
+      if (claims.teamId) {
+        setAuthTeamId(claims.teamId as string);
+      }
+    });
+  }, [user]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(currentUser => {
+      setUser(currentUser);
+      // Also re-check spectator status
+      const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
+      setIsSpectator(spectatorStatus);
+      
+      // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
+      if (!currentUser && !spectatorStatus) {
+        navigate('/draft-access');
+      }
+      setLoadingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth, navigate]);
 
   const isDraftComplete = nextPickIndex >= pickOrder.length;
   const currentTeamIdPicking = !isDraftComplete ? pickOrder[currentPickIndex] : null;
@@ -188,7 +221,7 @@ const DraftPage: React.FC = () => {
       if (docSnap.exists()) {
         const data = docSnap.data() as DraftState;
         setDraftState(data);
-      } else {
+      } else if (!isSpectator && user != null) {
         // If the draft doesn't exist in the DB, initialize it
         console.log("No draft found, initializing...");
         const initialState = initializeDraft(); // Your existing function
@@ -200,7 +233,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [draftDocRef]);
+  }, [isSpectator, user, draftDocRef]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -218,10 +251,10 @@ const DraftPage: React.FC = () => {
     const newCompletedPicks = { ...completedPicks, [currentPickIndex]: player.id };
     let nextPickIndex = currentPickIndex + 1;
     // Update skipped picks
-    while (pickOrder[nextPickIndex] === null && nextPickIndex < pickOrder.length) {
+    while (typeof(pickOrder[nextPickIndex]) === "string" && nextPickIndex < pickOrder.length) {
       nextPickIndex++;
     }
-    debugger;
+
     setNextPickIndex(nextPickIndex);
 
     // --- Create the final update object ---
@@ -240,60 +273,21 @@ const DraftPage: React.FC = () => {
 
   }, [draftState, draftDocRef]); // Dependency is now just draftState
 
-  const handleResetDraft = async () => {
-      await setDoc(draftDocRef, initializeDraft());
-  }
-
-  useEffect(() => {
-    if (!draftState || draftState.pickOrder[draftState.currentPickIndex] !== null) {
-      return;
-    }
-    const timer = setTimeout(async () => {
-      await updateDoc(draftDocRef, { currentPickIndex: draftState.currentPickIndex + 1 });
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [draftState, draftDocRef]);
-
-  //////// Firebase Setup //////////
-
-//   const handleDraftPlayer = useCallback((player: Player) => {
-//     if (isDraftComplete || !currentTeamIdPicking) return;
-
-//     setDraftState(prevState => {
-//       // Add player to the picking team
-//       const newTeams = prevState.teams.map(team => {
-//         if (team.id === currentTeamIdPicking) {
-//           return { ...team, players: [...team.players!, player] };
-//         }
-//         return team;
-//       });
-
-//       // Remove player from available pool
-//       const newAvailablePlayers = prevState.availablePlayers.filter(p => p.id !== player.id);
-
-//       const newCompletedPicks = {
-//         ...prevState.completedPicks,
-//         [currentPickIndex]: player.id,
-//       };
-
-//       return { ...prevState, teams: newTeams, availablePlayers: newAvailablePlayers, completedPicks: newCompletedPicks };
-//     });
-
-//     // Move to the next pick
-//     setCurrentPickIndex(prev => {
-//         while (pickOrder[prev + 1] === null && prev + 1 < totalPicks) {
-//           prev++;
-//         }
-//         return prev + 1;
-//     });
-//   }, [isDraftComplete, currentTeamIdPicking, currentPickIndex]);
-
   const currentTeamPicking = useMemo(() => {
     return teams.find(t => t.id === currentTeamIdPicking);
   }, [teams, currentTeamIdPicking]);
 
   if (isLoading || !draftState) {
     return <div>Connecting to Live Draft...</div>;
+  }
+
+  const canDraftNow = 
+    !isSpectator &&
+    authTeamId !== null &&
+    draftState?.pickOrder[draftState.currentPickIndex] === Number(authTeamId);
+
+  if (loadingAuth) {
+    return <div>Verifying Access...</div>;
   }
 
   return (
@@ -305,7 +299,6 @@ const DraftPage: React.FC = () => {
             ? "Draft Complete!"
             : `Round ${Math.floor(currentPickIndex / teams.length) + 1}, Pick ${currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
         </DraftStatus>
-        <button onClick={handleResetDraft}>Reset Draft</button>
       </DraftHeader>
 
       <MainContent>
@@ -328,7 +321,7 @@ const DraftPage: React.FC = () => {
         <PlayerPool
           players={availablePlayers}
           onDraft={handleDraftPlayer}
-          disabled={isDraftComplete}
+          disabled={isSpectator || !canDraftNow || isDraftComplete} 
         />
       </MainContent>
 

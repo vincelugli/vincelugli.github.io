@@ -10,8 +10,9 @@ import MatchHistory from './components/MatchHistory/MatchHistory';
 import TeamPage from './components/Team/TeamPage'; 
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
-import DraftPage from './components/Draft/DraftPage';
+import DraftAuthGate from './components/Draft/DraftAuthGate';
 import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData';
+import DraftPage from './components/Draft/DraftPage';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -70,7 +71,8 @@ const App: React.FC = () => {
               path="/teams/:teamId" 
               element={<TeamPage teams={mockTeams} matches={mockMatches} />} 
             />
-            <Route path="/draft" element={<DraftPage />} />
+            <Route path="/draft-access" element={<DraftAuthGate />} />
+            <Route path="draft" element={<DraftPage />} />
             <Route 
               path="/match-history/:teamId" 
               element={<MatchHistory teams={mockTeams} />} 
