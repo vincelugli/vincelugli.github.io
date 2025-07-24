@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Player, Team } from '../../types';
+import { Player, Team, DraftState } from '../../types';
 import { mockPlayers } from '../../data/mockData';
 import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; // We will create this next
@@ -80,13 +80,6 @@ const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
   color: ${props => props.isCaptain ? '#d9534f' : '#333'};
 `;
 
-interface DraftState {
-  teams: Team[];
-  pickOrder: (number | string)[];
-  availablePlayers: Player[];
-  completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
-  currentPickIndex: number; // Index of the current pick in the pickOrder
-}
 
 // --- Logic and Component Definition ---
 
@@ -264,6 +257,7 @@ const DraftPage: React.FC = () => {
         availablePlayers: newAvailablePlayers,
         completedPicks: newCompletedPicks,
         currentPickIndex: nextPickIndex,
+        pickStartTime: Date.now(),
     };
 
     // --- Atomically write the entire update back to Firestore ---

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { getAuth, User } from 'firebase/auth';
 
 const HeaderContainer = styled.header`
   background-color: #fff;
@@ -34,6 +35,15 @@ const NavLink = styled(Link)`
 `;
 
 const Header: React.FC = () => {
+  const auth = getAuth();
+  const [user, setUser] = useState<User | null>(auth.currentUser);
+
+  // Listen to auth state to show/hide the captain link
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe();
+  }, [auth]);
+
   return (
     <HeaderContainer>
       <Logo to="/">GRumble 2025</Logo>
@@ -52,6 +62,9 @@ const Header: React.FC = () => {
       <Nav>
         <NavLink to="/draft-access">Draft</NavLink>
       </Nav>
+      {user && (
+          <NavLink to="/pick-priority">My Draft Board</NavLink>
+        )}
     </HeaderContainer>
   );
 };

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
+import { getAuth, User } from 'firebase/auth';
+
 
 import Tournament from './components/Tournament';
 import SwissStage from './components/Swiss/SwissStage';
@@ -13,6 +15,7 @@ import Footer from './components/Common/Footer';
 import DraftAuthGate from './components/Draft/DraftAuthGate';
 import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData';
 import DraftPage from './components/Draft/DraftPage';
+import PriorityListPage from './components/PriorityList/PriorityListPage';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -43,6 +46,15 @@ const MainContent = styled.main`
 `;
 
 const App: React.FC = () => {
+  const auth = getAuth();
+  const [user, setUser] = useState<User | null>(auth.currentUser);
+  
+  // Listen to auth state to show/hide the captain link
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe();
+  }, [auth]);
+
   return (
     <Router>
       <GlobalStyle />
@@ -77,6 +89,8 @@ const App: React.FC = () => {
               path="/match-history/:teamId" 
               element={<MatchHistory teams={mockTeams} />} 
             />
+
+            {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
           </Routes>
         </MainContent>
         <Footer />
