@@ -46,3 +46,12 @@ export interface Player {
   isCaptain: boolean;
   teamId?: number | null;
 }
+
+export interface DraftState {
+  teams: Team[];
+  pickOrder: (number | string)[];
+  availablePlayers: Player[];
+  completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
+  currentPickIndex: number; // Index of the current pick in the pickOrder
+  pickEndsAt?: number | null; // End time in milliseconds
+}

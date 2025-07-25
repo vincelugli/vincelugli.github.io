@@ -4,10 +4,11 @@ import styled from 'styled-components';
 import { Player, Team, DraftState } from '../../types';
 import { mockPlayers } from '../../data/mockData';
 import PickOrderDisplay from './PickOrderDisplay';
-import PlayerPool from './PlayerPool'; // We will create this next
+import PlayerPool from './PlayerPool'; 
 import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getAuth, User } from 'firebase/auth';
+import DraftTimer from './DraftTimer';
 
 // --- Main Layout Components ---
 const DraftPageContainer = styled.div`
@@ -80,6 +81,7 @@ const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
   color: ${props => props.isCaptain ? '#d9534f' : '#333'};
 `;
 
+const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
 
 // --- Logic and Component Definition ---
 
@@ -257,7 +259,7 @@ const DraftPage: React.FC = () => {
         availablePlayers: newAvailablePlayers,
         completedPicks: newCompletedPicks,
         currentPickIndex: nextPickIndex,
-        pickStartTime: Date.now(),
+        pickEndsAt: Date.now() + DRAFT_PICK_TIME_LIMIT_IN_MS,
     };
 
     // --- Atomically write the entire update back to Firestore ---
@@ -293,6 +295,7 @@ const DraftPage: React.FC = () => {
             ? "Draft Complete!"
             : `Round ${Math.floor(currentPickIndex / teams.length) + 1}, Pick ${currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
         </DraftStatus>
+        <DraftTimer deadlineMs={draftState.pickEndsAt} />
       </DraftHeader>
 
       <MainContent>
