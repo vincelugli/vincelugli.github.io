@@ -215,6 +215,7 @@ const DraftPage: React.FC = () => {
     const unsubscribe = onSnapshot(draftDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as DraftState;
+        if (data.currentPickIndex === draftState.currentPickIndex) return;
         setDraftState(data);
       } else if (!isSpectator && user != null) {
         // If the draft doesn't exist in the DB, initialize it
@@ -264,8 +265,6 @@ const DraftPage: React.FC = () => {
 
     // --- Atomically write the entire update back to Firestore ---
     await updateDoc(draftDocRef, updatedDraft);
-    // NOTE: We no longer call setDraftState() here. The `onSnapshot` listener
-    // will automatically receive this update and update the state for everyone.
 
   }, [draftState, draftDocRef]); // Dependency is now just draftState
 

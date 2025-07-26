@@ -7,10 +7,10 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
+import {CloudTasksClient} from "@google-cloud/tasks";
 import {setGlobalOptions} from "firebase-functions";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onTaskDispatched} from "firebase-functions/v2/tasks";
-import {getFunctions} from "firebase-admin/functions";
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 
@@ -33,12 +33,16 @@ admin.initializeApp({
   serviceAccountId: "grumble-5885f@appspot.gserviceaccount.com",
 });
 const db = admin.firestore();
+const tasksClient = new CloudTasksClient();
 
 interface AuthData {
   accessCode: string;
 }
 
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 4 * 60 * 60;
+const PROJECT = "grumble-5885f";
+const LOCATION = "us-central1"; // Or your function's location
+const QUEUE = "executeautopick"; // The default queue created by Firebase
 
 export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
   async (rawRequest) => {
@@ -77,6 +81,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
 
 export const scheduleAutoPick = onDocumentUpdated("drafts/liveDraft",
   async (event) => {
+    functions.logger.debug("Event received: ", event);
     const change = event.data;
     if (!change) return;
 
@@ -88,18 +93,21 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/liveDraft",
       return;
     }
 
-    // Target function name must be lowercase
-    const taskQueue = getFunctions().taskQueue("executeautopick");
-
-    // Cancel any previously scheduled task to prevent duplicates
+    // First, cancel any previously scheduled task
     if (before.activeTimerTaskName) {
+      const taskPath = tasksClient.taskPath(
+        PROJECT,
+        LOCATION,
+        QUEUE,
+        before.activeTimerTaskName);
       try {
-        await taskQueue.delete(before.activeTimerTaskName);
-        functions.logger.log(`Cancel old task: ${before.activeTimerTaskName}`);
+        await tasksClient.deleteTask({name: taskPath});
+        functions.logger.log(
+          `Canceled old task: ${before.activeTimerTaskName}`
+        );
       } catch (error) {
-        // Task has already executed, safe to ignore error
         functions.logger.warn(
-          `Failed to cancel task ${before.activeTimerTaskName}:`, error
+          "Failed to cancel task, it may have already run:", error
         );
       }
     }
@@ -109,13 +117,34 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/liveDraft",
       return;
     }
 
-    // Schedule the new task
-    const scheduleTimeInSeconds = DRAFT_PICK_TIME_LIMIT_IN_SECONDS;
-    const taskName = await taskQueue.enqueue(
-      {draftId: "liveDraft"}, // Pass the draft ID in the body
-      {scheduleDelaySeconds: scheduleTimeInSeconds, dispatchDeadlineSeconds: 60}
-    );
+    const queuePath = tasksClient.queuePath(PROJECT, LOCATION, QUEUE);
+    const url = `https://${LOCATION}-${PROJECT}.cloudfunctions.net/executeAutoPick`;
+    const serviceAccountEmail = `${PROJECT}@appspot.gserviceaccount.com`;
 
+    const scheduleTime = new Date(
+      Date.now() + DRAFT_PICK_TIME_LIMIT_IN_SECONDS * 1000);
+    const task = {
+      httpRequest: {
+        httpMethod: "POST" as const,
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: Buffer
+          .from(JSON.stringify({data: {draftId: "liveDraft"}}))
+          .toString("base64"),
+        oidcToken: {
+          serviceAccountEmail,
+        },
+      },
+      scheduleTime: {
+        seconds: Math.floor(scheduleTime.getTime() / 1000),
+      },
+    };
+
+    const [response] = await tasksClient.createTask({parent: queuePath, task});
+    // Extract the short ID from the full path
+    const taskName = response.name!.split("/").pop()!;
+
+    // Schedule the new task
     functions.logger.log(`Scheduled new task: ${taskName}`);
 
     // Update the draft document with the new task name for tracking
@@ -126,7 +155,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/liveDraft",
 export const executeAutoPick = onTaskDispatched({
   retryConfig: {maxAttempts: 5, minBackoffSeconds: 60},
   rateLimits: {maxDispatchesPerSecond: 500},
-}, async (req) => {
+}, async (req: any) => {
   const {draftId} = req.data;
   functions.logger.log(`Executing auto-pick for draft: ${draftId}`);
 
@@ -137,6 +166,10 @@ export const executeAutoPick = onTaskDispatched({
   }
 
   const draftState = draftDoc.data();
+  if (!draftState) return;
+  functions.logger.log(
+    `Draft state current pick index: ${draftState.currentPickIndex}`
+  );
 
   if (!draftState) {
     // No draft state, return
@@ -146,7 +179,7 @@ export const executeAutoPick = onTaskDispatched({
   // Double-check: Has the pick already been made?
   // This prevents a race condition where a user picks just as the timer expires
   const now = admin.firestore.Timestamp.now();
-  if (!draftState.pickEndsAt || draftState.pickEndsAt > now) {
+  if (!draftState.pickEndsAt || draftState.pickEndsAt < now) {
     functions.logger.log(
       "Pick was already made or timer was updated. Aborting auto-pick."
     );
@@ -155,6 +188,7 @@ export const executeAutoPick = onTaskDispatched({
 
   // --- Auto-pick Logic ---
   const teamIdPicking = draftState.pickOrder[draftState.currentPickIndex];
+  functions.logger.log(`Team picking: ${teamIdPicking}`);
   if (teamIdPicking === null) {
     // This was a skipped pick, just advance it
     const nextPickIndex = draftState.currentPickIndex + 1;
@@ -177,9 +211,10 @@ export const executeAutoPick = onTaskDispatched({
 
   const draftBoardsDoc = await db
     .collection("draftBoards")
-    .doc(teamIdPicking)
+    .doc(teamIdPicking.toString())
     .get();
   const priorityPlayerIds: number[] = draftBoardsDoc.data()?.playerIds || [];
+  functions.logger.log(`Priority players: ${priorityPlayerIds.toString()}`);
 
   // Find the highest priority player who is still available
   let playerToDraftId: number | undefined = undefined;
@@ -190,6 +225,8 @@ export const executeAutoPick = onTaskDispatched({
     }
   }
 
+  functions.logger.log(`Found player: ${playerToDraftId}`);
+
   // Fallback: If no priority players are available, pick the highest Elo player
   if (!playerToDraftId) {
     const available = draftState.availablePlayers;
@@ -198,6 +235,8 @@ export const executeAutoPick = onTaskDispatched({
       playerToDraftId = available[0].id;
     }
   }
+
+  functions.logger.log(`Found player: ${playerToDraftId}`);
 
   if (playerToDraftId) {
     // --- Perform the draft update ---
@@ -218,9 +257,7 @@ export const executeAutoPick = onTaskDispatched({
       [draftState.currentPickIndex]: playerToDraftId,
     };
     const nextPickIndex = draftState.currentPickIndex + 1;
-    const nextDeadline = admin.firestore.Timestamp.fromMillis(
-      Date.now() + DRAFT_PICK_TIME_LIMIT_IN_SECONDS * 1000
-    );
+    const nextDeadline = Date.now() + DRAFT_PICK_TIME_LIMIT_IN_SECONDS * 1000;
 
     const updatedDraftState = {
       ...draftState,
