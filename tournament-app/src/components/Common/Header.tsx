@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, User } from 'firebase/auth';
-import { HeaderContainer, Logo, Nav, NavLink } from '../styles';
+import { HeaderContainer, Logo, Nav, NavLink } from '../../styles';
 
 const Header: React.FC = () => {
   const auth = getAuth();

@@ -8,7 +8,7 @@ import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getAuth, User } from 'firebase/auth';
 import DraftTimer from './DraftTimer';
-import {DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard} from '../styles';
+import {DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard} from '../../styles';
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
 
 // --- Logic and Component Definition ---

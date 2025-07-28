@@ -7,7 +7,7 @@ import { Player } from '../../types';
 import { mockPlayers } from '../../data/mockData'; // Assuming this is our full player pool
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { debounce } from 'lodash';
-import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../styles';
+import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../../styles';
 
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import Button from '../Common/Button';
-import { GateContainer, AuthBox, Input, ErrorMessage } from '../styles';
+import { GateContainer, AuthBox, Input, ErrorMessage } from '../../styles';
 
 
 const DraftAuthGate: React.FC = () => {

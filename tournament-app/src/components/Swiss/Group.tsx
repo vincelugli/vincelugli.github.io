@@ -1,6 +1,6 @@
 import React from 'react';
 import { Group, Team } from '../../types';
-import { GroupContainer, GroupTitle, TeamList, TeamItem, TeamName, TeamRecord } from '../styles';
+import { GroupContainer, GroupTitle, TeamList, TeamItem, TeamName, TeamRecord } from '../../styles';
 
 interface GroupProps {
   group: Group;

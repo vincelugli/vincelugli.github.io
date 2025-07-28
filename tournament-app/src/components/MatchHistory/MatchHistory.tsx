@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Team } from '../../types';
-import { HistoryContainer, MatchHistoryTeamName, MatchList, MatchItem, MatchInfo, Opponent, Score } from '../styles';
+import { HistoryContainer, MatchHistoryTeamName, MatchList, MatchItem, MatchInfo, Opponent, Score } from '../../styles';
 
 ///////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////

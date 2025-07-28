@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TimerWrapper, TimerLabel, TimerText } from '../styles';
+import { TimerWrapper, TimerLabel, TimerText } from '../../styles';
 
 interface DraftTimerProps {
   deadlineMs: number | null | undefined; 

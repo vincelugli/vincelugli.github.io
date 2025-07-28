@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Player } from '../../types';
-import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../styles';
+import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../../styles';
 
 interface PlayerPoolProps {
   players: Player[];

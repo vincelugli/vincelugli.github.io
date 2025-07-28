@@ -2,7 +2,7 @@ import React from 'react';
 import SwissStage from './Swiss/SwissStage';
 import DoubleEliminationBracket from './Brackets/DoubleEliminationBracket';
 import { Team, Group, BracketRound } from '../types';
-import { TournamentContainer, SectionTitle } from './styles';
+import { TournamentContainer, SectionTitle } from '../styles';
 
 interface TournamentProps {
   teams: Team[];

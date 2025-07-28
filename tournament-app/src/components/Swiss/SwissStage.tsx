@@ -1,7 +1,7 @@
 import React from 'react';
 import GroupComponent from './Group';
 import { Group, Team } from '../../types';
-import { StageContainer } from '../styles';
+import { StageContainer } from '../../styles';
 
 interface SwissStageProps {
   groups: Group[];

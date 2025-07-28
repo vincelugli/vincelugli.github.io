@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bracket, Seed, SeedItem, SeedTeam, IRenderSeedProps } from 'react-brackets';
 import { BracketRound } from '../../types';
-import { BracketContainer } from '../styles';
+import { BracketContainer } from '../../styles';
 
 interface BracketProps {
   bracket: BracketRound[];

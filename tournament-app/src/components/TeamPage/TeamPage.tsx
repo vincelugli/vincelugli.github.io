@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Team, Match } from '../../types';
-import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, UpcomingMatchCard, OpponentInfo, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../styles';
+import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, UpcomingMatchCard, OpponentInfo, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
 
 interface TeamPageProps {
   teams: Team[];

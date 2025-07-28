@@ -1,6 +1,6 @@
 import React from 'react';
 import { Team } from '../../types';
-import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, TeamRecord } from '../styles';
+import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, TeamRecord } from '../../styles';
 
 // Define the component's props
 interface TeamsPageProps {

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Team, Player } from '../../types';
-import { PickOrderContainer, PickList, PickItem, PickNumber, PickedTeamName, PickedPlayerName, SkippedText } from '../styles';
+import { PickOrderContainer, PickList, PickItem, PickNumber, PickedTeamName, PickedPlayerName, SkippedText } from '../../styles';
 
 interface PickOrderDisplayProps {
   pickOrder: (number | string)[];

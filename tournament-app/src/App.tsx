@@ -14,7 +14,7 @@ import DraftAuthGate from './components/Draft/DraftAuthGate';
 import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData';
 import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
-import {GlobalStyle, AppContainer, MainContent } from './components/styles';
+import {GlobalStyle, AppContainer, MainContent } from './styles';
 
 const App: React.FC = () => {
   const auth = getAuth();
