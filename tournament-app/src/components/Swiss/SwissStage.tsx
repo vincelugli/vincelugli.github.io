@@ -1,13 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
 import GroupComponent from './Group';
 import { Group, Team } from '../../types';
-
-const StageContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-`;
+import { StageContainer } from '../styles';
 
 interface SwissStageProps {
   groups: Group[];

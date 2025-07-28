@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 import { getAuth } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -8,66 +7,8 @@ import { Player } from '../../types';
 import { mockPlayers } from '../../data/mockData'; // Assuming this is our full player pool
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { debounce } from 'lodash';
+import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../styles';
 
-// --- Styled Components ---
-const PageContainer = styled.div` /* ... */ `;
-const Title = styled.h1` /* ... */ `;
-const BoardContainer = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 1.5rem;
-`;
-
-const Column = styled.div<{ isDraggingOver: boolean }>`
-  display: flex;
-  flex-direction: column;
-  background: ${props => props.isDraggingOver ? '#e9ecef' : '#f8f9fa'};
-  padding: 1rem;
-  border-radius: 8px;
-  min-height: 500px;
-  transition: background-color 0.2s ease;
-`;
-
-const ColumnTitle = styled.h3` /* ... */ `;
-
-const PlayerCard = styled.div<{ isDragging: boolean }>`
-  user-select: none;
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  background: ${props => props.isDragging ? '#d4edda' : '#fff'};
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: space-between;
-`;
-
-const PlayerInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const PlayerName = styled.span`
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #333;
-`;
-
-const PlayerRole = styled.span`
-  font-size: 0.85rem;
-  color: #6c757d; /* A muted gray color */
-  font-style: italic;
-  margin-top: 2px;
-`;
-
-const SecondaryRoles = styled.span` /* Add this style */
-  font-style: italic;
-  color: #6c757d;
-  font-size: 0.8rem;
-  margin-top: 2px;
-`;
-
-// --- Component ---
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
   const auth = getAuth();
@@ -96,7 +37,7 @@ const PriorityListPage: React.FC = () => {
   }, [auth, navigate]);
   
   // Debounced save function to prevent spamming Firestore
-  const savePriorityList = useCallback(
+  const savePriorityList = useMemo(() =>
     debounce(async (teamId: string, playerIds: number[]) => {
       if (!teamId) return;
       const docRef = doc(db, 'draftBoards', teamId);
@@ -155,6 +96,8 @@ const PriorityListPage: React.FC = () => {
 
   if (!authTeamId) return <div>Authenticating...</div>;
 
+  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
+
   return (
     <PageContainer>
       <Title>My Draft Board</Title>
@@ -169,7 +112,12 @@ const PriorityListPage: React.FC = () => {
                     {(provided, snapshot) => (
                       <PlayerCard ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} isDragging={snapshot.isDragging}>
                         <PlayerInfo>
-                          <PlayerName>{player.name}</PlayerName>
+                          <PlayerName 
+                            href={createOpGgUrl(player.name)} 
+                            target="_blank"
+                            rel="noopener noreferrer" >
+                              {player.name}
+                          </PlayerName>
                           <span>{player.elo}</span>
                           <PlayerRole>{player.role}</PlayerRole>
                           {player.secondaryRoles.length > 0 && (
@@ -194,7 +142,12 @@ const PriorityListPage: React.FC = () => {
                     {(provided, snapshot) => (
                       <PlayerCard ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} isDragging={snapshot.isDragging}>
                         <PlayerInfo>
-                          <PlayerName>{index + 1}.{player.name}</PlayerName>
+                          <PlayerName 
+                            href={createOpGgUrl(player.name)} 
+                            target="_blank"
+                            rel="noopener noreferrer" >
+                              {index + 1}.{player.name}
+                          </PlayerName>
                           <span>{player.elo}</span>
                           <PlayerRole>{player.role}</PlayerRole>
                         </PlayerInfo>

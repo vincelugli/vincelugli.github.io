@@ -1,89 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import styled from 'styled-components';
 import { Player } from '../../types';
-
-const PoolContainer = styled.div`
-  background: #fff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  position: sticky;
-  top: 2rem;
-`;
-
-const PoolHeader = styled.h3`
-  margin-top: 0;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.75rem;
-`;
-
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  margin-bottom: 1rem;
-  box-sizing: border-box;
-`;
-
-const PlayerTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-
-  th, td {
-    padding: 0.5rem;
-    text-align: left;
-  }
-`;
-
-const DraftButton = styled.button`
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-
-  &:hover {
-    background-color: #218838;
-  }
-
-  &:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-  }
-`;
-
-const PlayerInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-`;
-
-const PlayerName = styled.div`
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #333;
-`;
-
-const RolesContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-top: 4px;
-  font-size: 0.85rem;
-`;
-
-const PrimaryRole = styled.span`
-  font-weight: 500;
-  color: #0056b3; /* A distinct color for primary role */
-`;
-
-const SecondaryRoles = styled.span`
-  font-style: italic;
-  color: #6c757d; /* Muted color for secondary roles */
-  margin-top: 2px;
-`;
+import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../styles';
 
 interface PlayerPoolProps {
   players: Player[];
@@ -129,6 +46,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
     return filtered.sort((a, b) => b.elo - a.elo);
   }, [players, searchTerm]);
 
+  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
 
   return (
     <PoolContainer>
@@ -153,7 +71,13 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
               <tr key={player.id}>
               <td>
                   <PlayerInfo>
-                      <PlayerName>{player.name}</PlayerName>
+                      <PlayerName
+                          href={createOpGgUrl(player.name)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                      >
+                          {player.name}
+                      </PlayerName>
                       <RolesContainer>
                           <PrimaryRole>P: {player.role}</PrimaryRole>
                           {/* Only display secondary roles if they exist */}

@@ -1,38 +1,11 @@
 import React from 'react';
-import styled from 'styled-components';
 import { Bracket, Seed, SeedItem, SeedTeam, IRenderSeedProps } from 'react-brackets';
 import { BracketRound } from '../../types';
+import { BracketContainer } from '../styles';
 
 interface BracketProps {
   bracket: BracketRound[];
 }
-
-const BracketContainer = styled.div`
-  /* The key property: enables horizontal scrolling only when needed */
-  overflow-x: auto;
-
-  /* Optional: Add some nice styling for the scrollable area */
-  padding: 1.5rem;
-  background-color: #fcfcfc; /* Slightly different background to stand out */
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-
-  /* Improve scrollbar appearance on Webkit browsers (Chrome, Safari) */
-  &::-webkit-scrollbar {
-    height: 10px;
-  }
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 10px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background: #aaa;
-  }
-`;
 
 
 const DoubleEliminationBracket: React.FC<BracketProps> = ({ bracket }) => {

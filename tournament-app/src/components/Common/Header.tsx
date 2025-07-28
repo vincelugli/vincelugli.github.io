@@ -1,38 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import styled from 'styled-components';
 import { getAuth, User } from 'firebase/auth';
-
-const HeaderContainer = styled.header`
-  background-color: #fff;
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Logo = styled(Link)`
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
-  text-decoration: none;
-`;
-
-const Nav = styled.nav`
-  display: flex;
-  gap: 1.5rem;
-`;
-
-const NavLink = styled(Link)`
-  color: #555;
-  text-decoration: none;
-  font-weight: 500;
-
-  &:hover {
-    color: #000;
-  }
-`;
+import { HeaderContainer, Logo, Nav, NavLink } from '../styles';
 
 const Header: React.FC = () => {
   const auth = getAuth();

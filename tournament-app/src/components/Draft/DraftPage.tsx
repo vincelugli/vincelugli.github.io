@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 import { Player, Team, DraftState } from '../../types';
 import { mockPlayers } from '../../data/mockData';
 import PickOrderDisplay from './PickOrderDisplay';
@@ -9,111 +8,7 @@ import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getAuth, User } from 'firebase/auth';
 import DraftTimer from './DraftTimer';
-
-// --- Main Layout Components ---
-const DraftPageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`;
-
-const DraftHeader = styled.div`
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  text-align: center;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  color: #333;
-`;
-
-const DraftStatus = styled.p`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #007bff;
-  margin: 0.5rem 0 0 0;
-`;
-
-const MainContent = styled.div`
-  display: grid;
-  grid-template-columns: 3fr 1fr;
-  gap: 2rem;
-  align-items: start;
-`;
-
-const TeamsSection = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-`;
-
-// --- Team Card Component ---
-const TeamCardContainer = styled.div<{ isPicking: boolean }>`
-  background: #fff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  border: 2px solid ${props => props.isPicking ? '#007bff' : '#transparent'};
-  transition: border-color 0.3s ease;
-`;
-
-const TeamHeader = styled.h3`
-  margin-top: 0;
-  color: #333;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.75rem;
-`;
-
-const PlayerList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 1rem 0 0 0;
-`;
-
-const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  align-items: center; /* Vertically align the info block and the Elo */
-  padding: 0.8rem 0;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-  
-  /* Use color to distinguish captains */
-  color: ${props => (props.isCaptain ? '#d9534f' : 'inherit')};
-`;
-
-const PlayerInfoOnCard = styled.div`
-  display: flex;
-  flex-direction: column; /* Stack name and roles vertically */
-  text-align: left;
-`;
-
-const PlayerNameOnCard = styled.span`
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #333;
-`;
-
-const PlayerRolesOnCard = styled.span`
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-top: 3px;
-`;
-
-const PlayerEloOnCard = styled.span`
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
-  padding-left: 1rem; /* Ensure space between roles and Elo */
-`;
-
-
+import {DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard} from '../styles';
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
 
 // --- Logic and Component Definition ---
@@ -321,6 +216,8 @@ const DraftPage: React.FC = () => {
     return <div>Verifying Access...</div>;
   }
 
+  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
+
   return (
     <DraftPageContainer>
       <DraftHeader>
@@ -333,7 +230,7 @@ const DraftPage: React.FC = () => {
         <DraftTimer deadlineMs={draftState.pickEndsAt} />
       </DraftHeader>
 
-      <MainContent>
+      <DraftContent>
         <TeamsSection>
           {teams.map(team => (
             <TeamCardContainer key={team.id} isPicking={team.id === currentTeamIdPicking}>
@@ -342,8 +239,12 @@ const DraftPage: React.FC = () => {
                 {team.players!.map(p => (
                   <PlayerListItem key={p.id} isCaptain={p.isCaptain}>
                     <PlayerInfoOnCard>
-                      <PlayerNameOnCard>
-                        {p.name}
+                      <PlayerNameOnCard
+                          href={createOpGgUrl(p.name)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                      >
+                          {p.name}
                       </PlayerNameOnCard>
                       <PlayerRolesOnCard>
                         {p.role}
@@ -365,7 +266,7 @@ const DraftPage: React.FC = () => {
           onDraft={handleDraftPlayer}
           disabled={isSpectator || !canDraftNow || isDraftComplete} 
         />
-      </MainContent>
+      </DraftContent>
 
       <PickOrderDisplay
         pickOrder={draftState.pickOrder}

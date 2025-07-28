@@ -1,37 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import styled from 'styled-components';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import Button from '../Common/Button';
-
-// --- Styled Components for the Gate ---
-const GateContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 70vh;
-`;
-
-const AuthBox = styled.div`
-  width: 100%;
-  max-width: 400px;
-  padding: 2.5rem;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  text-align: center;
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
-  box-sizing: border-box; /* Important for consistent sizing */
-`;
-const ErrorMessage = styled.p` color: red; `;
+import { GateContainer, AuthBox, Input, ErrorMessage } from '../styles';
 
 
 const DraftAuthGate: React.FC = () => {

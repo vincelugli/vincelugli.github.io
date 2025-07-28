@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import styled, { createGlobalStyle } from 'styled-components';
 import { getAuth, User } from 'firebase/auth';
 
 
@@ -8,42 +7,14 @@ import Tournament from './components/Tournament';
 import SwissStage from './components/Swiss/SwissStage';
 import DoubleEliminationBracket from './components/Brackets/DoubleEliminationBracket';
 import AllTeamsPage from './components/Team/AllTeamsPage';
-import MatchHistory from './components/MatchHistory/MatchHistory';
-import TeamPage from './components/Team/TeamPage'; 
+import TeamPage from './components/TeamPage/TeamPage'; 
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
 import DraftAuthGate from './components/Draft/DraftAuthGate';
 import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData';
 import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
-
-const GlobalStyle = createGlobalStyle`
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: #f0f2f5;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-`;
-
-const AppContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-`;
-
-const MainContent = styled.main`
-  flex: 1;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-`;
+import {GlobalStyle, AppContainer, MainContent } from './components/styles';
 
 const App: React.FC = () => {
   const auth = getAuth();
@@ -85,11 +56,6 @@ const App: React.FC = () => {
             />
             <Route path="/draft-access" element={<DraftAuthGate />} />
             <Route path="draft" element={<DraftPage />} />
-            <Route 
-              path="/match-history/:teamId" 
-              element={<MatchHistory teams={mockTeams} />} 
-            />
-
             {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
           </Routes>
         </MainContent>

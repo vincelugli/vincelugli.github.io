@@ -1,22 +1,8 @@
 import React from 'react';
-import styled from 'styled-components';
 import SwissStage from './Swiss/SwissStage';
 import DoubleEliminationBracket from './Brackets/DoubleEliminationBracket';
 import { Team, Group, BracketRound } from '../types';
-
-const TournamentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 2rem;
-  color: #333;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-`;
+import { TournamentContainer, SectionTitle } from './styles';
 
 interface TournamentProps {
   teams: Team[];

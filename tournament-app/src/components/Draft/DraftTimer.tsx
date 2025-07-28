@@ -1,39 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-
-
-const TimerWrapper = styled.div`
-  background-color: #ffffff;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 220px;
-`;
-
-const TimerLabel = styled.div`
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6c757d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
-`;
-
-// The color of the timer text will be passed as a prop
-const TimerText = styled.div<{ color: string }>`
-  font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
-  font-size: 2.75rem;
-  font-weight: 700;
-  color: ${(props) => props.color};
-  line-height: 1.1;
-  transition: color 0.5s ease-in-out;
-`;
-
-// --- Component Definition ---
+import { TimerWrapper, TimerLabel, TimerText } from '../styles';
 
 interface DraftTimerProps {
   deadlineMs: number | null | undefined; 
