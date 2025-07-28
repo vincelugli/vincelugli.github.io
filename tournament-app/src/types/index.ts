@@ -44,6 +44,8 @@ export interface Player {
   name: string;
   elo: number;
   isCaptain: boolean;
+  role: string;
+  secondaryRoles: string[];
   teamId?: number | null;
 }
 

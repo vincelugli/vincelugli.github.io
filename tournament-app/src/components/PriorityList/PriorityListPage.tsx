@@ -42,6 +42,31 @@ const PlayerCard = styled.div<{ isDragging: boolean }>`
   justify-content: space-between;
 `;
 
+const PlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const PlayerName = styled.span`
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+`;
+
+const PlayerRole = styled.span`
+  font-size: 0.85rem;
+  color: #6c757d; /* A muted gray color */
+  font-style: italic;
+  margin-top: 2px;
+`;
+
+const SecondaryRoles = styled.span` /* Add this style */
+  font-style: italic;
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 2px;
+`;
+
 // --- Component ---
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -143,8 +168,14 @@ const PriorityListPage: React.FC = () => {
                   <Draggable key={player.id} draggableId={String(player.id)} index={index}>
                     {(provided, snapshot) => (
                       <PlayerCard ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} isDragging={snapshot.isDragging}>
-                        <span>{player.name}</span>
-                        <span>{player.elo}</span>
+                        <PlayerInfo>
+                          <PlayerName>{player.name}</PlayerName>
+                          <span>{player.elo}</span>
+                          <PlayerRole>{player.role}</PlayerRole>
+                          {player.secondaryRoles.length > 0 && (
+                            <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>
+                          )}
+                        </PlayerInfo>
                       </PlayerCard>
                     )}
                   </Draggable>
@@ -162,8 +193,11 @@ const PriorityListPage: React.FC = () => {
                   <Draggable key={player.id} draggableId={String(player.id)} index={index}>
                     {(provided, snapshot) => (
                       <PlayerCard ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} isDragging={snapshot.isDragging}>
-                        <span>{index + 1}. {player.name}</span>
-                        <span>{player.elo}</span>
+                        <PlayerInfo>
+                          <PlayerName>{index + 1}.{player.name}</PlayerName>
+                          <span>{player.elo}</span>
+                          <PlayerRole>{player.role}</PlayerRole>
+                        </PlayerInfo>
                       </PlayerCard>
                     )}
                   </Draggable>

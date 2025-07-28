@@ -70,16 +70,49 @@ const TeamHeader = styled.h3`
 const PlayerList = styled.ul`
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 1rem 0 0 0;
 `;
 
 const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
   display: flex;
   justify-content: space-between;
-  padding: 0.5rem 0;
-  font-weight: ${props => props.isCaptain ? '700' : '400'};
-  color: ${props => props.isCaptain ? '#d9534f' : '#333'};
+  align-items: center; /* Vertically align the info block and the Elo */
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  /* Use color to distinguish captains */
+  color: ${props => (props.isCaptain ? '#d9534f' : 'inherit')};
 `;
+
+const PlayerInfoOnCard = styled.div`
+  display: flex;
+  flex-direction: column; /* Stack name and roles vertically */
+  text-align: left;
+`;
+
+const PlayerNameOnCard = styled.span`
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+`;
+
+const PlayerRolesOnCard = styled.span`
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 3px;
+`;
+
+const PlayerEloOnCard = styled.span`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  padding-left: 1rem; /* Ensure space between roles and Elo */
+`;
+
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
 
@@ -215,7 +248,10 @@ const DraftPage: React.FC = () => {
     const unsubscribe = onSnapshot(draftDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as DraftState;
-        if (data.currentPickIndex === draftState.currentPickIndex) return;
+        if (data.currentPickIndex === draftState.currentPickIndex) {
+          setIsLoading(false);
+          return;
+        }
         setDraftState(data);
       } else if (!isSpectator && user != null) {
         // If the draft doesn't exist in the DB, initialize it
@@ -229,7 +265,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [isSpectator, user, draftDocRef]);
+  }, [isSpectator, user, draftDocRef, draftState.currentPickIndex]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -305,8 +341,18 @@ const DraftPage: React.FC = () => {
               <PlayerList>
                 {team.players!.map(p => (
                   <PlayerListItem key={p.id} isCaptain={p.isCaptain}>
-                    <span>{p.name}</span>
-                    <span>{p.elo}</span>
+                    <PlayerInfoOnCard>
+                      <PlayerNameOnCard>
+                        {p.name}
+                      </PlayerNameOnCard>
+                      <PlayerRolesOnCard>
+                        {p.role}
+                        {p.secondaryRoles && p.secondaryRoles.length > 0 ? ` (${p.secondaryRoles.join(', ')})` : ''}
+                      </PlayerRolesOnCard>
+                    </PlayerInfoOnCard>
+
+                    {/* Right Block: Contains only the Elo */}
+                    <PlayerEloOnCard>{p.elo}</PlayerEloOnCard>
                   </PlayerListItem>
                 ))}
               </PlayerList>

@@ -55,6 +55,36 @@ const DraftButton = styled.button`
   }
 `;
 
+const PlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+`;
+
+const PlayerName = styled.div`
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+`;
+
+const RolesContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  font-size: 0.85rem;
+`;
+
+const PrimaryRole = styled.span`
+  font-weight: 500;
+  color: #0056b3; /* A distinct color for primary role */
+`;
+
+const SecondaryRoles = styled.span`
+  font-style: italic;
+  color: #6c757d; /* Muted color for secondary roles */
+  margin-top: 2px;
+`;
+
 interface PlayerPoolProps {
   players: Player[];
   onDraft: (player: Player) => void;
@@ -65,10 +95,40 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredPlayers = useMemo(() => {
-    return players
-      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => b.elo - a.elo);
+    // An empty search term should show all players
+    if (!searchTerm.trim()) {
+      return players.sort((a, b) => b.elo - a.elo);
+    }
+
+    // Prepare a case-insensitive search term once for efficiency
+    const lowercasedSearchTerm = searchTerm.toLowerCase();
+
+    if (lowercasedSearchTerm.startsWith("p:")) {
+      const roleSearchTerm = lowercasedSearchTerm.substring(2);
+      console.log(roleSearchTerm);
+      return players.filter(player => player.role.toLowerCase().includes(roleSearchTerm));
+    }
+
+    const filtered = players.filter(player => {
+      // Check against player name
+      const nameMatch = player.name.toLowerCase().includes(lowercasedSearchTerm);
+      
+      // Check against primary role
+      const primaryRoleMatch = player.role.toLowerCase().includes(lowercasedSearchTerm);
+      
+      // Check against all secondary roles
+      const secondaryRoleMatch = player.secondaryRoles.some(role =>
+        role.toLowerCase().includes(lowercasedSearchTerm)
+      );
+
+      // Return true if any field matches
+      return nameMatch || primaryRoleMatch || secondaryRoleMatch;
+    });
+
+    // Sort the final filtered list by Elo
+    return filtered.sort((a, b) => b.elo - a.elo);
   }, [players, searchTerm]);
+
 
   return (
     <PoolContainer>
@@ -91,14 +151,27 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
           <tbody>
             {filteredPlayers.map(player => (
               <tr key={player.id}>
-                <td>{player.name}</td>
-                <td>{player.elo}</td>
-                <td>
+              <td>
+                  <PlayerInfo>
+                      <PlayerName>{player.name}</PlayerName>
+                      <RolesContainer>
+                          <PrimaryRole>P: {player.role}</PrimaryRole>
+                          {/* Only display secondary roles if they exist */}
+                          {player.secondaryRoles && player.secondaryRoles.length > 0 && (
+                              <SecondaryRoles>
+                                  S: {player.secondaryRoles.join(', ')}
+                              </SecondaryRoles>
+                          )}
+                      </RolesContainer>
+                  </PlayerInfo>
+              </td>
+              <td>{player.elo}</td>
+              <td>
                   <DraftButton onClick={() => onDraft(player)} disabled={disabled}>
-                    Draft
+                      Draft
                   </DraftButton>
-                </td>
-              </tr>
+              </td>
+          </tr>
             ))}
           </tbody>
         </PlayerTable>
