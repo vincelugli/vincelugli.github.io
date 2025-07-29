@@ -15,6 +15,7 @@ import { mockTeams, mockMatches, mockGroups, mockBracket } from './data/mockData
 import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
 import {GlobalStyle, AppContainer, MainContent } from './styles';
+import SchedulePage from './components/Schedule/SchedulePage';
 
 const App: React.FC = () => {
   const auth = getAuth();
@@ -38,6 +39,7 @@ const App: React.FC = () => {
               path="/" 
               element={<Tournament teams={mockTeams} groups={mockGroups} bracket={mockBracket} />} 
             />
+            <Route path="/schedule" element={<SchedulePage />} />
             <Route 
               path="/swiss" 
               element={<SwissStage groups={mockGroups} teams={mockTeams} />}

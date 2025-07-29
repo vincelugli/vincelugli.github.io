@@ -1,4 +1,4 @@
-import styled, { createGlobalStyle } from 'styled-components';
+import styled, { createGlobalStyle, css } from 'styled-components';
 import { Link } from 'react-router-dom';
 
 // DoubleEliminationBracket
@@ -749,4 +749,124 @@ export const MainContent = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+`;
+
+// SchedulePage
+export const SchedulePageContainer = styled.div`
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-width: 900px;
+  margin: 2rem auto;
+`;
+
+export const ScheduleTitle = styled.h1`
+  font-size: 2.8rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2.5rem;
+`;
+
+export const TimelineContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  
+  /* The central vertical line of the timeline */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 15px;
+    bottom: 15px;
+    width: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+  }
+`;
+
+export const StageCard = styled.div`
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  position: relative;
+  padding-left: 60px; /* Space for the icon and line */
+`;
+
+export const StageIcon = styled.div<{ status: string }>`
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  z-index: 1; /* Make sure it's on top of the line */
+  
+  /* Dynamic styling based on status */
+  ${({ status }) =>
+    status === 'completed' && css`
+      background-color: #28a745; /* Green */
+      color: white;
+      border: 3px solid #1f7a35;
+    `}
+  ${({ status }) =>
+    status === 'in-progress' && css`
+      background-color: #007bff; /* Blue */
+      color: white;
+      border: 3px solid #0056b3;
+    `}
+  ${({ status }) =>
+    status === 'upcoming' && css`
+      background-color: #e9ecef; /* Gray */
+      color: #6c757d;
+      border: 3px solid #adb5bd;
+    `}
+`;
+
+export const StageContent = styled.div`
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  flex-grow: 1;
+`;
+
+export const StageTitle = styled.h2`
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+`;
+
+export const StageDescription = styled.p`
+  margin: 0 0 1rem 0;
+  color: #6c757d;
+  font-size: 1rem;
+`;
+
+export const StageLink = styled(Link)`
+  background-color: #007bff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
+
+export const StageDate = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem; /* Space between icon and text */
+  color: #6c757d;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0.25rem 0 1rem 0; /* Position it neatly between title and description */
 `;
