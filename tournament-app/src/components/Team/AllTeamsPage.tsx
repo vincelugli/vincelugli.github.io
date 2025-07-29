@@ -1,7 +1,7 @@
 import React from 'react';
 import { Team } from '../../types';
-import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, TeamRecord } from '../../styles';
-
+import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record } from '../../styles';
+import { compareTeams } from '../../utils';
 // Define the component's props
 interface TeamsPageProps {
   teams: Team[];
@@ -9,13 +9,7 @@ interface TeamsPageProps {
 
 const AllTeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
   // Order the teams by best record
-  teams = teams.sort((t1, t2) => {
-    const result = t2.wins - t1.wins;
-    if (result === 0) {
-      return t1.losses - t2.losses;
-    }
-    return result;
-  });
+  teams = teams.sort(compareTeams);
 
   return (
     <TeamsContainer>
@@ -24,7 +18,8 @@ const AllTeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
         <TableHead>
           <tr>
             <th>Team Name</th>
-            <th>Record (W-L)</th>
+            <th>Team Record (W-L)</th>
+            <th>Game Record (W-L)</th>
           </tr>
         </TableHead>
         <TableBody>
@@ -37,7 +32,10 @@ const AllTeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
                 </TeamNameLink>
               </td>
               <td>
-                <TeamRecord>{team.record}</TeamRecord>
+                <Record>{team.record}</Record>
+              </td>
+              <td>
+                <Record>{team.gameRecord}</Record>
               </td>
             </tr>
           ))}

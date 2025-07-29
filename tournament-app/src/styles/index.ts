@@ -133,7 +133,6 @@ export const TeamsSection = styled.div`
   gap: 1.5rem;
 `;
 
-// --- Team Card Component ---
 export const TeamCardContainer = styled.div<{ isPicking: boolean }>`
   background: #fff;
   border-radius: 8px;
@@ -432,7 +431,6 @@ export const Score = styled.span<{ win: boolean }>`
 `;
 
 // PriorityListPage
-
 export const PageContainer = styled.div` /* ... */ `;
 
 export const BoardContainer = styled.div`
@@ -451,8 +449,6 @@ export const Column = styled.div<{ isDraggingOver: boolean }>`
   min-height: 500px;
   transition: background-color 0.2s ease;
 `;
-
-export const ColumnTitle = styled.h3` /* ... */ `;
 
 export const PlayerCard = styled.div<{ isDragging: boolean }>`
   user-select: none;
@@ -500,18 +496,6 @@ export const TeamList = styled.ul`
   padding: 0;
 `;
 
-export const TeamItem = styled.li`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #eee;
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
 export const TeamName = styled(Link)`
   font-weight: 500;
   color: #333;
@@ -522,6 +506,46 @@ export const TeamName = styled(Link)`
   }
 `;
 
+export const GroupHeaderRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 60px 60px; /* Name | Match | Game */
+  gap: 1rem;
+  padding: 0 1rem 0.5rem 1rem;
+  border-bottom: 2px solid #f0f0f0;
+`;
+
+export const ColumnTitle = styled.span`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  text-align: center;
+`;
+
+export const TeamItem = styled.li`
+  display: grid;
+  grid-template-columns: 1fr 60px 60px; /* Name | Match | Game */
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+// UPDATE: Shared style for both record types
+export const Record = styled.span`
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+  text-align: center;
+  background-color: #f8f9fa;
+  padding: 0.25rem 0;
+  border-radius: 4px;
+`;
+
 // SwissStage
 export const StageContainer = styled.div`
   display: grid;
@@ -530,8 +554,6 @@ export const StageContainer = styled.div`
 `;
 
 // AllTeamsPage
-
-// Main container for the page
 export const TeamsContainer = styled.div`
   background-color: #ffffff;
   padding: 2rem;
@@ -595,28 +617,7 @@ export const TeamNameLink = styled(Link)`
   }
 `;
 
-// Style for the team record
-export const TeamRecord = styled.span`
-  font-weight: 500;
-  font-size: 1.1rem;
-  color: #333;
-`;
-
 // TeamPage
-
-// export const PageContainer = styled.div`
-//   display: flex;
-//   flex-direction: column;
-//   gap: 2.5rem;
-// `;
-
-// export const TeamHeader = styled.div`
-//   background: #fff;
-//   padding: 2rem;
-//   border-radius: 8px;
-//   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-// `;
-
 export const TeamPageTeamName = styled.h1`
   font-size: 3rem;
   color: #333;
@@ -631,7 +632,6 @@ export const SectionTitle = styled.h2`
   margin-bottom: 1.5rem;
 `;
 
-// Card for the Upcoming Match
 export const UpcomingMatchCard = styled.div`
   background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
@@ -685,19 +685,6 @@ export const CopyButton = styled.button`
   &:hover { background: #f0f0f0; }
 `;
 
-// List for Match History
-// const MatchHistoryList = styled.ul`
-//   list-style: none;
-//   padding: 0;
-// `;
-
-// const MatchItem = styled.li`
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   padding: 1rem;
-//   border-bottom: 1px solid #eee;
-// `;
 
 export const MatchHistoryList = styled.ul`
   list-style: none;
@@ -706,27 +693,6 @@ export const MatchHistoryList = styled.ul`
   flex-direction: column;
   gap: 1rem;
 `;
-
-// export const MatchItem = styled.li`
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   background-color: #fff;
-//   padding: 1.5rem;
-//   border-radius: 8px;
-//   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-//   border-left: 5px solid;
-// `;
-
-// export const MatchInfo = styled.div`
-//   font-size: 1.2rem;
-//   font-weight: 500;
-//   color: #555;
-//   span {
-//     font-weight: 700;
-//     color: #333;
-//   }
-// `;
 
 export const MatchResult = styled.div`
   display: flex;

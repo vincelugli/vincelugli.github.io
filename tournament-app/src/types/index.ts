@@ -15,7 +15,10 @@ export interface Team {
   players: Player[];
   wins: number;
   losses: number;
+  gameWins: number;
+  gameLosses: number;
   record?: string;
+  gameRecord?: string;
   matchHistory?: Match[];
 }
 
