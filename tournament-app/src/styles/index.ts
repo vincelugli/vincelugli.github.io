@@ -95,8 +95,36 @@ export const Input = styled.input`
   border-radius: 6px;
   font-size: 1rem;
   box-sizing: border-box; /* Important for consistent sizing */
+  margin-top: 1rem;
 `;
 export const ErrorMessage = styled.p` color: red; `;
+
+export const Label = styled.label`
+  font-weight: 600;
+  color: #555;
+  font-size: 1rem;
+  padding: 0.8rem 1.5rem;
+`;
+
+export const Select = styled.select`
+  padding: 0.8rem 2.5rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  }
+`;
+
+export const DraftMetadataGroup = styled.div`
+  display: flex;
+  gap: 2rem;
+`;
 
 // DraftPage
 export const DraftPageContainer = styled.div`

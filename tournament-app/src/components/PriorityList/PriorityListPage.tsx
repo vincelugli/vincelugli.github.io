@@ -136,7 +136,7 @@ const PriorityListPage: React.FC = () => {
           <Droppable droppableId="priority">
             {(provided, snapshot) => (
               <Column ref={provided.innerRef} {...provided.droppableProps} isDraggingOver={snapshot.isDraggingOver}>
-                <ColumnTitle>My Priority List</ColumnTitle>
+                <ColumnTitle>My Auto Draft Board</ColumnTitle>
                 {priorityPlayers.map((player, index) => (
                   <Draggable key={player.id} draggableId={String(player.id)} index={index}>
                     {(provided, snapshot) => (
@@ -150,6 +150,9 @@ const PriorityListPage: React.FC = () => {
                           </PlayerName>
                           <span>{player.elo}</span>
                           <PlayerRole>{player.role}</PlayerRole>
+                          {player.secondaryRoles.length > 0 && (
+                            <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>
+                          )}
                         </PlayerInfo>
                       </PlayerCard>
                     )}

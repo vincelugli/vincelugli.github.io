@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface Match {
   id: string; // Use a string for unique IDs like from a DB
   team1Id: number;
@@ -59,4 +61,14 @@ export interface DraftState {
   completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
   currentPickIndex: number; // Index of the current pick in the pickOrder
   pickEndsAt?: number | null; // End time in milliseconds
+}
+
+export interface SignUpData {
+  mainSummonerName: string;
+  location: string;
+  role: 'Player' | 'Sub' | 'Coach';
+  peakRank: string;
+  peakRankSeason: string;
+  altSummonerNames: string;
+  submittedAt: Timestamp; // To track when the sign-up happened
 }

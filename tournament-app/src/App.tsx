@@ -57,7 +57,7 @@ const App: React.FC = () => {
               element={<TeamPage teams={mockTeams} matches={mockMatches} />} 
             />
             <Route path="/draft-access" element={<DraftAuthGate />} />
-            <Route path="draft" element={<DraftPage />} />
+            <Route path="/draft/:draftId" element={<DraftPage />} />
             {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
           </Routes>
         </MainContent>

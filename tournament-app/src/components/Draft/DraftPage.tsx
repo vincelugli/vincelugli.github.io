@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Player, Team, DraftState } from '../../types';
 import { mockPlayers } from '../../data/mockData';
 import PickOrderDisplay from './PickOrderDisplay';
@@ -96,6 +96,7 @@ const initializeDraft = (): DraftState => {
 
 const DraftPage: React.FC = () => {
   const navigate = useNavigate();
+  const { draftId } = useParams<{ draftId: string }>();
   const auth = getAuth();
 
   const [user, setUser] = useState<User | null>(auth.currentUser);
@@ -139,7 +140,7 @@ const DraftPage: React.FC = () => {
   const isDraftComplete = nextPickIndex >= pickOrder.length;
   const currentTeamIdPicking = !isDraftComplete ? pickOrder[currentPickIndex] : null;
 
-  const draftDocRef = doc(db, 'drafts', 'liveDraft');
+  const draftDocRef = doc(db, 'drafts', draftId ?? 'liveDraft');
   useEffect(() => {
     // onSnapshot listens for any changes to the document
     const unsubscribe = onSnapshot(draftDocRef, (docSnap) => {

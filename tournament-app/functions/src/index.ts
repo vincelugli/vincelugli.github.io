@@ -185,64 +185,72 @@ export const executeAutoPick = onTaskDispatched({
     );
     return;
   }
-
+  
+  const all_roles = ['top', 'mid', 'jungle', 'adc', 'support'];
+  
   // --- Auto-pick Logic ---
   const teamIdPicking = draftState.pickOrder[draftState.currentPickIndex];
-  functions.logger.log(`Team picking: ${teamIdPicking}`);
-  if (teamIdPicking === null) {
-    // This was a skipped pick, just advance it
-    const nextPickIndex = draftState.currentPickIndex + 1;
-    const nextDeadline = admin
-      .firestore
-      .Timestamp
-      .fromMillis(Date.now() + 90000);
-    const updatedDraftState = {
-      ...draftState,
-      currentPickIndex: nextPickIndex,
-      pickEndsAt: nextDeadline,
-    };
+  const pickingTeam = draftState.teams.find((t: any) => t.id === teamIdPicking);
+  const availablePlayers = draftState.availablePlayers;
 
-    await draftRef.update(updatedDraftState);
-    functions.logger.log(
-      `Team picking was null, so pick was skipped: ${draftId}`
-    );
-    return;
-  }
+  // 1. Determine the roles already filled on the team
+  const filledRoles = new Set(pickingTeam.players.map((p: any) => p.primaryRole));
+  const neededRoles = all_roles.filter(role => !filledRoles.has(role));
+  functions.logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
 
+  // 2. Fetch the captain's priority list
+  // This assumes you have a way to link team ID to an access code/priority list ID
   const draftBoardsDoc = await db
     .collection("draftBoards")
     .doc(teamIdPicking.toString())
     .get();
   const priorityPlayerIds: number[] = draftBoardsDoc.data()?.playerIds || [];
-  functions.logger.log(`Priority players: ${priorityPlayerIds.toString()}`);
+  
+  let playerToDraftId: number | undefined;
 
-  // Find the highest priority player who is still available
-  let playerToDraftId: number | undefined = undefined;
-  for (const pId of priorityPlayerIds) {
-    if (draftState.availablePlayers.some((p: any) => p.id === pId)) {
-      playerToDraftId = pId;
-      break; // Found our player
-    }
+  // 3. Primary Search: Find the highest priority player who fills a needed role
+  if (neededRoles.length > 0) {
+      for (const pId of priorityPlayerIds) {
+          const player = availablePlayers.find((p: any) => p.id === pId);
+          if (player && neededRoles.includes(player.primaryRole)) {
+              playerToDraftId = pId;
+              functions.logger.log(`Primary search found: Player ${pId} (${player.primaryRole}) fills a needed role.`);
+              break;
+          }
+      }
   }
-
-  functions.logger.log(`Found player: ${playerToDraftId}`);
-
-  // Fallback: If no priority players are available, pick the highest Elo player
+  
+  // 4. Fallback 1: If no role-fit found, find the highest priority player available
   if (!playerToDraftId) {
-    const available = draftState.availablePlayers;
-    if (available.length > 0) {
-      available.sort((a: any, b: any) => b.elo - a.elo);
-      playerToDraftId = available[0].id;
-    }
+      functions.logger.log("Primary search failed. Falling back to best available from priority list.");
+      for (const pId of priorityPlayerIds) {
+          if (availablePlayers.some((p: any) => p.id === pId)) {
+              playerToDraftId = pId;
+              functions.logger.log(`Fallback 1 found: Player ${pId} is the highest available priority pick.`);
+              break;
+          }
+      }
   }
 
-  functions.logger.log(`Found player: ${playerToDraftId}`);
+  // 5. Fallback 2: If priority list exhausted, find the highest Elo player overall
+  if (!playerToDraftId) {
+      functions.logger.log("Fallback 1 failed. Falling back to best available Elo.");
+      // Create a mutable copy to sort
+      const sortedAvailable = [...availablePlayers];
+      sortedAvailable.sort((a: any, b: any) => b.elo - a.elo);
+      playerToDraftId = sortedAvailable[0]?.id;
+      functions.logger.log(`Fallback 2 found: Player ${playerToDraftId} has the highest Elo.`);
+  }
 
+  // 6. Perform the draft with the selected player
+  if (!playerToDraftId) {
+      throw new Error("Auto-pick failed: Could not determine a player to draft.");
+  }
+
+  
   if (playerToDraftId) {
     // --- Perform the draft update ---
-    const playerToDraft = draftState
-      .availablePlayers
-      .find((p: any) => p.id === playerToDraftId);
+    const playerToDraft = availablePlayers.find((p: any) => p.id === playerToDraftId);
 
     const newTeams = draftState.teams.map((team: any) =>
       team.id === teamIdPicking ?
