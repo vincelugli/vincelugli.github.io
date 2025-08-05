@@ -36,6 +36,9 @@ const Header: React.FC = () => {
       {user && (
           <NavLink to="/pick-priority">My Draft Board</NavLink>
         )}
+      <Nav>
+        <NavLink to="/subs">Subs</NavLink>
+      </Nav>
     </HeaderContainer>
   );
 };

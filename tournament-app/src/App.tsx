@@ -16,6 +16,7 @@ import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
 import {GlobalStyle, AppContainer, MainContent } from './styles';
 import SchedulePage from './components/Schedule/SchedulePage';
+import SubstitutesPage from './components/Players/SubstitutePlayersPage';
 
 const App: React.FC = () => {
   const auth = getAuth();
@@ -59,6 +60,7 @@ const App: React.FC = () => {
             <Route path="/draft-access" element={<DraftAuthGate />} />
             <Route path="/draft/:draftId" element={<DraftPage />} />
             {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
+            <Route path="/subs" element={<SubstitutesPage />} />
           </Routes>
         </MainContent>
         <Footer />

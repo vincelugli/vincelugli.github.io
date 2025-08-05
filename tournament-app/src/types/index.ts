@@ -72,3 +72,11 @@ export interface SignUpData {
   altSummonerNames: string;
   submittedAt: Timestamp; // To track when the sign-up happened
 }
+
+export interface SubPlayer {
+  name: string;
+  rank: string;
+  contact: string;
+  primaryRole: string;
+  secondaryRoles: string[];
+}
