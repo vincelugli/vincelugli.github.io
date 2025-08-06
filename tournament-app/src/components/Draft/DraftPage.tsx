@@ -10,7 +10,7 @@ import DraftTimer from './DraftTimer';
 import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
 
-const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
+const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
 
 // --- Logic and Component Definition ---
 
