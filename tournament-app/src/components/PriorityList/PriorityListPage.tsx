@@ -4,10 +4,10 @@ import { getAuth } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Player } from '../../types';
-import { mockPlayers } from '../../data/mockData'; // Assuming this is our full player pool
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { debounce } from 'lodash';
 import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../../styles';
+import { usePlayers } from '../../context/PlayerContext';
 
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +16,8 @@ const PriorityListPage: React.FC = () => {
   const [authTeamId, setAuthTeamId] = useState<string | null>(null);
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
   const [priorityPlayers, setPriorityPlayers] = useState<Player[]>([]);
+
+  const { players: allPlayers } = usePlayers();
 
   // Auth checking effect
   useEffect(() => {
@@ -52,7 +54,7 @@ const PriorityListPage: React.FC = () => {
 
     const docRef = doc(db, 'draftBoards', authTeamId);
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      const allDraftablePlayers = mockPlayers.filter(p => !p.isCaptain);
+      const allDraftablePlayers = allPlayers.filter(p => !p.isCaptain);
       const priorityIds = snapshot.exists() ? snapshot.data().playerIds as number[] : [];
 
       const priority = priorityIds.map(id => allDraftablePlayers.find(p => p.id === id)!).filter(Boolean);
@@ -63,7 +65,7 @@ const PriorityListPage: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [authTeamId]);
+  }, [allPlayers, authTeamId]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result;

@@ -17,6 +17,9 @@ import PriorityListPage from './components/PriorityList/PriorityListPage';
 import {GlobalStyle, AppContainer, MainContent } from './styles';
 import SchedulePage from './components/Schedule/SchedulePage';
 import SubstitutesPage from './components/Players/SubstitutePlayersPage';
+import { PlayerProvider } from './context/PlayerContext';
+import AdminPage from './components/Admin/AdminPage';
+import AdminAuthGate from './components/Admin/AdminAuthGate';
 
 const App: React.FC = () => {
   const auth = getAuth();
@@ -29,43 +32,47 @@ const App: React.FC = () => {
   }, [auth]);
 
   return (
-    <Router>
-      <GlobalStyle />
-      
-      <AppContainer>
-        <Header />
-        <MainContent>
-          <Routes>
-            <Route 
-              path="/" 
-              element={<Tournament teams={mockTeams} groups={mockGroups} bracket={mockBracket} />} 
-            />
-            <Route path="/schedule" element={<SchedulePage />} />
-            <Route 
-              path="/swiss" 
-              element={<SwissStage groups={mockGroups} teams={mockTeams} />}
-            />
-            <Route 
-              path="/knockout" 
-              element={<DoubleEliminationBracket bracket={mockBracket} />}
-            />
-            <Route 
-              path="/teams" 
-              element={<AllTeamsPage teams={mockTeams} />} 
-            />
-            <Route 
-              path="/teams/:teamId" 
-              element={<TeamPage teams={mockTeams} matches={mockMatches} />} 
-            />
-            <Route path="/draft-access" element={<DraftAuthGate />} />
-            <Route path="/draft/:draftId" element={<DraftPage />} />
-            {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
-            <Route path="/subs" element={<SubstitutesPage />} />
-          </Routes>
-        </MainContent>
-        <Footer />
-      </AppContainer>
-    </Router>
+    <PlayerProvider>
+      <Router>
+        <GlobalStyle />
+        
+        <AppContainer>
+          <Header />
+          <MainContent>
+            <Routes>
+              <Route 
+                path="/" 
+                element={<Tournament teams={mockTeams} groups={mockGroups} bracket={mockBracket} />} 
+              />
+              <Route path="/schedule" element={<SchedulePage />} />
+              <Route 
+                path="/swiss" 
+                element={<SwissStage groups={mockGroups} teams={mockTeams} />}
+              />
+              <Route 
+                path="/knockout" 
+                element={<DoubleEliminationBracket bracket={mockBracket} />}
+              />
+              <Route 
+                path="/teams" 
+                element={<AllTeamsPage teams={mockTeams} />} 
+              />
+              <Route 
+                path="/teams/:teamId" 
+                element={<TeamPage teams={mockTeams} matches={mockMatches} />} 
+              />
+              <Route path="/draft-access" element={<DraftAuthGate />} />
+              <Route path="/draft/:draftId" element={<DraftPage />} />
+              {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
+              <Route path="/subs" element={<SubstitutesPage />} />
+              <Route path="/admin-access" element={<AdminAuthGate />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          </MainContent>
+          <Footer />
+        </AppContainer>
+      </Router>
+    </PlayerProvider>
   );
 }
 

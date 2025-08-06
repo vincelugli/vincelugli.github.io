@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Player, Team, DraftState } from '../../types';
-import { mockPlayers } from '../../data/mockData';
 import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
-import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { getAuth, User } from 'firebase/auth';
 import DraftTimer from './DraftTimer';
-import {DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard} from '../../styles';
+import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
+import { usePlayers } from '../../context/PlayerContext';
+
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 4 * 60 * 60 * 1000;
 
 // --- Logic and Component Definition ---
@@ -21,10 +22,10 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
   }
 }
 
-const initializeDraft = (): DraftState => {
-  const captains = mockPlayers.filter(p => p.isCaptain).sort((a, b) => b.elo - a.elo);
-  const availablePlayers = mockPlayers.filter(p => !p.isCaptain);
-  const allPlayersSorted = [...mockPlayers].sort((a, b) => b.elo - a.elo);
+const initializeDraft = (allPlayers: Player[]): DraftState => {
+  const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => b.elo - a.elo);
+  const availablePlayers = allPlayers.filter(p => !p.isCaptain);
+  const allPlayersSorted = [...allPlayers].sort((a, b) => b.elo - a.elo);
 
   const teams: Team[] = captains.map((captain, index) => ({
     id: index + 1,
@@ -54,7 +55,7 @@ const initializeDraft = (): DraftState => {
   allPlayersSorted.forEach((player, index) => {
     const overallRank = index; // The pick number to be forfeited
     if (player.isCaptain && pickOrder[overallRank] !== undefined) {
-        playerSkipSlot[player.id] = index / mockPlayers.length;
+        playerSkipSlot[player.id] = index / allPlayers.length;
         player.teamId = nextTeamId++;
     }
   });
@@ -94,6 +95,16 @@ const initializeDraft = (): DraftState => {
   return { teams, pickOrder, availablePlayers, completedPicks: {}, currentPickIndex };
 };
 
+const emptyDraftState = (): DraftState => {
+  return {
+    teams: [],
+    pickOrder: [],
+    availablePlayers: [],
+    completedPicks: {},
+    currentPickIndex: 0
+  };
+}
+
 const DraftPage: React.FC = () => {
   const navigate = useNavigate();
   const { draftId } = useParams<{ draftId: string }>();
@@ -104,13 +115,16 @@ const DraftPage: React.FC = () => {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [draftState, setDraftState] = useState<DraftState>(initializeDraft);
+  const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
 
-  const { teams, pickOrder, availablePlayers, currentPickIndex } = draftState;
+  const { players: allPlayers } = usePlayers();
+  const initialDraftState = initializeDraft(allPlayers);
+  const { teams, pickOrder, availablePlayers, currentPickIndex } = initialDraftState;
 
   const [nextPickIndex, setNextPickIndex] = useState(currentPickIndex);
   const [authTeamId, setAuthTeamId] = useState<string | null>(null);
 
+  //// BEGIN AUTH ////
   useEffect(() => {
     user?.getIdTokenResult().then(idTokenResult => {
       const claims = idTokenResult.claims;
@@ -136,6 +150,7 @@ const DraftPage: React.FC = () => {
 
     return () => unsubscribe();
   }, [auth, navigate]);
+  //// END AUTH ////
 
   const isDraftComplete = nextPickIndex >= pickOrder.length;
   const currentTeamIdPicking = !isDraftComplete ? pickOrder[currentPickIndex] : null;
@@ -151,19 +166,13 @@ const DraftPage: React.FC = () => {
           return;
         }
         setDraftState(data);
-      } else if (!isSpectator && user != null) {
-        // If the draft doesn't exist in the DB, initialize it
-        console.log("No draft found, initializing...");
-        const initialState = initializeDraft(); // Your existing function
-        setDoc(draftDocRef, initialState); // Create it in Firestore
-        setDraftState(initialState);
       }
       setIsLoading(false);
     });
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [isSpectator, user, draftDocRef, draftState.currentPickIndex]);
+  }, [allPlayers, isSpectator, user, draftDocRef, draftState.currentPickIndex]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -274,8 +283,7 @@ const DraftPage: React.FC = () => {
       <PickOrderDisplay
         pickOrder={draftState.pickOrder}
         teams={draftState.teams}
-        // Assuming players are static, but they could also be loaded from Firestore
-        players={mockPlayers} 
+        players={allPlayers} 
         currentPickIndex={draftState.currentPickIndex}
         completedPicks={draftState.completedPicks}
       />

@@ -22,10 +22,10 @@ const Header: React.FC = () => {
         <NavLink to="/schedule">Schedule</NavLink>
       </Nav>
       <Nav>
-        <NavLink to="/swiss">Swiss (Round 1)</NavLink>
+        <NavLink to="/swiss">Round Robin</NavLink>
       </Nav>
       <Nav>
-        <NavLink to="/knockout">Knockout (Round 2)</NavLink>
+        <NavLink to="/knockout">Knockout</NavLink>
       </Nav>
       <Nav>
         <NavLink to="/teams">Teams</NavLink>
@@ -38,6 +38,9 @@ const Header: React.FC = () => {
         )}
       <Nav>
         <NavLink to="/subs">Subs</NavLink>
+      </Nav>
+      <Nav>
+        <NavLink to="/admin-access">Admin</NavLink>
       </Nav>
     </HeaderContainer>
   );
