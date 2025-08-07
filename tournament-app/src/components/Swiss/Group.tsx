@@ -8,6 +8,8 @@ interface GroupProps {
   teams: Team[];
 }
 
+// TODO: Pull records from database
+// TODO: Hook into division context
 const GroupComponent: React.FC<GroupProps> = ({ group, teams }) => {
   teams = teams
     .filter((team) => group.teams.includes(team.id))

@@ -45,12 +45,39 @@ const TextArea = styled.textarea`
   }
 `;
 
+const SelectionContainer = styled.div`
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 2rem;
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-weight: 600;
+  color: #555;
+`;
+
+const Select = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: white;
+`;
+
+
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;
 
 // --- Component Definition ---
 
-type FormStatus = 'idle' | 'loading' | 'success' | 'error';
-const JSON_PLACEHOLDER = `[
+type DataType = 'players' | 'teams' | 'groups' | 'bracket';
+
+const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 101,
     "name": "NewPlayer1",
@@ -68,13 +95,48 @@ const JSON_PLACEHOLDER = `[
     "isCaptain": false
   }
 ]`;
+const TEAM_JSON_PLACEHOLDER = `[
+  {
+    "id": 1,
+    "name": "TEAM 1",
+    "captainId": 1,
+    "players": [],
+    "record": "2-0",
+    "wins": 2,
+    "losses": 0,
+    "gameWins": 4,
+    "gameLosses": 1,
+    "gameRecord": "4-1"
+  }
+]`;
+
+const GROUPS_JSON_PLACEHOLDER = `[
+  {
+    "id": 1, 
+    "name": "Group A", 
+    "teams": [1, 2, 3, 4]
+  }
+]`;
+
+const BRACKET_JSON_PLACEHOLDER = `[
+  {
+    "title": "Finals",
+    "seeds": [
+        {
+          "id": 3,
+          "teams": []
+        }
+    ]
+  }
+]`;
 
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
     const auth = getAuth();
-
+    
+    const [selectedType, setSelectedType] = useState<DataType>('players');
     const [jsonString, setJsonString] = useState('');
-    const [status, setStatus] = useState<FormStatus>('idle');
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [statusMessage, setStatusMessage] = useState('');
 
     const [loadingAuth, setLoadingAuth] = useState(true);
@@ -111,7 +173,7 @@ const AdminPage: React.FC = () => {
 
         try {
             // Get a new write batch
-            const docRef = doc(db, 'players', 'grumble2025');
+            const docRef = doc(db, selectedType, 'grumble2025');
 
             await updateDoc(docRef, {
                 players: arrayUnion(...playersData)
@@ -126,7 +188,22 @@ const AdminPage: React.FC = () => {
             setStatusMessage("Failed to write players to the database. Check the console.");
         }
 
-    }, [jsonString]);
+    }, [jsonString, selectedType]);
+
+    const getPlaceholder = () => {
+        switch (selectedType) {
+            case 'players':
+                return PLAYER_JSON_PLACEHOLDER;
+            case 'teams':
+                return TEAM_JSON_PLACEHOLDER;
+            case 'groups':
+                return GROUPS_JSON_PLACEHOLDER;
+            case 'bracket':
+                return BRACKET_JSON_PLACEHOLDER;
+            default: 
+                return '';
+        }
+    }
 
     if (loadingAuth) {
         return <div>Verifying Access...</div>;
@@ -134,17 +211,34 @@ const AdminPage: React.FC = () => {
 
     return (
         <PageContainer>
-            <Title>Admin: Bulk Player Creation</Title>
-            <p>Enter an array of player objects in JSON format. Each player object will be created as a new document in the "players" collection. The player's `id` field will be used as the document ID.</p>
+            <Title>Admin: Bulk {selectedType} Creation</Title>
+
+            <SelectionContainer>
+                <FormGroup>
+                <Label htmlFor="data-type-select">Select Data to Manage</Label>
+                <Select
+                    id="data-type-select"
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value as DataType)}
+                >
+                    <option value="players">Players</option>
+                    <option value="teams">Teams</option>
+                    <option value="groups">Groups</option>
+                    <option value="bracket">Bracket</option>
+                </Select>
+                </FormGroup>
+            </SelectionContainer>
+            
+            <p>Enter an array {selectedType} objects in JSON format. Each player object will be created as a new document in the "{selectedType}" collection.</p>
             <Form onSubmit={handleSubmit}>
                 <TextArea
                     value={jsonString}
                     onChange={(e) => setJsonString(e.target.value)}
-                    placeholder={JSON_PLACEHOLDER}
+                    placeholder={getPlaceholder()}
                     required
                 />
                 <Button type="submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Processing...' : 'Create Players'}
+                    {status === 'loading' ? 'Processing...' : 'Create Documents'}
                 </Button>
 
                 {statusMessage && (

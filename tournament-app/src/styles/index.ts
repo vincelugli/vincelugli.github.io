@@ -46,6 +46,7 @@ export const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative; /* Needed for positioning the mobile menu */
 `;
 
 export const Logo = styled(Link)`
@@ -53,11 +54,17 @@ export const Logo = styled(Link)`
   font-weight: bold;
   color: #333;
   text-decoration: none;
+  z-index: 10; /* Ensure logo is above the mobile menu if it overlaps */
 `;
 
 export const Nav = styled.nav`
   display: flex;
   gap: 1.5rem;
+
+  /* Hide the desktop nav on smaller screens */
+  @media (max-width: 1000px) {
+    display: none;
+  }
 `;
 
 export const NavLink = styled(Link)`

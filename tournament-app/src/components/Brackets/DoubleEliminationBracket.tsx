@@ -7,7 +7,8 @@ interface BracketProps {
   bracket: BracketRound[];
 }
 
-
+// TODO: Pull record from database
+// TODO: Hook into division context
 const DoubleEliminationBracket: React.FC<BracketProps> = ({ bracket }) => {
   if (!bracket || bracket.length === 0) {
     return <p>Bracket not yet finalized.</p>;
@@ -18,7 +19,6 @@ const DoubleEliminationBracket: React.FC<BracketProps> = ({ bracket }) => {
       <Bracket
         rounds={bracket}
         renderSeedComponent={(props: IRenderSeedProps) => {
-          // ISeedProps comes from the react-brackets library
           return (
             <Seed mobileBreakpoint={0}>
               <SeedItem>

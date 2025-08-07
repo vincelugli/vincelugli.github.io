@@ -9,6 +9,14 @@ interface SwissStageProps {
 }
 
 const SwissStage: React.FC<SwissStageProps> = ({ groups, teams }) => {
+  if (!groups || groups.length === 0) {
+    return (
+    <StageContainer>
+      <p>Groups not yet finalized.</p>
+    </StageContainer>
+    );
+  }
+
   return (
     <StageContainer>
       {groups.map(group => (
