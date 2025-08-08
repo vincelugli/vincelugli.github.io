@@ -1,57 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, User } from 'firebase/auth';
-import { HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, NavLink, SubMenu, SubMenuItem } from '../../styles';
-import styled from 'styled-components';
+import {  HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, NavLink, SubMenu, SubMenuItem } from '../../styles';
 import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
-
-const HamburgerIcon = styled.div`
-  display: none; /* Hidden by default on desktop */
-  font-size: 1.8rem;
-  color: ${({ theme }) => theme.text}};
-  cursor: pointer;
-  z-index: 10;
-
-  /* Show the icon on smaller screens */
-  @media (max-width: 1000px) {
-    display: block;
-  }
-`;
-
-const MobileMenu = styled.nav<{ isOpen: boolean }>`
-  display: flex;
-  flex-direction: column;
-  
-  align-items: flex-start; /* Align to the left for a cleaner look */
-  gap: 1rem;
-  padding: 6rem 2rem 2rem 2rem;
-  
-  background-color: ${({ theme }) => theme.background};
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh; /* Full screen height */
-
-  /* Animate the menu sliding in from the top */
-  transition: transform 0.3s ease-in-out;
-  transform: translateY(${({ isOpen }) => (isOpen ? '0' : '-100%')});
-  z-index: 5; /* Sit below the header but above other content */
-
-  /* Style the links specifically for the mobile menu */
-  ${NavLink} {
-    font-size: 1.5rem;
-    padding: 0;
-    border: none;
-  }
-`;
-
-const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-`;
 
 const Header: React.FC = () => {
   const auth = getAuth();
@@ -119,7 +71,6 @@ const Header: React.FC = () => {
       </div>
       
       <MobileMenu isOpen={isMobileMenuOpen}>
-        {/* <MobileMainLink to="/schedule" onClick={closeAllMenus}>Schedule</MobileMainLink> */}
         <MobileNavItem>
           <MobileMainLink onClick={() => toggleMobileSubMenu('schedule')}>
             Schedule <FaChevronDown size={16} />
