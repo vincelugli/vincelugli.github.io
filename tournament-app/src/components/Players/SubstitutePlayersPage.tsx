@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import styled from 'styled-components';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { SubPlayer } from '../../types';
