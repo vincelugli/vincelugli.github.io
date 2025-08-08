@@ -8,9 +8,9 @@ export const BracketContainer = styled.div`
 
   /* Optional: Add some nice styling for the scrollable area */
   padding: 1.5rem;
-  background-color: #fcfcfc; /* Slightly different background to stand out */
+  background-color: ${({ theme }) => theme.background}
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid ${({ theme }) => theme.border};
 
   /* Improve scrollbar appearance on Webkit browsers (Chrome, Safari) */
   &::-webkit-scrollbar {
@@ -68,12 +68,12 @@ export const Nav = styled.nav`
 `;
 
 export const NavLink = styled(Link)`
-  color: #555;
+  color: ${({ theme }) => theme.secondaryText};
   text-decoration: none;
   font-weight: 500;
 
   &:hover {
-    color: #000;
+    color: ${({ theme }) => theme.text};
   }
 `;
 
@@ -108,7 +108,7 @@ export const ErrorMessage = styled.p` color: red; `;
 
 export const Label = styled.label`
   font-weight: 600;
-  color: #555;
+  color: ${({ theme }) => theme.secondaryText};
   font-size: 1rem;
   padding: 0.8rem 1.5rem;
 `;
@@ -180,7 +180,7 @@ export const TeamCardContainer = styled.div<{ isPicking: boolean }>`
 export const TeamHeader = styled.h3`
   margin-top: 0;
   color: ${({ theme }) => theme.text};
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
   padding-bottom: 0.75rem;
 `;
 
@@ -202,7 +202,7 @@ export const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
   }
   
   /* Use color to distinguish captains */
-  color: ${props => (props.isCaptain ? '#d9534f' : 'inherit')};
+  color: ${props => (props.isCaptain ? props.theme.captains : 'inherit')};
 `;
 
 export const PlayerInfoOnCard = styled.div`
@@ -353,7 +353,7 @@ export const PoolContainer = styled.div`
 
 export const PoolHeader = styled.h3`
   margin-top: 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
   padding-bottom: 0.75rem;
 `;
 
@@ -447,7 +447,7 @@ export const MatchItem = styled.li`
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
 `;
 
 export const MatchInfo = styled.div`
@@ -492,7 +492,7 @@ export const PlayerCard = styled.div<{ isDragging: boolean }>`
   user-select: none;
   padding: 1rem;
   margin-bottom: 0.5rem;
-  background: ${props => props.isDragging ? '#d4edda' : props.theme.background};
+  background: ${props => props.isDragging ? props.theme.success : props.theme.background};
   border-radius: 4px;
   box-shadow: 0 1px 3px ${({ theme }) => theme.boxShadow};
   display: flex;
@@ -525,7 +525,7 @@ export const GroupContainer = styled.div`
 
 export const GroupTitle = styled.h3`
   font-size: 1.5rem;
-  color: #555;
+  color: ${({ theme }) => theme.secondaryText};
   margin-top: 0;
 `;
 
@@ -622,7 +622,7 @@ export const TableHead = styled.thead`
   th {
     padding: 1rem;
     font-size: 1rem;
-    color: #555;
+    color: ${({ theme }) => theme.secondaryText};
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -631,7 +631,7 @@ export const TableHead = styled.thead`
 // Table body
 export const TableBody = styled.tbody`
   tr {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
     &:last-child {
       border-bottom: none;
     }
@@ -665,7 +665,7 @@ export const TeamPageTeamName = styled.h1`
 export const SectionTitle = styled.h2`
   font-size: 1.8rem;
   color: ${({ theme }) => theme.text};
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid ${({ theme }) => theme.secondaryBorderBotton};
   padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
 `;
@@ -968,7 +968,7 @@ export const SubsTableHead = styled.thead`
   th {
     padding: 1rem;
     font-size: 1rem;
-    color: #555;
+    color: ${({ theme }) => theme.secondaryText};
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 3px solid ${({ theme }) => theme.borderBottom};
@@ -1023,7 +1023,7 @@ export const SubsPlayerTable = styled.table`
 export const SubsLabel = styled.label`
   font-weight: 600;
   font-size: 0.9rem;
-  color: #555;
+  color: ${({ theme }) => theme.secondaryText};
 `;
 
 export const SubsSelect = styled.select`
