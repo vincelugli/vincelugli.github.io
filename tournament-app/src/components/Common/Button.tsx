@@ -7,16 +7,16 @@ interface ButtonProps {
 // Define the styles for each variant
 const variants = {
   primary: css`
-    background-color: #007bff;
+    background-color: ${({ theme }) => theme.primary};
     color: white;
     border: 2px solid transparent;
 
     &:hover {
-      background-color: #0056b3;
+      background-color: ${({ theme }) => theme.primaryHover};
     }
   `,
   secondary: css`
-    background-color: #6c757d;
+    background-color: ${({ theme }) => theme.textAlt};
     color: white;
     border: 2px solid transparent;
 
@@ -40,7 +40,7 @@ const Button = styled.button<ButtonProps>`
   margin-top: 1rem;
 
   &:disabled {
-    background-color: #ccc;
+    background-color: ${({ theme }) => theme.border};
     cursor: not-allowed;
     opacity: 0.7;
   }

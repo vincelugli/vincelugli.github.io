@@ -4,6 +4,7 @@ import { HeaderContainer, Logo, Nav, NavLink } from '../../styles';
 import styled from 'styled-components';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
+import ThemeToggleButton from './ThemeToggleButton';
 
 const HamburgerIcon = styled.div`
   display: none; /* Hidden by default on desktop */
@@ -103,7 +104,8 @@ const Header: React.FC = () => {
           <NavLink to="/admin-access">Admin</NavLink>
         )}
       </Nav>
-
+      
+      <ThemeToggleButton />
       <HamburgerIcon onClick={toggleMenu}>
         {/* Intelligently switch between the bars and the 'X' icon */}
         {isOpen ? <FaTimes /> : <FaBars />}

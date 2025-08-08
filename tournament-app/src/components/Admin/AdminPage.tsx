@@ -6,69 +6,7 @@ import { Player } from '../../types'; // Assuming your Player type is defined an
 import Button from '../Common/Button';
 import { getAuth } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-
-// --- Styled Components (consistent with the rest of the app) ---
-
-const PageContainer = styled.div`
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 2.5rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-`;
-
-const Title = styled.h1`
-  font-size: 2.8rem;
-  color: #333;
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const TextArea = styled.textarea`
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-family: 'Courier New', Courier, monospace;
-  min-height: 400px;
-  resize: vertical;
-  &:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-`;
-
-const SelectionContainer = styled.div`
-  margin-bottom: 2rem;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 2rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 600;
-  color: #555;
-`;
-
-const Select = styled.select`
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  background-color: white;
-`;
+import { PageContainer, Title, Select, Label, Form, TextArea, SelectionContainer, FormGroup } from '../../styles/index';
 
 
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;

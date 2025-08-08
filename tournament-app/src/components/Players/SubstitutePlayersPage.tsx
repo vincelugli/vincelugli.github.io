@@ -4,116 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { SubPlayer } from '../../types';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa'; 
-
-// --- Styled Components (consistent with the rest of the app) ---
-
-const PageContainer = styled.div`
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 2.5rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-`;
-
-const Title = styled.h1`
-  font-size: 2.8rem;
-  color: #333;
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const PlayerTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-`;const ControlsContainer = styled.div`
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-`;
-
-const FilterGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #555;
-`;
-
-const Select = styled.select`
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-`;
-
-// UPDATE: Table header cells are now clickable
-const TableHead = styled.thead`
-  th {
-    padding: 1rem;
-    font-size: 1rem;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 3px solid #f0f2f5;
-    cursor: pointer;
-    user-select: none; /* Prevent text selection on click */
-    transition: background-color 0.2s;
-    
-    &:hover {
-      background-color: #f8f9fa;
-    }
-  }
-`;
-
-const TableBody = styled.tbody`
-  tr {
-    border-bottom: 1px solid #f0f2f5;
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-
-  td {
-    padding: 1.25rem 1rem;
-    vertical-align: middle;
-  }
-`;
-
-const ContactInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const CopyButton = styled.button`
-  background: #e9ecef;
-  color: #343a40;
-  border: 1px solid #dee2e6;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  &:hover { background-color: #dee2e6; }
-`;
-
-const LoadingText = styled.p`
-  text-align: center;
-  font-size: 1.2rem;
-  color: #6c757d;
-`;
-
-const ErrorText = styled(LoadingText)`
-  color: #dc3545;
-`;
+import { ControlsContainer, FilterGroup, SubsTableHead, ContactInfo, LoadingText, ErrorText, SubsPageContainer, SubsTitle, SubsPlayerTable, SubsLabel, SubsSelect, SubsTableBody, SubsCopyButton } from '../../styles/index';
 
 type SortDirection = 'ascending' | 'descending';
 type SortKey = keyof SubPlayer;
@@ -253,20 +144,20 @@ const SubstitutesPage: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <Title>Substitute Player Pool</Title>
+    <SubsPageContainer>
+      <SubsTitle>Substitute Player Pool</SubsTitle>
 
       <ControlsContainer>
         <FilterGroup>
-          <Label htmlFor="role-filter">Filter by Role</Label>
-          <Select id="role-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+          <SubsLabel htmlFor="role-filter">Filter by Role</SubsLabel>
+          <SubsSelect id="role-filter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
             {ALL_ROLES.map(role => <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>)}
-          </Select>
+          </SubsSelect>
         </FilterGroup>
       </ControlsContainer>
 
-      <PlayerTable>
-        <TableHead>
+      <SubsPlayerTable>
+        <SubsTableHead>
           <tr>
             <th onClick={() => requestSort('name')}>Name {getSortIcon('name')}</th>
             <th onClick={() => requestSort('rank')}>Rank {getSortIcon('rank')}</th>
@@ -274,8 +165,8 @@ const SubstitutesPage: React.FC = () => {
             <th>Secondary Roles</th>
             <th onClick={() => requestSort('contact')}>Contact Info {getSortIcon('contact')}</th>
           </tr>
-        </TableHead>
-        <TableBody>
+        </SubsTableHead>
+        <SubsTableBody>
           {sortedAndFilteredSubs.map((sub, index) => (
             <tr key={index}>
               <td>{sub.name}</td>
@@ -285,16 +176,16 @@ const SubstitutesPage: React.FC = () => {
               <td>
                 <ContactInfo>
                   <span>{sub.contact}</span>
-                  <CopyButton onClick={() => handleCopy(sub.contact)}>
+                  <SubsCopyButton onClick={() => handleCopy(sub.contact)}>
                     {copiedContact === sub.contact ? 'Copied!' : 'Copy'}
-                  </CopyButton>
+                  </SubsCopyButton>
                 </ContactInfo>
               </td>
             </tr>
           ))}
-        </TableBody>
-      </PlayerTable>
-    </PageContainer>
+        </SubsTableBody>
+      </SubsPlayerTable>
+    </SubsPageContainer>
   );
 };
 

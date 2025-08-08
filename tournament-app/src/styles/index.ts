@@ -17,11 +17,11 @@ export const BracketContainer = styled.div`
     height: 10px;
   }
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: ${({ theme }) => theme.scrollbar};
     border-radius: 10px;
   }
   &::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: ${({ theme }) => theme.border};
     border-radius: 10px;
   }
   &::-webkit-scrollbar-thumb:hover {
@@ -31,8 +31,8 @@ export const BracketContainer = styled.div`
 
 // Footer
 export const FooterContainer = styled.footer`
-  background-color: #333;
-  color: #fff;
+  background-color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.background };
   padding: 1rem;
   text-align: center;
   margin-top: auto;
@@ -40,9 +40,9 @@ export const FooterContainer = styled.footer`
 
 // Header
 export const HeaderContainer = styled.header`
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.background };
   padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px ${({ theme }) => theme.boxShadow};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -52,7 +52,7 @@ export const HeaderContainer = styled.header`
 export const Logo = styled(Link)`
   font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   text-decoration: none;
   z-index: 10; /* Ensure logo is above the mobile menu if it overlaps */
 `;
@@ -89,16 +89,16 @@ export const AuthBox = styled.div`
   width: 100%;
   max-width: 400px;
   padding: 2.5rem;
-  background: #fff;
+  background: ${({ theme }) => theme.background };
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 5px 15px ${({ theme }) => theme.boxShadow};
   text-align: center;
 `;
 
 export const Input = styled.input`
   width: 100%;
   padding: 0.8rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${({ theme }) => theme.border};
   border-radius: 6px;
   font-size: 1rem;
   box-sizing: border-box; /* Important for consistent sizing */
@@ -115,14 +115,14 @@ export const Label = styled.label`
 
 export const Select = styled.select`
   padding: 0.8rem 2.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 1rem;
   background-color: white;
   cursor: pointer;
   transition: border-color 0.2s;
   &:focus {
-    border-color: #007bff;
+    border-color: ${({ theme }) => theme.primary};
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
   }
@@ -141,7 +141,7 @@ export const DraftPageContainer = styled.div`
 `;
 
 export const DraftHeader = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.background };
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -151,7 +151,7 @@ export const DraftHeader = styled.div`
 export const DraftStatus = styled.p`
   font-size: 1.2rem;
   font-weight: 600;
-  color: #007bff;
+  color: ${({ theme }) => theme.primary};
   margin: 0.5rem 0 0 0;
 `;
 
@@ -169,17 +169,17 @@ export const TeamsSection = styled.div`
 `;
 
 export const TeamCardContainer = styled.div<{ isPicking: boolean }>`
-  background: #fff;
+  background: ${({ theme }) => theme.background };
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-  border: 2px solid ${props => props.isPicking ? '#007bff' : '#transparent'};
+  box-shadow: 0 4px 8px ${({ theme }) => theme.boxShadow};
+  border: 2px solid ${props => props.isPicking ? props.theme.primary : '#transparent'};
   transition: border-color 0.3s ease;
 `;
 
 export const TeamHeader = styled.h3`
   margin-top: 0;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   border-bottom: 1px solid #eee;
   padding-bottom: 0.75rem;
 `;
@@ -195,7 +195,7 @@ export const PlayerListItem = styled.li<{ isCaptain?: boolean }>`
   justify-content: space-between;
   align-items: center; /* Vertically align the info block and the Elo */
   padding: 0.8rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
 
   &:last-child {
     border-bottom: none;
@@ -214,7 +214,7 @@ export const PlayerInfoOnCard = styled.div`
 export const PlayerNameOnCard = styled.a`
   font-weight: 600;
   font-size: 1.1rem;
-  color: #0056b3; /* A slightly different link color to fit the card */
+  color: ${({ theme }) => theme.primaryHover}; /* A slightly different link color to fit the card */
   text-decoration: none;
 
   &:hover {
@@ -224,20 +224,20 @@ export const PlayerNameOnCard = styled.a`
 
 export const PlayerRolesOnCard = styled.span`
   font-size: 0.85rem;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   margin-top: 3px;
 `;
 
 export const PlayerEloOnCard = styled.span`
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   padding-left: 1rem; /* Ensure space between roles and Elo */
 `;
 
 // DraftTimer
 export const TimerWrapper = styled.div`
-  background-color: #ffffff;
+  background-color: ${({ theme }) => theme.background};
   padding: 1rem 1.5rem;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -251,7 +251,7 @@ export const TimerWrapper = styled.div`
 export const TimerLabel = styled.div`
   font-size: 0.8rem;
   font-weight: 600;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.25rem;
@@ -268,7 +268,7 @@ export const TimerText = styled.div<{ color: string }>`export
 
 // PickOrderDisplay
 export const PickOrderContainer = styled.div`
-  background: #ffffff;
+  background: ${({ theme }) => theme.background};
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -280,10 +280,10 @@ export const PickOrderContainer = styled.div`
     height: 8px;
   }
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: ${({ theme }) => theme.scrollbar};
   }
   &::-webkit-scrollbar-thumb {
-    background: #007bff;
+    background: ${({ theme }) => theme.primary};
     border-radius: 4px;
   }
 `;
@@ -302,15 +302,15 @@ export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; i
   height: 90px;
   padding: 0.5rem;
   border-radius: 6px;
-  background-color: #f8f9fa;
-  border: 2px solid #dee2e6;
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  border: 2px solid ${({ theme }) => theme.border};
   text-align: center;
   transition: all 0.3s ease-in-out;
   
   /* Conditional styling */
   opacity: ${props => props.isCompleted ? 0.7 : 1};
-  background-color: ${props => props.isSkipped ? '#e9ecef' : '#f8f9fa'};
-  border-color: ${props => props.isCurrent ? '#007bff' : '#dee2e6'};
+  background-color: ${props => props.isSkipped ? props.theme.backgroundTwo : props.theme.backgroundTwo};
+  border-color: ${props => props.isCurrent ? props.theme.primary : props.theme.border};
   transform: ${props => props.isCurrent ? 'scale(1.05)' : 'scale(1)'};
   box-shadow: ${props => props.isCurrent ? '0 0 15px rgba(0, 123, 255, 0.5)' : 'none'};
 `;
@@ -318,35 +318,35 @@ export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; i
 export const PickNumber = styled.div`
   font-size: 0.8rem;
   font-weight: 700;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
 `;
 
 export const PickedTeamName = styled.div`
   font-size: 1rem;
   font-weight: 600;
-  color: #343a40;
+  color: ${({ theme }) => theme.text};
   margin: 4px 0;
 `;
 
 export const PickedPlayerName = styled.div`
   font-size: 0.9rem;
-  color: #28a745;
+  color: ${({ theme }) => theme.success};
   font-weight: 500;
 `;
 
 export const SkippedText = styled.div`
   font-size: 1rem;
   font-weight: 600;
-  color: #dc3545;
+  color: ${({ theme }) => theme.danger};
   text-decoration: line-through;
 `;
 
 // PlayerPool
 export const PoolContainer = styled.div`
-  background: #fff;
+  background: ${({ theme }) => theme.background };
   border-radius: 8px;
   padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 8px ${({ theme }) => theme.boxShadow};
   position: sticky;
   top: 2rem;
 `;
@@ -361,7 +361,7 @@ export const SearchInput = styled.input`
   width: 100%;
   padding: 0.5rem;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid ${({ theme }) => theme.border};
   margin-bottom: 1rem;
   box-sizing: border-box;
 `;
@@ -377,7 +377,7 @@ export const PlayerTable = styled.table`
 `;
 
 export const DraftButton = styled.button`
-  background-color: #28a745;
+  background-color: ${({ theme }) => theme.success};
   color: white;
   border: none;
   padding: 0.3rem 0.6rem;
@@ -386,11 +386,11 @@ export const DraftButton = styled.button`
   font-weight: bold;
 
   &:hover {
-    background-color: #218838;
+    background-color: ${({ theme }) => theme.success};
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: ${({ theme }) => theme.border};
     cursor: not-allowed;
   }
 `;
@@ -404,7 +404,7 @@ export const PlayerInfo = styled.div`
 export const PlayerName = styled.a`
   font-weight: 600;
   font-size: 1.1rem;
-  color: #007bff;
+  color: ${({ theme }) => theme.primary};
   text-decoration: none;
 
   &:hover {
@@ -421,20 +421,20 @@ export const RolesContainer = styled.div`
 
 export const PrimaryRole = styled.span`
   font-weight: 500;
-  color: #0056b3; /* A distinct color for primary role */
+  color: ${({ theme }) => theme.primaryHover}; /* A distinct color for primary role */
 `;
 
 // MatchHistory
 export const HistoryContainer = styled.div`
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.background };
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px ${({ theme }) => theme.boxShadow};
 `;
 
 export const MatchHistoryTeamName = styled.h2`
   font-size: 2.5rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
 `;
 
 export const MatchList = styled.ul`
@@ -462,11 +462,14 @@ export const Opponent = styled.span`
 
 export const Score = styled.span<{ win: boolean }>`
   font-weight: bold;
-  color: ${props => (props.win ? 'green' : 'red')};
+  color: ${props => (props.win ? props.theme.success : props.theme.danger)};
 `;
 
 // PriorityListPage
-export const PageContainer = styled.div` /* ... */ `;
+export const PageContainer = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+`;
 
 export const BoardContainer = styled.div`
   display: grid;
@@ -478,7 +481,7 @@ export const BoardContainer = styled.div`
 export const Column = styled.div<{ isDraggingOver: boolean }>`
   display: flex;
   flex-direction: column;
-  background: ${props => props.isDraggingOver ? '#e9ecef' : '#f8f9fa'};
+  background: ${props => props.isDraggingOver ? props.theme.backgroundThree : props.theme.backgroundTwo};
   padding: 1rem;
   border-radius: 8px;
   min-height: 500px;
@@ -489,9 +492,9 @@ export const PlayerCard = styled.div<{ isDragging: boolean }>`
   user-select: none;
   padding: 1rem;
   margin-bottom: 0.5rem;
-  background: ${props => props.isDragging ? '#d4edda' : '#fff'};
+  background: ${props => props.isDragging ? '#d4edda' : props.theme.background};
   border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.boxShadow};
   display: flex;
   justify-content: space-between;
 `;
@@ -499,14 +502,14 @@ export const PlayerCard = styled.div<{ isDragging: boolean }>`
 
 export const PlayerRole = styled.span`
   font-size: 0.85rem;
-  color: #6c757d; /* A muted gray color */
+  color: ${({ theme }) => theme.textAlt}; /* A muted gray color */
   font-style: italic;
   margin-top: 2px;
 `;
 
 export const SecondaryRoles = styled.span`
   font-style: italic;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   font-size: 0.8rem;
   margin-top: 2px;
 `;
@@ -514,9 +517,9 @@ export const SecondaryRoles = styled.span`
 // Group
 
 export const GroupContainer = styled.div`
-  background-color: #fff;
+  background-color: ${({ theme }) => theme.background };
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px ${({ theme }) => theme.boxShadow};
   padding: 1.5rem;
 `;
 
@@ -533,7 +536,7 @@ export const TeamList = styled.ul`
 
 export const TeamName = styled(Link)`
   font-weight: 500;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   text-decoration: none;
 
   &:hover {
@@ -546,13 +549,13 @@ export const GroupHeaderRow = styled.div`
   grid-template-columns: 1fr 60px 60px; /* Name | Match | Game */
   gap: 1rem;
   padding: 0 1rem 0.5rem 1rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid ${({ theme }) => theme.borderBottom};
 `;
 
 export const ColumnTitle = styled.span`
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   text-transform: uppercase;
   text-align: center;
 `;
@@ -563,7 +566,7 @@ export const TeamItem = styled.li`
   gap: 1rem;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
 
   &:last-child {
     border-bottom: none;
@@ -574,9 +577,9 @@ export const TeamItem = styled.li`
 export const Record = styled.span`
   font-weight: 500;
   font-size: 0.9rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   text-align: center;
-  background-color: #f8f9fa;
+  background-color: ${({ theme }) => theme.backgroundTwo};
   padding: 0.25rem 0;
   border-radius: 4px;
 `;
@@ -590,18 +593,18 @@ export const StageContainer = styled.div`
 
 // AllTeamsPage
 export const TeamsContainer = styled.div`
-  background-color: #ffffff;
+  background-color: ${({ theme }) => theme.background};
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px ${({ theme }) => theme.boxShadow};
 `;
 
 // Page title
 export const Title = styled.h1`
   font-size: 2.5rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   margin-bottom: 1.5rem;
-  border-bottom: 3px solid #f0f2f5;
+  border-bottom: 3px solid ${({ theme }) => theme.body};
   padding-bottom: 1rem;
 `;
 
@@ -614,7 +617,7 @@ export const TeamsTable = styled.table`
 
 // Table header
 export const TableHead = styled.thead`
-  background-color: #f9f9f9;
+  background-color: ${({ theme }) => theme.background};
   
   th {
     padding: 1rem;
@@ -643,7 +646,7 @@ export const TableBody = styled.tbody`
 // Style for the team name to make it a prominent link
 export const TeamNameLink = styled(Link)`
   font-weight: 600;
-  color: #007bff;
+  color: ${({ theme }) => theme.primary};
   text-decoration: none;
   font-size: 1.1rem;
 
@@ -655,24 +658,24 @@ export const TeamNameLink = styled(Link)`
 // TeamPage
 export const TeamPageTeamName = styled.h1`
   font-size: 3rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   margin: 0;
 `;
 
 export const SectionTitle = styled.h2`
   font-size: 1.8rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   border-bottom: 2px solid #eee;
   padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
 `;
 
 export const UpcomingMatchCard = styled.div`
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  background: linear-gradient(135deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.primaryHover});
   color: white;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 8px 16px ${({ theme }) => theme.matchCard};
 `;
 
 export const OpponentInfo = styled.div`
@@ -700,7 +703,7 @@ export const CodeBox = styled.div`
 `;
 
 export const Code = styled.code`
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: ${({ theme }) => theme.code};
   padding: 0.75rem 1rem;
   border-radius: 4px;
   font-size: 1.5rem;
@@ -709,15 +712,15 @@ export const Code = styled.code`
 `;
 
 export const CopyButton = styled.button`
-  background: #fff;
-  color: #007bff;
+  background: ${({ theme }) => theme.background };
+  color: ${({ theme }) => theme.primary};
   border: none;
   padding: 0.75rem 1rem;
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
-  &:hover { background: #f0f0f0; }
+  &:hover { background: ${({ theme }) => theme.borderBottom}; }
 `;
 
 
@@ -738,14 +741,14 @@ export const MatchResult = styled.div`
 export const ResultIndicator = styled.span<{ win: boolean }>`
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${(props) => (props.win ? '#28a745' : '#dc3545')};
+  color: ${(props) => (props.win ? props.theme.success : props.theme.danger)};
 `;
 
 export const TeamPageScore = styled.span`
   font-size: 1.2rem;
   font-weight: 700;
-  color: #333;
-  background: #f0f2f5;
+  color: ${({ theme }) => theme.text};
+  background: ${({ theme }) => theme.body};
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
 `;
@@ -765,10 +768,12 @@ export const GlobalStyle = createGlobalStyle`
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #f0f2f5;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    background: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
+    transition: all 0.25s linear;
   }
 `;
 
@@ -788,7 +793,7 @@ export const MainContent = styled.main`
 
 // SchedulePage
 export const SchedulePageContainer = styled.div`
-  background-color: #ffffff;
+  background-color: ${({ theme }) => theme.background};
   padding: 2.5rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -798,7 +803,7 @@ export const SchedulePageContainer = styled.div`
 
 export const ScheduleTitle = styled.h1`
   font-size: 2.8rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   text-align: center;
   margin-bottom: 2.5rem;
 `;
@@ -816,7 +821,7 @@ export const TimelineContainer = styled.div`
     top: 15px;
     bottom: 15px;
     width: 4px;
-    background-color: #e9ecef;
+    background-color: ${({ theme }) => theme.backgroundThree};
     border-radius: 2px;
   }
 `;
@@ -846,26 +851,26 @@ export const StageIcon = styled.div<{ status: string }>`
   /* Dynamic styling based on status */
   ${({ status }) =>
     status === 'completed' && css`
-      background-color: #28a745; /* Green */
+      background-color: ${({ theme }) => theme.success};
       color: white;
-      border: 3px solid #1f7a35;
+      border: 3px solid ${({ theme }) => theme.success};
     `}
   ${({ status }) =>
     status === 'in-progress' && css`
-      background-color: #007bff; /* Blue */
+      background-color: ${({ theme }) => theme.primary}; /* Blue */
       color: white;
-      border: 3px solid #0056b3;
+      border: 3px solid ${({ theme }) => theme.primaryHover};
     `}
   ${({ status }) =>
     status === 'upcoming' && css`
-      background-color: #e9ecef; /* Gray */
-      color: #6c757d;
+      background-color: ; /* Gray */
+      color: ${({ theme }) => theme.textAlt};
       border: 3px solid #adb5bd;
     `}
 `;
 
 export const StageContent = styled.div`
-  background-color: #f8f9fa;
+  background-color: ${({ theme }) => theme.backgroundTwo};
   border-radius: 8px;
   padding: 1.5rem;
   flex-grow: 1;
@@ -878,12 +883,12 @@ export const StageTitle = styled.h2`
 
 export const StageDescription = styled.p`
   margin: 0 0 1rem 0;
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   font-size: 1rem;
 `;
 
 export const StageLink = styled(Link)`
-  background-color: #007bff;
+  background-color: ${({ theme }) => theme.primary};
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 5px;
@@ -892,7 +897,7 @@ export const StageLink = styled(Link)`
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #0056b3;
+    background-color: ${({ theme }) => theme.primaryHover};
   }
 `;
 
@@ -900,8 +905,157 @@ export const StageDate = styled.div`
   display: flex;
   align-items: center;
   gap: 0.6rem; /* Space between icon and text */
-  color: #6c757d;
+  color: ${({ theme }) => theme.textAlt};
   font-size: 0.95rem;
   font-weight: 500;
   margin: 0.25rem 0 1rem 0; /* Position it neatly between title and description */
+`;
+
+export const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+export const TextArea = styled.textarea`
+  padding: 1rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 5px;
+  font-size: 1rem;
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 400px;
+  resize: vertical;
+  &:focus {
+    border-color: ${({ theme }) => theme.borderColor};
+    outline: none;
+  }
+`;
+
+export const SelectionContainer = styled.div`
+  margin-bottom: 2rem;
+  border-bottom: 2px solid ${({ theme }) => theme.borderBottom};
+  padding-bottom: 2rem;
+`;
+
+export const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+// DivisionSelector
+export const SelectWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+// SubstitutePage
+export const ControlsContainer = styled.div`
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+`;
+
+export const FilterGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+export const SubsTableHead = styled.thead`
+  th {
+    padding: 1rem;
+    font-size: 1rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid ${({ theme }) => theme.borderBottom};
+    cursor: pointer;
+    user-select: none; /* Prevent text selection on click */
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: ${({ theme }) => theme.backgroundTwo};
+    }
+  }
+`;
+
+export const ContactInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
+export const LoadingText = styled.p`
+  text-align: center;
+  font-size: 1.2rem;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const ErrorText = styled(LoadingText)`
+  color: ${({ theme }) => theme.danger};
+`;
+
+export const SubsPageContainer = styled.div`
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: ${({ theme }) => theme.background};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+`;
+
+export const SubsTitle = styled.h1`
+  font-size: 2.8rem;
+  color: ${({ theme }) => theme.text};
+  text-align: center;
+  margin-bottom: 2rem;
+`;
+
+export const SubsPlayerTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+`;
+
+export const SubsLabel = styled.label`
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #555;
+`;
+
+export const SubsSelect = styled.select`
+  padding: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 5px;
+  font-size: 1rem;
+`;
+
+export const SubsTableBody = styled.tbody`
+  tr {
+    border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  td {
+    padding: 1.25rem 1rem;
+    vertical-align: middle;
+  }
+`;
+
+export const SubsCopyButton = styled.button`
+  background: ${({ theme }) => theme.backgroundThree};
+  color: ${({ theme }) => theme.text};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  &:hover { background-color: ${({ theme }) => theme.border}; }
 `;
