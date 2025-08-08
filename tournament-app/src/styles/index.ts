@@ -1,5 +1,5 @@
 import styled, { createGlobalStyle, css } from 'styled-components';
-import { Link } from 'react-router-dom';
+import { Link, NavLink as RouterNavLink } from 'react-router-dom';
 
 // DoubleEliminationBracket
 export const BracketContainer = styled.div`
@@ -73,6 +73,95 @@ export const NavLink = styled(Link)`
   font-weight: 500;
 
   &:hover {
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+export const NavItem = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textAlt};
+  cursor: pointer;
+`;
+
+export const SubMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: ${({ theme }) => theme.background};
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  padding: 0.5rem;
+  margin-top: 0.75rem;
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s ease-in-out;
+  z-index: 100;
+
+  /* Show on hover of the parent NavItem */
+  ${NavItem}:hover & {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+`;
+
+export const SubMenuItem = styled(RouterNavLink)`
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  color: ${({ theme }) => theme.text};
+  text-decoration: none;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.body};
+  }
+
+  &.active {
+    background-color: ${({ theme }) => theme.primary};
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+export const MobileNavItem = styled.div`
+  width: 100%;
+`;
+
+export const MobileMainLink = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0;
+`;
+
+export const MobileSubMenu = styled.div<{ isOpen: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  max-height: ${({ isOpen }) => (isOpen ? '500px' : '0')}; /* Animate height */
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+`;
+
+export const MobileSubMenuItem = styled(RouterNavLink)`
+  font-size: 1.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-decoration: none;
+  &:hover {
+    background-color: ${({ theme }) => theme.body};
+  }
+
+  &.active {
+    background-color: ${({ theme }) => theme.primary};
     color: ${({ theme }) => theme.text};
   }
 `;
@@ -911,6 +1000,23 @@ export const StageDate = styled.div`
   margin: 0.25rem 0 1rem 0; /* Position it neatly between title and description */
 `;
 
+// AdminPage
+export const AdminPageContainer = styled.div`
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+`;
+
+export const AdminTitle = styled.h1`
+  font-size: 2.8rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2rem;
+`;
+
 export const Form = styled.form`
   display: flex;
   flex-direction: column;
@@ -919,21 +1025,21 @@ export const Form = styled.form`
 
 export const TextArea = styled.textarea`
   padding: 1rem;
-  border: 1px solid ${({ theme }) => theme.border};
+  border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 1rem;
   font-family: 'Courier New', Courier, monospace;
   min-height: 400px;
   resize: vertical;
   &:focus {
-    border-color: ${({ theme }) => theme.borderColor};
+    border-color: #007bff;
     outline: none;
   }
 `;
 
 export const SelectionContainer = styled.div`
   margin-bottom: 2rem;
-  border-bottom: 2px solid ${({ theme }) => theme.borderBottom};
+  border-bottom: 2px solid #f0f0f0;
   padding-bottom: 2rem;
 `;
 
@@ -941,6 +1047,19 @@ export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+`;
+
+export const AdminLabel = styled.label`
+  font-weight: 600;
+  color: #555;
+`;
+
+export const AdminSelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: white;
 `;
 
 // DivisionSelector

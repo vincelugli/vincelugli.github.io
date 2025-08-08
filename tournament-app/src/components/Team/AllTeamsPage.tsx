@@ -1,13 +1,11 @@
 import React from 'react';
-import { Team } from '../../types';
 import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record } from '../../styles';
 import { compareTeams } from '../../utils';
-// Define the component's props
-interface TeamsPageProps {
-  teams: Team[];
-}
+import { useTournament } from '../../context/TournamentContext';
 
-const AllTeamsPage: React.FC<TeamsPageProps> = ({ teams }) => {
+const AllTeamsPage: React.FC = () => {
+  let { teams } = useTournament();
+  
   // Order the teams by best record
   teams = teams.sort(compareTeams);
 

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Team, Match } from '../../types';
+import { Match } from '../../types';
 import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, UpcomingMatchCard, OpponentInfo, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
+import { useTournament } from '../../context/TournamentContext';
 
 interface TeamPageProps {
-  teams: Team[];
   matches: Match[];
 }
 
-const TeamPage: React.FC<TeamPageProps> = ({ teams, matches }) => {
+const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
+  const { teams } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
   const [copiedCode, setCopiedCode] = useState('');
 

@@ -1,15 +1,10 @@
 import React from 'react';
 import { Bracket, Seed, SeedItem, SeedTeam, IRenderSeedProps } from 'react-brackets';
-import { BracketRound } from '../../types';
 import { BracketContainer } from '../../styles';
+import { useTournament } from '../../context/TournamentContext';
 
-interface BracketProps {
-  bracket: BracketRound[];
-}
-
-// TODO: Pull record from database
-// TODO: Hook into division context
-const DoubleEliminationBracket: React.FC<BracketProps> = ({ bracket }) => {
+const DoubleEliminationBracket: React.FC = () => {
+  const { bracket } = useTournament();
   if (!bracket || bracket.length === 0) {
     return <p>Bracket not yet finalized.</p>;
   }

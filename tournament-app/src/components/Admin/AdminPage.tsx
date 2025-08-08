@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { Player } from '../../types'; // Assuming your Player type is defined and exported
+import { BracketRound, Group, Player, Team } from '../../types'; // Assuming your Player type is defined and exported
 import Button from '../Common/Button';
 import { getAuth } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { PageContainer, Title, Select, Label, Form, TextArea, SelectionContainer, FormGroup } from '../../styles/index';
-
+import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, FormGroup, AdminLabel, AdminSelect } from '../../styles/index';
+import { useDivision } from '../../context/DivisionContext';
+import { z } from 'zod';
 
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;
 
@@ -71,13 +72,52 @@ const BRACKET_JSON_PLACEHOLDER = `[
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
     const auth = getAuth();
+    const { division } = useDivision();
     
     const [selectedType, setSelectedType] = useState<DataType>('players');
     const [jsonString, setJsonString] = useState('');
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [statusMessage, setStatusMessage] = useState('');
-
     const [loadingAuth, setLoadingAuth] = useState(true);
+
+    const PlayerSchema = z.array(z.object({
+        id: z.number(),
+        name: z.string().min(1, { message: "Name cannot be empty" }),
+        elo: z.number(),
+        primaryRole: z.string(),
+        secondaryRoles: z.array(z.string()),
+        isCaptain: z.boolean()
+    }));
+
+    
+    const TeamSchema = z.array(z.object({
+        id: z.number(),
+        name: z.string(),
+        captainId: z.number(),
+        players: z.array(z.number()),
+        record: z.string(),
+        wins: z.number(),
+        losses: z.number(),
+        gameWins: z.number(),
+        gameLosses: z.number(),
+        gameRecord: z.string()
+    }));
+
+    const GroupsSchema = z.array(z.object({
+        id: z.number(),
+        name: z.string(), 
+        teams: z.array(z.number())
+    }));
+
+    const BracketSchema = z.array(z.object({
+        title: z.string(),
+        seeds: z.array(z.object({
+            id: z.number(), 
+            teams: z.array(z.object({
+                name: z.string()
+            }))
+        }))
+    }));
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async currentUser => {
@@ -97,36 +137,56 @@ const AdminPage: React.FC = () => {
         setStatus('loading');
         setStatusMessage('');
 
-        let playersData: Player[];
+        let data: Player[] | Team[] | Group[] | BracketRound[];
         try {
-            playersData = JSON.parse(jsonString);
-            if (!Array.isArray(playersData)) {
+            data = JSON.parse(jsonString);
+            if (!Array.isArray(data)) {
                 throw new Error("JSON data must be an array.");
+            }
+            switch(selectedType) {
+                case 'players':
+                    PlayerSchema.parse(data);
+                    break;
+                case 'teams':
+                    TeamSchema.parse(data);
+                    break;
+                case 'groups':
+                    GroupsSchema.parse(data);
+                    break;
+                case 'bracket':
+                    BracketSchema.parse(data);
+                    break;
+                default: 
+                    return '';
             }
         } catch (error) {
             setStatus('error');
+            if (error instanceof z.ZodError) {
+                setStatusMessage(`Validation Failed: ${error.format()}`);
+                return;
+            }
             setStatusMessage(error instanceof Error ? error.message : "Invalid JSON format.");
             return;
         }
 
         try {
             // Get a new write batch
-            const docRef = doc(db, selectedType, 'grumble2025');
+            const docRef = doc(db, selectedType, `grumble2025_${division}`);
 
             await updateDoc(docRef, {
-                players: arrayUnion(...playersData)
+                [selectedType]: arrayUnion(...data)
             });
 
             setStatus('success');
-            setStatusMessage(`Successfully created or updated ${playersData.length} players.`);
+            setStatusMessage(`Successfully created or updated ${data.length} ${selectedType}.`);
             setJsonString(''); // Clear the text area on success
         } catch (error) {
             console.error("Error committing batch:", error);
             setStatus('error');
-            setStatusMessage("Failed to write players to the database. Check the console.");
+            setStatusMessage(`Failed to write ${selectedType} to the database. Check the console.`);
         }
 
-    }, [jsonString, selectedType]);
+    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema]);
 
     const getPlaceholder = () => {
         switch (selectedType) {
@@ -148,13 +208,13 @@ const AdminPage: React.FC = () => {
     }
 
     return (
-        <PageContainer>
-            <Title>Admin: Bulk {selectedType} Creation</Title>
+        <AdminPageContainer>
+            <AdminTitle>Admin: Bulk {selectedType} Creation</AdminTitle>
 
             <SelectionContainer>
                 <FormGroup>
-                <Label htmlFor="data-type-select">Select Data to Manage</Label>
-                <Select
+                <AdminLabel htmlFor="data-type-select">Select Data to Manage</AdminLabel>
+                <AdminSelect
                     id="data-type-select"
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value as DataType)}
@@ -163,7 +223,7 @@ const AdminPage: React.FC = () => {
                     <option value="teams">Teams</option>
                     <option value="groups">Groups</option>
                     <option value="bracket">Bracket</option>
-                </Select>
+                </AdminSelect>
                 </FormGroup>
             </SelectionContainer>
             
@@ -185,7 +245,7 @@ const AdminPage: React.FC = () => {
                     </StatusMessage>
                 )}
             </Form>
-        </PageContainer>
+        </AdminPageContainer>
     );
 };
 

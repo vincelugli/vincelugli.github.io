@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, User } from 'firebase/auth';
-import { HeaderContainer, Logo, Nav, NavLink } from '../../styles';
+import { HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, NavLink, SubMenu, SubMenuItem } from '../../styles';
 import styled from 'styled-components';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
 
 const HamburgerIcon = styled.div`
   display: none; /* Hidden by default on desktop */
   font-size: 1.8rem;
-  color: #333;
+  color: ${({ theme }) => theme.text}};
   cursor: pointer;
   z-index: 10;
 
@@ -22,16 +22,17 @@ const HamburgerIcon = styled.div`
 const MobileMenu = styled.nav<{ isOpen: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  align-items: center;
   
-  background-color: #ffffff;
+  align-items: flex-start; /* Align to the left for a cleaner look */
+  gap: 1rem;
+  padding: 6rem 2rem 2rem 2rem;
+  
+  background-color: ${({ theme }) => theme.background};
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh; /* Full screen height */
-  padding-top: 6rem; /* Space for header */
 
   /* Animate the menu sliding in from the top */
   transition: transform 0.3s ease-in-out;
@@ -55,7 +56,23 @@ const HeaderLeft = styled.div`
 const Header: React.FC = () => {
   const auth = getAuth();
   const [user, setUser] = useState<User | null>(auth.currentUser);
-  const [isOpen, setIsOpen] = useState(false);
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openMobileSubMenu, setOpenMobileSubMenu] = useState<string | null>(null);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setOpenMobileSubMenu(null); // Close sub-menus when main menu is toggled
+  };
+
+  const toggleMobileSubMenu = (menu: string) => {
+    setOpenMobileSubMenu(prev => (prev === menu ? null : menu));
+  };
+
+  const closeAllMenus = () => {
+    setIsMobileMenuOpen(false);
+    setOpenMobileSubMenu(null);
+  }
 
   // Listen to auth state to show/hide the captain link
   useEffect(() => {
@@ -63,65 +80,80 @@ const Header: React.FC = () => {
     return () => unsubscribe();
   }, [auth]);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
-
   return (
     <HeaderContainer>
       <HeaderLeft>
-        <Logo to="/">GRumble 2025</Logo>
+        <Logo to="/" onClick={closeAllMenus}>GRumble 2025</Logo>
         <DivisionSelector />
       </HeaderLeft>
-      <Nav>
-        <NavLink to="/">Home</NavLink>
-      </Nav>
-      <Nav>
-        <NavLink to="/schedule">Schedule</NavLink>
-      </Nav>
-      <Nav>
-        <NavLink to="/swiss">Round Robin</NavLink>
-      </Nav>
-      <Nav>
-        <NavLink to="/knockout">Knockout</NavLink>
-      </Nav>
-      <Nav>
-        <NavLink to="/teams">Teams</NavLink>
-      </Nav>
-      <Nav>
-        <NavLink to="/draft-access">Draft</NavLink>
-      </Nav>
-      <Nav>
-        {user && (
-          <NavLink to="/pick-priority">My Auto-Draft</NavLink>
-        )}
-      </Nav>
-      <Nav>
-        <NavLink to="/subs">Subs</NavLink>
-      </Nav>
-      <Nav>
-        {user && (
-          <NavLink to="/admin-access">Admin</NavLink>
-        )}
-      </Nav>
       
-      <ThemeToggleButton />
-      <HamburgerIcon onClick={toggleMenu}>
-        {/* Intelligently switch between the bars and the 'X' icon */}
-        {isOpen ? <FaTimes /> : <FaBars />}
-      </HamburgerIcon>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* --- DESKTOP NAV --- */}
+        <Nav>
+          <NavLink to="/schedule">Schedule</NavLink>
+
+          <NavItem>
+            Stages <FaChevronDown size={12} />
+            <SubMenu>
+              <SubMenuItem to="/draft-access">Draft</SubMenuItem>
+              <SubMenuItem to="/swiss">Round Robin</SubMenuItem>
+              <SubMenuItem to="/knockout">Knockout Stage</SubMenuItem>
+              <SubMenuItem to="/teams">Teams</SubMenuItem>
+            </SubMenu>
+          </NavItem>
+
+          <NavItem>
+            Captain <FaChevronDown size={12} />
+            <SubMenu>
+              <SubMenuItem to="/draft-access">Draft</SubMenuItem>
+              {user && (<SubMenuItem to="/pick-priority">Auto-Draft</SubMenuItem>)}
+              <SubMenuItem to="/subs">Substitutes</SubMenuItem>
+            </SubMenu>
+          </NavItem>
+        </Nav>
+
+        <ThemeToggleButton />
+        <HamburgerIcon onClick={toggleMobileMenu}>
+          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </HamburgerIcon>
+      </div>
       
-      <MobileMenu isOpen={isOpen}>
-        <NavLink to="/" onClick={toggleMenu}>Home</NavLink>
-        <NavLink to="/schedule" onClick={toggleMenu}>Schedule</NavLink>
-        <NavLink to="/swiss" onClick={toggleMenu}>Round Robin</NavLink>
-        <NavLink to="/knockouts" onClick={toggleMenu}>Knockouts</NavLink>
-        <NavLink to="/teams" onClick={toggleMenu}>Teams</NavLink>
-        <NavLink to="/drafts" onClick={toggleMenu}>Draft</NavLink>
-        <NavLink to="/pick-priority" onClick={toggleMenu}>My Auto-Draft</NavLink>
-        <NavLink to="/subs" onClick={toggleMenu}>Subs</NavLink>
-        <NavLink to="/admin" onClick={toggleMenu}>Admin</NavLink>
+      <MobileMenu isOpen={isMobileMenuOpen}>
+        {/* <MobileMainLink to="/schedule" onClick={closeAllMenus}>Schedule</MobileMainLink> */}
+        <MobileNavItem>
+          <MobileMainLink onClick={() => toggleMobileSubMenu('schedule')}>
+            Schedule <FaChevronDown size={16} />
+          </MobileMainLink>
+          <MobileSubMenu isOpen={openMobileSubMenu === 'schedule'}>
+            <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Overall Timeline</MobileSubMenuItem>
+          </MobileSubMenu>
+        </MobileNavItem>
+        
+        <MobileNavItem>
+          <MobileMainLink onClick={() => toggleMobileSubMenu('stages')}>
+            Stages <FaChevronDown size={16} />
+          </MobileMainLink>
+          <MobileSubMenu isOpen={openMobileSubMenu === 'stages'}>
+            <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft Lobby</MobileSubMenuItem>
+            <MobileSubMenuItem to="/swiss" onClick={closeAllMenus}>Round Robin</MobileSubMenuItem>
+            <MobileSubMenuItem to="/knockout" onClick={closeAllMenus}>Knockout Stage</MobileSubMenuItem>
+            <MobileSubMenuItem to="/teams" onClick={closeAllMenus}>Teams</MobileSubMenuItem>
+          </MobileSubMenu>
+        </MobileNavItem>
+
+        <MobileNavItem>
+          <MobileMainLink onClick={() => toggleMobileSubMenu('captain')}>
+            Captain <FaChevronDown size={16} />
+          </MobileMainLink>
+          <MobileSubMenu isOpen={openMobileSubMenu === 'captain'}>
+            <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft</MobileSubMenuItem>
+            {user && (<MobileSubMenuItem to="/pick-priority" onClick={closeAllMenus}>Auto-Draft</MobileSubMenuItem>)}
+            <MobileSubMenuItem to="/subs" onClick={closeAllMenus}>Substitutes</MobileSubMenuItem>
+          </MobileSubMenu>
+        </MobileNavItem>
       </MobileMenu>
+
+
     </HeaderContainer>
   );
 };

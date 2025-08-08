@@ -1,14 +1,11 @@
 import React from 'react';
 import GroupComponent from './Group';
-import { Group, Team } from '../../types';
 import { StageContainer } from '../../styles';
+import { useTournament } from '../../context/TournamentContext';
 
-interface SwissStageProps {
-  groups: Group[];
-  teams: Team[];
-}
+const SwissStage: React.FC = () => {
+  const { groups, teams } = useTournament();
 
-const SwissStage: React.FC<SwissStageProps> = ({ groups, teams }) => {
   if (!groups || groups.length === 0) {
     return (
     <StageContainer>

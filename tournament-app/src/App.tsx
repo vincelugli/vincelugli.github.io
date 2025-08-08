@@ -6,6 +6,7 @@ import { PlayerProvider } from './context/PlayerContext';
 import { DivisionProvider } from './context/DivisionContext';
 import AppContent from './AppContent';
 import { CustomThemeProvider } from './context/ThemeContext';
+import { TournamentProvider } from './context/TournamentContext';
 
 const App: React.FC = () => {
 
@@ -13,8 +14,10 @@ const App: React.FC = () => {
     <CustomThemeProvider>
       <DivisionProvider>
         <PlayerProvider>
-          <GlobalStyle />
-          <AppContent />
+          <TournamentProvider>
+            <GlobalStyle />
+            <AppContent />
+          </TournamentProvider>
         </PlayerProvider>
       </DivisionProvider>
     </CustomThemeProvider>
