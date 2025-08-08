@@ -23,6 +23,7 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
 }
 
 const initializeDraft = (allPlayers: Player[]): DraftState => {
+  if (!allPlayers) return emptyDraftState();
   const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => b.elo - a.elo);
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
   const allPlayersSorted = [...allPlayers].sort((a, b) => b.elo - a.elo);

@@ -53,7 +53,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
       <PoolHeader>Available Players</PoolHeader>
       <SearchInput 
         type="text" 
-        placeholder="Search players..."
+        placeholder="Search players... (P:<role>)"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />

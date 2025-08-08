@@ -84,7 +84,7 @@ const AdminPage: React.FC = () => {
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
         elo: z.number(),
-        primaryRole: z.string(),
+        role: z.string(),
         secondaryRoles: z.array(z.string()),
         isCaptain: z.boolean()
     }));
