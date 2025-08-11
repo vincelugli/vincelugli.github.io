@@ -7,7 +7,7 @@ const AllTeamsPage: React.FC = () => {
   let { teams } = useTournament();
   
   // Order the teams by best record
-  teams = teams.sort(compareTeams);
+  teams = teams ? teams.sort(compareTeams) : [];
 
   return (
     <TeamsContainer>

@@ -9,7 +9,7 @@ const Footer = () => {
   return (
     <>
       <FooterContainer>
-        <CopyrightText>&copy; 2024 Vince Lugli. All rights reserved. This competition is not affiliated with or sponsored by Riot Games, Inc. or League of Legends Esports.</CopyrightText>
+        <CopyrightText>&copy; 2025 Vince Lugli. All rights reserved. This competition is not affiliated with or sponsored by Riot Games, Inc. or League of Legends Esports.</CopyrightText>
         
         {/* 3. Add the button and its onClick handler */}
         <BugReportButton onClick={() => setIsModalOpen(true)}>

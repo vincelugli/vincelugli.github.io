@@ -69,7 +69,7 @@ const SubstitutesPage: React.FC = () => {
           const subsData = data.subs || [];
           setSubstitutes(subsData as SubPlayer[]);
         } else {
-          setError("Player substitutes are not yet available.");
+          setSubstitutes([])
         }
       } catch (err) {
         console.error("Error fetching substitutes:", err);
