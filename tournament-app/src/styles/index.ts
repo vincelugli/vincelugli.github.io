@@ -31,12 +31,39 @@ export const BracketContainer = styled.div`
 
 // Footer
 export const FooterContainer = styled.footer`
-  background-color: ${({ theme }) => theme.text};
-  color: ${({ theme }) => theme.background };
+  background: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.background};
   padding: 1rem;
   text-align: center;
   margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid ${({ theme }) => theme.borderColor};
 `;
+
+export const CopyrightText = styled.p`
+  margin: 0;
+`;
+
+export const BugReportButton = styled.button`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  color: ${({ theme }) => theme.textAlt};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover {
+    background: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
 
 // Header
 export const HeaderContainer = styled.header`

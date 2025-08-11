@@ -69,7 +69,7 @@ const SubstitutesPage: React.FC = () => {
           const subsData = data.subs || [];
           setSubstitutes(subsData as SubPlayer[]);
         } else {
-          setError("Could not find the substitute player list document.");
+          setError("Player substitutes are not yet available.");
         }
       } catch (err) {
         console.error("Error fetching substitutes:", err);
