@@ -4,9 +4,10 @@ jobs:
   build-and-deploy:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
-  steps: 
-  - name: Build and deploy
-    working-directory: ./tournament-app
-    run: npm run deploy
-    env:
-      token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
+
+    steps: 
+    - name: Build and deploy
+      working-directory: ./tournament-app
+      run: npm run deploy
+      env:
+        token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
