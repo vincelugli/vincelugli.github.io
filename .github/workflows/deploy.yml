@@ -24,8 +24,11 @@ jobs:
       run: npm ci --legacy-peer-deps
 
     - name: Build and deploy
+      uses: peaceiris/actions-gh-pages@v4
       working-directory: ./tournament-app
-      run: npm run deploy
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
       env:
         token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
 
