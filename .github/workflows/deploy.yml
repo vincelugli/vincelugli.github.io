@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps: 
+    - name: Set GitHub name
+      run: git config --global user.name "${GITHUB_ACTOR}"
+      
+    - name: Set GitHub email
+      run: git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
     - name: Checkout
       uses: actions/checkout@v3
 
