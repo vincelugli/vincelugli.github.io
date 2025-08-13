@@ -24,21 +24,12 @@ jobs:
       run: npm ci --legacy-peer-deps
 
     - name: Build and deploy
-      uses: peaceiris/actions-gh-pages@v4
       working-directory: ./tournament-app
+      uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./public
+        cname: www.grumble.cc
       env:
         token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
-
-    - name: Create CNAME
-      run: echo "www.grumble.cc" > CNAME
-
-    - name: Commit and push changes
-      uses: EndBug/add-and-commit@v9
-      with:
-        add: 'CNAME' # Or the pattern of files to add
-        message: 'Add CNAME via GitHub Actions'
-        branch: 'deploy' # The target branch for the commit
 
