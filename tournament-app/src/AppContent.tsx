@@ -19,6 +19,7 @@ import SchedulePage from './components/Schedule/SchedulePage';
 import SubstitutesPage from './components/Players/SubstitutePlayersPage';
 import AdminPage from './components/Admin/AdminPage';
 import AdminAuthGate from './components/Admin/AdminAuthGate';
+import RouteChangeTracker from './components/Common/RouteChangeTracker';
 
 const AppContent: React.FC = () => {
   const auth = getAuth();
@@ -26,6 +27,7 @@ const AppContent: React.FC = () => {
 
   return (
     <Router>
+      <RouteChangeTracker />
       <AppContainer>
           <Header />
           <MainContent>

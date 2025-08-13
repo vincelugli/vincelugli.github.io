@@ -11,6 +11,9 @@ import {CloudTasksClient} from "@google-cloud/tasks";
 import {setGlobalOptions} from "firebase-functions";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onTaskDispatched} from "firebase-functions/v2/tasks";
+import {onRequest} from "firebase-functions/v2/https";
+import {z} from "zod";
+import {Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 
@@ -38,6 +41,18 @@ const tasksClient = new CloudTasksClient();
 interface AuthData {
   accessCode: string;
 }
+
+const GameNotificationSchema = z.object({
+  startTime: z.number(),
+  shortCode: z.string(),
+  metaData: z.string(),
+  gameId: z.number(),
+  gameName: z.string(),
+  gameType: z.string(),
+  gameMap: z.number(),
+  gameMode: z.string(),
+  region: z.string(),
+});
 
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 2 * 60 * 60;
 const PROJECT = "grumble-5885f";
@@ -328,3 +343,52 @@ export const executeAutoPick = onTaskDispatched({
 
   functions.logger.log(`Auto-pick un-successful for draft: ${draftId}`);
 });
+
+export const gameNotificationEndpoint = onRequest(
+  {},
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const notificationData = GameNotificationSchema.parse(req.body);
+      functions.logger.info(
+        `Received valid notification for match: ${notificationData.shortCode}`
+      );
+
+      const matchRef = db.collection("matches").doc(notificationData.shortCode);
+      const resultRef = db
+        .collection("match_results")
+        .doc(notificationData.shortCode);
+
+      const batch = db.batch();
+
+      const resultPayload = {
+        ...notificationData,
+        submittedAt: Timestamp.now(),
+      };
+
+      batch.set(resultRef, resultPayload);
+      batch.update(matchRef, {
+        status: "completed",
+      });
+
+      await batch.commit();
+      functions.logger.info(`Successfully created result for match 
+        ${notificationData.shortCode} and updated match status.`);
+      res.status(201).send({message: "Match result created successfully."});
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        functions.logger.error("Validation failed:", error.message);
+        res.status(400).send({
+          message: "Invalid request body.", errors: error.message,
+        });
+      } else {
+        functions.logger.error("Internal server error:", error);
+        res.status(500).send({message: "An internal error occurred."});
+      }
+    }
+  }
+);
