@@ -1,5 +1,9 @@
 name: Deploy to GitHub Pages
 
+on:
+  push:
+    branches: [ main ]
+
 jobs:
   build-and-deploy:
     # The type of runner that the job will run on
