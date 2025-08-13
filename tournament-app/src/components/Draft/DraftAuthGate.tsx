@@ -77,7 +77,7 @@ const DraftAuthGate: React.FC = () => {
           <Select
             id="draft-selection"
             value={selectedDraftId}
-            onChange={(e) => setSelectedDraftId(e.target.value)}
+            onChange={(e: any) => setSelectedDraftId(e.target.value)}
             disabled={drafts.length === 0}
           >
             {drafts.length > 0 ? (

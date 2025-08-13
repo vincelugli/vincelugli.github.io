@@ -42,7 +42,7 @@ const AdminAuthGate: React.FC = () => {
           type="text" 
           placeholder="Enter Admin Access Code"
           value={accessCode}
-          onChange={(e) => setAccessCode(e.target.value)}
+          onChange={(e: any) => setAccessCode(e.target.value)}
         />
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <Button onClick={handleLogin} disabled={loading} variant="primary">
