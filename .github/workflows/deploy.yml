@@ -16,10 +16,8 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: CD tournament-app
-      run: cd tournament-app
-
     - name: Install dependencies
+      working-directory: ./tournament-app
       run: npm ci --legacy-peer-deps
 
     - name: Build and deploy
@@ -28,6 +26,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./public
         cname: www.grumble.cc
-      env:
-        token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
+        working-directory: ./tournament-app
+        env:
+          token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
 
