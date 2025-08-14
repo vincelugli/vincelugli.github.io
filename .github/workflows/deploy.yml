@@ -27,6 +27,6 @@ jobs:
         publish_dir: ./public
         cname: www.grumble.cc
         working-directory: ./tournament-app
-        env:
-          token: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
+      env:
+        REACT_APP_GA_MEASUREMENT_ID: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
 
