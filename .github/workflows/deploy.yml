@@ -41,6 +41,9 @@ jobs:
         env:
           REACT_APP_GA_MEASUREMENT_ID: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
       
+      - name: Create riot.txt file
+        run: echo "c503f58a-03e5-484a-ab1d-28051911dc57" > build/riot.txt
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
