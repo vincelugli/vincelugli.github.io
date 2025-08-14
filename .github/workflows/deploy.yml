@@ -10,17 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps: 
-    - name: Set GitHub name
-      run: git config --global user.name "${GITHUB_ACTOR}"
-      
-    - name: Set GitHub email
-      run: git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+    - name: Set GitHub main branch
+      run: git config --global init.defaultBranch main
 
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: CD tournament-app
+      run: cd tournament-app
+
     - name: Install dependencies
-      working-directory: ./tournament-app
       run: npm ci --legacy-peer-deps
 
     - name: Build and deploy
