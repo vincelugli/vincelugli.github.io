@@ -1,11 +1,11 @@
 # Name of the workflow
 name: Build and Deploy GRumble
 
-# # Run this workflow every time a push is made to the "main" branch
-# on:
-#   push:
-#     branches: [ main ]
-#   workflow_dispatch:
+# Run this workflow every time a push is made to the "main" branch
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 # Set the necessary permissions for the GITHUB_TOKEN for the deployment jobs
 permissions:
@@ -64,6 +64,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
-        # This is the final new action you requested
         id: deployment
         uses: actions/deploy-pages@v4
