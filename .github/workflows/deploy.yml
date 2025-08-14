@@ -1,32 +1,69 @@
-name: Deploy to GitHub Pages
+# Name of the workflow
+name: Deploy React App to GitHub Pages
 
+# Run this workflow every time a push is made to the "main" branch
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+# Set the necessary permissions for the GITHUB_TOKEN for the deployment jobs
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    # The type of runner that the job will run on
+  # Build job
+  build:
     runs-on: ubuntu-latest
-
-    steps: 
-    - name: Set GitHub main branch
-      run: git config --global init.defaultBranch main
-
-    - name: Checkout
-      uses: actions/checkout@v3
-
-    - name: Install dependencies
-      working-directory: ./tournament-app
-      run: npm ci --legacy-peer-deps
-
-    - name: Build and deploy
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./public
-        cname: www.grumble.cc
+    defaults:
+      run:
         working-directory: ./tournament-app
-      env:
-        REACT_APP_GA_MEASUREMENT_ID: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Build the application
+        run: npm run build
+        env:
+          REACT_APP_GA_MEASUREMENT_ID: ${{ secrets.REACT_APP_GA_MEASUREMENT_ID }}
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './tournament-app/build'
+
+  # Deploy job
+  deploy:
+    # This job requires the 'build' job to have completed successfully
+    needs: build
+    
+    # Grant permissions for the deployment
+    permissions:
+      pages: write
+      id-token: write
+
+    # Specify the deployment environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        # This is the final new action you requested
+        id: deployment
+        uses: actions/deploy-pages@v4
