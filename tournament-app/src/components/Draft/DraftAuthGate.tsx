@@ -6,6 +6,7 @@ import Button from '../Common/Button';
 import { GateContainer, AuthBox, Input, ErrorMessage, Label, Select, DraftMetadataGroup } from '../../styles';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useAuth } from '../Common/AuthContext';
 
 interface DraftMeta {
   id: string;
@@ -22,6 +23,8 @@ const DraftAuthGate: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { captainTeamId } = useAuth();
+
   const handleLogin = async () => {
     setLoading(true);
     setError('');
@@ -32,10 +35,12 @@ const DraftAuthGate: React.FC = () => {
       const token = (result.data as { token: string }).token;
       
       await signInWithCustomToken(auth, token);
+
+      sessionStorage.setItem("isSpectator", "false");
       navigate(`/draft/${selectedDraftId}`);
       // The onAuthStateChanged listener will update the user state automatically
     } catch (err: any) {
-      // navigate to draft as pectator if code is invalid
+      // navigate to draft as spectator if code is invalid
       sessionStorage.setItem("isSpectator", "true");
       navigate(`/draft/${selectedDraftId}`);
     } finally {
@@ -66,6 +71,12 @@ const DraftAuthGate: React.FC = () => {
 
     fetchDrafts().catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!!captainTeamId) {
+      navigate(`/draft/${!!selectedDraftId ? selectedDraftId : 'liveDraft'}`);
+    }
+  });
   
   // Otherwise, show the login gate
   return (

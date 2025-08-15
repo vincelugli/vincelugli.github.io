@@ -5,14 +5,12 @@ import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { getAuth, User } from 'firebase/auth';
 import DraftTimer from './DraftTimer';
 import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
+import { useAuth } from '../Common/AuthContext';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
-
-// --- Logic and Component Definition ---
 
 const calculatePickIndex = (pickNumber: number, numCaptains: number, captainIndex: number): number => {
   if (pickNumber % 2 === 1) {
@@ -109,9 +107,7 @@ const emptyDraftState = (): DraftState => {
 const DraftPage: React.FC = () => {
   const navigate = useNavigate();
   const { draftId } = useParams<{ draftId: string }>();
-  const auth = getAuth();
 
-  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
   const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -123,34 +119,20 @@ const DraftPage: React.FC = () => {
   const { teams, pickOrder, availablePlayers, currentPickIndex } = initialDraftState;
 
   const [nextPickIndex, setNextPickIndex] = useState(currentPickIndex);
-  const [authTeamId, setAuthTeamId] = useState<string | null>(null);
+
+  const { captainTeamId, currentUser } = useAuth();
 
   //// BEGIN AUTH ////
-  useEffect(() => {
-    user?.getIdTokenResult().then(idTokenResult => {
-      const claims = idTokenResult.claims;
-      if (claims.teamId) {
-        setAuthTeamId(claims.teamId as string);
-      }
-    });
-  }, [user]);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(currentUser => {
-      setUser(currentUser);
-      // Also re-check spectator status
-      const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
-      setIsSpectator(spectatorStatus);
-      
-      // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
-      if (!currentUser && !spectatorStatus) {
-        navigate('/draft-access');
-      }
-      setLoadingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, [auth, navigate]);
+    const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
+    setIsSpectator(spectatorStatus);
+    // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
+    if (!captainTeamId && !spectatorStatus) {
+      navigate('/draft-access');
+    }
+    setLoadingAuth(false);
+  }, [captainTeamId, currentUser, navigate, setIsSpectator, setLoadingAuth]);
   //// END AUTH ////
 
   const isDraftComplete = nextPickIndex >= pickOrder.length;
@@ -173,7 +155,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [allPlayers, isSpectator, user, draftDocRef, draftState.currentPickIndex]);
+  }, [draftDocRef, draftState.currentPickIndex]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -222,8 +204,8 @@ const DraftPage: React.FC = () => {
 
   const canDraftNow = 
     !isSpectator &&
-    authTeamId !== null &&
-    draftState?.pickOrder[draftState.currentPickIndex] === Number(authTeamId);
+    captainTeamId !== null &&
+    draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId);
 
   if (loadingAuth) {
     return <div>Verifying Access...</div>;

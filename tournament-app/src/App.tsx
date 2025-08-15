@@ -6,6 +6,7 @@ import { DivisionProvider } from './context/DivisionContext';
 import AppContent from './AppContent';
 import { CustomThemeProvider } from './context/ThemeContext';
 import { TournamentProvider } from './context/TournamentContext';
+import { AuthProvider } from './components/Common/AuthContext';
 
 const GA_MEASUREMENT_ID = process.env.REACT_APP_GA_MEASUREMENT_ID;
 if (GA_MEASUREMENT_ID) {
@@ -18,16 +19,18 @@ if (GA_MEASUREMENT_ID) {
 const App: React.FC = () => {
 
   return (
-    <CustomThemeProvider>
-      <DivisionProvider>
-        <PlayerProvider>
-          <TournamentProvider>
-            <GlobalStyle />
-            <AppContent />
-          </TournamentProvider>
-        </PlayerProvider>
-      </DivisionProvider>
-    </CustomThemeProvider>
+    <AuthProvider>
+      <CustomThemeProvider>
+        <DivisionProvider>
+          <PlayerProvider>
+            <TournamentProvider>
+              <GlobalStyle />
+              <AppContent />
+            </TournamentProvider>
+          </PlayerProvider>
+        </DivisionProvider>
+      </CustomThemeProvider>
+    </AuthProvider>
   );
 }
 

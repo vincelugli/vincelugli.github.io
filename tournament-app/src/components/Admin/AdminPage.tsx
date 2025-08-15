@@ -2,13 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { BracketRound, Group, Player, Team } from '../../types'; // Assuming your Player type is defined and exported
+import { BracketRound, Group, Player, Team } from '../../types';
 import Button from '../Common/Button';
-import { getAuth } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, FormGroup, AdminLabel, AdminSelect } from '../../styles/index';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
+import { useAuth } from '../Common/AuthContext';
 
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;
 
@@ -71,8 +71,8 @@ const BRACKET_JSON_PLACEHOLDER = `[
 
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
-    const auth = getAuth();
     const { division } = useDivision();
+    const { isAdmin } = useAuth();
     
     const [selectedType, setSelectedType] = useState<DataType>('players');
     const [jsonString, setJsonString] = useState('');
@@ -120,17 +120,11 @@ const AdminPage: React.FC = () => {
     }));
 
     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(async currentUser => {
-            const idTokenResult = await currentUser?.getIdTokenResult();
-            // user is NOT logged in, redirect them
-            if (!currentUser || !idTokenResult?.claims.adminId) {
-                navigate('/admin-access');
-            }
-            setLoadingAuth(false);
-        });
-
-        return () => unsubscribe();
-    }, [auth, navigate]);
+        if (!isAdmin) {
+            navigate('/admin-access')
+        }
+        setLoadingAuth(false);
+    }, [isAdmin, navigate, setLoadingAuth]);
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
