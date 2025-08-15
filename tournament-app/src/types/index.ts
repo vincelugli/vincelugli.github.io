@@ -61,6 +61,7 @@ export interface DraftState {
   completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
   currentPickIndex: number; // Index of the current pick in the pickOrder
   pickEndsAt?: number | null; // End time in milliseconds
+  draftId: string;
 }
 
 export interface SignUpData {

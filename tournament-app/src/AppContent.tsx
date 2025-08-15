@@ -55,6 +55,7 @@ const AppContent: React.FC = () => {
               />
               <Route path="/draft-access" element={<DraftAuthGate />} />
               <Route path="/draft/:draftId" element={<DraftPage />} />
+              <Route path="/draft" element={<DraftPage />} />
               {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
               <Route path="/subs" element={<SubstitutesPage />} />
               <Route path="/admin-access" element={<AdminAuthGate />} />

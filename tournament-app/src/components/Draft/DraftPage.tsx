@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Player, Team, DraftState } from '../../types';
 import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
@@ -9,6 +9,7 @@ import DraftTimer from './DraftTimer';
 import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
+import { useDivision } from '../../context/DivisionContext';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -20,7 +21,7 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
   }
 }
 
-const initializeDraft = (allPlayers: Player[]): DraftState => {
+const initializeDraft = (allPlayers: Player[], division: string): DraftState => {
   if (!allPlayers) return emptyDraftState();
   const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => b.elo - a.elo);
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
@@ -91,7 +92,7 @@ const initializeDraft = (allPlayers: Player[]): DraftState => {
     currentPickIndex++;
   }
 
-  return { teams, pickOrder, availablePlayers, completedPicks: {}, currentPickIndex };
+  return { teams, pickOrder, availablePlayers, completedPicks: {}, currentPickIndex, draftId: `grumble2025_${division ?? "master"}` };
 };
 
 const emptyDraftState = (): DraftState => {
@@ -100,62 +101,73 @@ const emptyDraftState = (): DraftState => {
     pickOrder: [],
     availablePlayers: [],
     completedPicks: {},
-    currentPickIndex: 0
+    currentPickIndex: 0,
+    draftId: '',
   };
 }
 
 const DraftPage: React.FC = () => {
   const navigate = useNavigate();
-  const { draftId } = useParams<{ draftId: string }>();
-
-  const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
-
+  const { division } = useDivision();
   const { players: allPlayers } = usePlayers();
-  const initialDraftState = initializeDraft(allPlayers);
+  const { captainTeamId, currentUser, isAdmin } = useAuth();
+
+  const initialDraftState = initializeDraft(allPlayers, division);
   const { teams, pickOrder, availablePlayers, currentPickIndex } = initialDraftState;
 
+  const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
+  const [draftDocRef, setDraftDocRef] = useState(doc(db, 'drafts', `grumble2025_${division}`));
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [nextPickIndex, setNextPickIndex] = useState(currentPickIndex);
-
-  const { captainTeamId, currentUser } = useAuth();
-
-  //// BEGIN AUTH ////
-
-  useEffect(() => {
-    const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
-    setIsSpectator(spectatorStatus);
-    // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
-    if (!captainTeamId && !spectatorStatus) {
-      navigate('/draft-access');
-    }
-    setLoadingAuth(false);
-  }, [captainTeamId, currentUser, navigate, setIsSpectator, setLoadingAuth]);
-  //// END AUTH ////
+  const [prevDivision, setPrevDivision] = useState('');
+  const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
+  const [isLoading, setIsLoading] = useState(true);
 
   const isDraftComplete = nextPickIndex >= pickOrder.length;
   const currentTeamIdPicking = !isDraftComplete ? pickOrder[currentPickIndex] : null;
 
-  const draftDocRef = doc(db, 'drafts', draftId ?? 'liveDraft');
+  //// BEGIN AUTH ////
   useEffect(() => {
+    const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
+    setIsSpectator(spectatorStatus);
+    // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
+    if (!captainTeamId && !spectatorStatus && !isAdmin) {
+      navigate('/draft-access');
+    }
+    setLoadingAuth(false);
+  }, [captainTeamId, currentUser, isAdmin, navigate, setIsSpectator, setLoadingAuth]);
+  //// END AUTH ////
+
+  useEffect(() => {
+    if (division !== prevDivision) {
+      setDraftDocRef(doc(db, 'drafts', `grumble2025_${division}`));
+      setPrevDivision(division);
+    }
+
     // onSnapshot listens for any changes to the document
-    const unsubscribe = onSnapshot(draftDocRef, (docSnap) => {
+    const unsubscribe = onSnapshot(draftDocRef, async (docSnap) => {
+      setIsLoading(false);
       if (docSnap.exists()) {
         const data = docSnap.data() as DraftState;
-        if (data.currentPickIndex === draftState.currentPickIndex) {
-          setIsLoading(false);
+        if (data.currentPickIndex === draftState.currentPickIndex 
+            && data.draftId === draftState.draftId 
+            && Object.keys(data).length === Object.keys(draftState).length) {
           return;
+        }
+
+        // Draft hasn't been initialized yet, update with initialize draft state
+        if (Object.keys(data).length <= 1) {
+          const initialDraftState = initializeDraft(allPlayers, division);
+          // --- Atomically write the entire update back to Firestore ---
+          await updateDoc(draftDocRef, {...draftState, ...initialDraftState});
         }
         setDraftState(data);
       }
-      setIsLoading(false);
     });
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [draftDocRef, draftState.currentPickIndex]);
+  }, [allPlayers, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -205,7 +217,9 @@ const DraftPage: React.FC = () => {
   const canDraftNow = 
     !isSpectator &&
     captainTeamId !== null &&
-    draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId);
+    Object.keys(draftState).length > 0 && 
+    (draftState?.pickOrder ? 
+      draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId) : false);
 
   if (loadingAuth) {
     return <div>Verifying Access...</div>;
@@ -264,7 +278,7 @@ const DraftPage: React.FC = () => {
       </DraftContent>
 
       <PickOrderDisplay
-        pickOrder={draftState.pickOrder}
+        pickOrder={draftState.pickOrder ?? []}
         teams={draftState.teams}
         players={allPlayers} 
         currentPickIndex={draftState.currentPickIndex}
