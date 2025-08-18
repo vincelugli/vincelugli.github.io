@@ -20,6 +20,7 @@ import SubstitutesPage from './components/Players/SubstitutePlayersPage';
 import AdminPage from './components/Admin/AdminPage';
 import AdminAuthGate from './components/Admin/AdminAuthGate';
 import RouteChangeTracker from './components/Common/RouteChangeTracker';
+import AllPlayersPage from './components/Players/AllPlayersPage';
 
 const AppContent: React.FC = () => {
   const auth = getAuth();
@@ -55,10 +56,12 @@ const AppContent: React.FC = () => {
               />
               <Route path="/draft-access" element={<DraftAuthGate />} />
               <Route path="/draft/:draftId" element={<DraftPage />} />
+              <Route path="/draft" element={<DraftPage />} />
               {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
               <Route path="/subs" element={<SubstitutesPage />} />
               <Route path="/admin-access" element={<AdminAuthGate />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/players" element={<AllPlayersPage />} />
           </Routes>
           </MainContent>
           <Footer />

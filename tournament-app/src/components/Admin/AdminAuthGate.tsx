@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import Button from '../Common/Button';
 import { GateContainer, AuthBox, Input, ErrorMessage } from '../../styles';
+import { useAuth } from '../Common/AuthContext';
 
 const AdminAuthGate: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,13 @@ const AdminAuthGate: React.FC = () => {
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/admin');
+    }
+  })
 
   const handleLogin = async () => {
     setLoading(true);

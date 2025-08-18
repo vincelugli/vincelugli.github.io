@@ -3,24 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import Button from '../Common/Button';
-import { GateContainer, AuthBox, Input, ErrorMessage, Label, Select, DraftMetadataGroup } from '../../styles';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
-
-interface DraftMeta {
-  id: string;
-  name: string;
-}
+import { GateContainer, AuthBox, Input, ErrorMessage } from '../../styles';
+import { useAuth } from '../Common/AuthContext';
 
 const DraftAuthGate: React.FC = () => {
   const navigate = useNavigate();
   const auth = getAuth();
 
-  const [drafts, setDrafts] = useState<DraftMeta[]>([]);
-  const [selectedDraftId, setSelectedDraftId] = useState<string>('');
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const { captainTeamId } = useAuth();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -32,12 +26,14 @@ const DraftAuthGate: React.FC = () => {
       const token = (result.data as { token: string }).token;
       
       await signInWithCustomToken(auth, token);
-      navigate(`/draft/${selectedDraftId}`);
+
+      sessionStorage.setItem("isSpectator", "false");
+      navigate(`/draft`);
       // The onAuthStateChanged listener will update the user state automatically
     } catch (err: any) {
-      // navigate to draft as pectator if code is invalid
+      // navigate to draft as spectator if code is invalid
       sessionStorage.setItem("isSpectator", "true");
-      navigate(`/draft/${selectedDraftId}`);
+      navigate(`/draft`);
     } finally {
       setLoading(false);
     }
@@ -45,50 +41,20 @@ const DraftAuthGate: React.FC = () => {
 
   const handleSpectator = () => {
     sessionStorage.setItem("isSpectator", "true");
-    navigate(`/draft/${selectedDraftId}`);
+    navigate(`/draft`);
   };
 
   useEffect(() => {
-    const fetchDrafts = async () => {
-      const draftsRef = collection(db, 'draftsMetadata');
-      const snapshot = await getDocs(draftsRef);
-      const draftsList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name,
-      }));
-      setDrafts(draftsList);
-
-      // Set a default selection if drafts are available
-      if (draftsList.length > 0) {
-        setSelectedDraftId(draftsList[0].id);
-      }
-    };
-
-    fetchDrafts().catch(console.error);
-  }, []);
+    if (!!captainTeamId) {
+      navigate(`/draft`);
+    }
+  });
   
   // Otherwise, show the login gate
   return (
     <GateContainer>
       <AuthBox>
         <h2>Draft Access</h2>
-        <DraftMetadataGroup>
-          <Label htmlFor="draft-selection">Select Draft</Label>
-          <Select
-            id="draft-selection"
-            value={selectedDraftId}
-            onChange={(e: any) => setSelectedDraftId(e.target.value)}
-            disabled={drafts.length === 0}
-          >
-            {drafts.length > 0 ? (
-              drafts.map(draft => (
-                <option key={draft.id} value={draft.id}>{draft.name}</option>
-              ))
-            ) : (
-              <option>Loading drafts...</option>
-            )}
-          </Select>
-        </DraftMetadataGroup>
         <Input 
           id="team-access-code"
           type="text" 
