@@ -131,11 +131,11 @@ const DraftPage: React.FC = () => {
     const spectatorStatus = sessionStorage.getItem('isSpectator') === 'true';
     setIsSpectator(spectatorStatus);
     // If after checking, user is NOT logged in AND is NOT a spectator, redirect them
-    if (!captainTeamId && !spectatorStatus && !isAdmin) {
+    if (!captainTeamId && !spectatorStatus && !isAdmin && !isLoading) {
       navigate('/draft-access');
     }
     setLoadingAuth(false);
-  }, [captainTeamId, currentUser, isAdmin, navigate, setIsSpectator, setLoadingAuth]);
+  }, [captainTeamId, currentUser, isAdmin, isLoading, navigate, setIsSpectator, setLoadingAuth]);
   //// END AUTH ////
 
   useEffect(() => {
@@ -214,12 +214,12 @@ const DraftPage: React.FC = () => {
     return <div>Connecting to Live Draft...</div>;
   }
 
-  const canDraftNow = 
+  const canDraftNow = (
     !isSpectator &&
     captainTeamId !== null &&
     Object.keys(draftState).length > 0 && 
     (draftState?.pickOrder ? 
-      draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId) : false);
+      draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId) : false)) || isAdmin;
 
   if (loadingAuth) {
     return <div>Verifying Access...</div>;
