@@ -47,7 +47,8 @@ export interface BracketRound {
 export interface Player {
   id: number;
   name: string;
-  elo: number;
+  rankTier: string;
+  rankDivision: number;
   isCaptain: boolean;
   role: string;
   secondaryRoles: string[];

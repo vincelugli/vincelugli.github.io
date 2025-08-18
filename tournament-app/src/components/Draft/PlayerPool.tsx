@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player } from '../../types';
 import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../../styles';
+import { convertRankToElo } from '../../utils';
 
 interface PlayerPoolProps {
   players: Player[];
@@ -14,7 +15,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
   const filteredPlayers = useMemo(() => {
     // An empty search term should show all players
     if (!searchTerm.trim()) {
-      return players.sort((a, b) => b.elo - a.elo);
+      return players.sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
     }
 
     // Prepare a case-insensitive search term once for efficiency
@@ -42,8 +43,8 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
       return nameMatch || primaryRoleMatch || secondaryRoleMatch;
     });
 
-    // Sort the final filtered list by Elo
-    return filtered.sort((a, b) => b.elo - a.elo);
+    // Sort the final filtered list by Rank
+    return filtered.sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
   }, [players, searchTerm]);
 
   const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
@@ -62,7 +63,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
           <thead>
             <tr>
               <th>Name</th>
-              <th>Elo</th>
+              <th>Rank</th>
               <th></th>
             </tr>
           </thead>
@@ -89,7 +90,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
                       </RolesContainer>
                   </PlayerInfo>
               </td>
-              <td>{player.elo}</td>
+              <td>{player.rankTier} {player.rankDivision}</td>
               <td>
                   <DraftButton onClick={() => onDraft(player)} disabled={disabled}>
                       Draft

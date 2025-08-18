@@ -20,7 +20,8 @@ const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 101,
     "name": "NewPlayer1",
-    "elo": 2200,
+    "rankTier": "Diamond"
+    "rankDivision": 2,
     "primaryRole": "top",
     "secondaryRoles": ["mid"],
     "isCaptain": false
@@ -28,7 +29,8 @@ const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 102,
     "name": "NewPlayer2",
-    "elo": 2350,
+    "rankTier": "Diamond",
+    "rankDivision": 1,
     "primaryRole": "adc",
     "secondaryRoles": [],
     "isCaptain": false
@@ -83,7 +85,8 @@ const AdminPage: React.FC = () => {
     const PlayerSchema = z.array(z.object({
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
-        elo: z.number(),
+        rankTier: z.string(),
+        rankDivision: z.number(),
         role: z.string(),
         secondaryRoles: z.array(z.string()),
         isCaptain: z.boolean()

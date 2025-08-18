@@ -10,6 +10,7 @@ import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, Team
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
+import { convertRankToElo } from '../../utils';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -23,9 +24,9 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
 
 const initializeDraft = (allPlayers: Player[], division: string): DraftState => {
   if (!allPlayers) return emptyDraftState();
-  const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => b.elo - a.elo);
+  const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
-  const allPlayersSorted = [...allPlayers].sort((a, b) => b.elo - a.elo);
+  const allPlayersSorted = [...allPlayers].sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
 
   const teams: Team[] = captains.map((captain, index) => ({
     id: index + 1,
@@ -261,8 +262,7 @@ const DraftPage: React.FC = () => {
                       </PlayerRolesOnCard>
                     </PlayerInfoOnCard>
 
-                    {/* Right Block: Contains only the Elo */}
-                    <PlayerEloOnCard>{p.elo}</PlayerEloOnCard>
+                    <PlayerEloOnCard>{p.rankTier} {p.rankDivision}</PlayerEloOnCard>
                   </PlayerListItem>
                 ))}
               </PlayerList>

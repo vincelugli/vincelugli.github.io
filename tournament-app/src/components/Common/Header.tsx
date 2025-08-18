@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, User } from 'firebase/auth';
-import {  HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, NavLink, SubMenu, SubMenuItem } from '../../styles';
+import {  HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem } from '../../styles';
 import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';

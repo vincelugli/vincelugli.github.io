@@ -4,6 +4,7 @@ import { usePlayers } from '../../context/PlayerContext';
 import { Player } from '../../types';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { ControlsContainer, FilterGroup, SubsLabel, SubsPageContainer, SubsPlayerTable, SubsSelect, SubsTableBody, SubsTableHead, SubsTitle } from '../../styles';
+import { convertRankToElo } from '../../utils';
 
 const PlayerNameLink = styled.a`
   font-weight: 600;
@@ -27,7 +28,7 @@ const AllPlayersPage: React.FC = () => {
   const { players: allPlayers, loading: playersLoading } = usePlayers();
 
   // 2. Local state for filtering and sorting
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'elo', direction: 'descending' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'rankTier', direction: 'descending' });
   const [roleFilter, setRoleFilter] = useState<string>('All');
 
   const filteredPlayers = useMemo(() => {
@@ -43,9 +44,11 @@ const AllPlayersPage: React.FC = () => {
   const sortedAndFilteredPlayers = useMemo(() => {
     const sortableItems = [...filteredPlayers];
     sortableItems.sort((a, b) => {
-      // Custom sorting for 'elo' to treat it as a number
-      if (sortConfig.key === 'elo') {
-        return sortConfig.direction === 'ascending' ? a.elo - b.elo : b.elo - a.elo;
+      // Custom sorting for 'rankTier' to treat it as a number
+      if (sortConfig.key === 'rankTier') {
+        return sortConfig.direction === 'ascending' ?
+            convertRankToElo(a.rankTier, a.rankDivision) - convertRankToElo(b.rankTier, b.rankDivision) :
+            convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision);
       }
       
       const aValue = a[sortConfig.key]!;
@@ -63,8 +66,8 @@ const AllPlayersPage: React.FC = () => {
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    // Default to descending for Elo when first clicked
-    if (key === 'elo' && sortConfig.key !== 'elo') {
+    // Default to descending for rank when first clicked
+    if (key === 'rankTier' && sortConfig.key !== 'rankTier') {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
@@ -98,7 +101,7 @@ const AllPlayersPage: React.FC = () => {
         <SubsTableHead>
           <tr>
             <th onClick={() => requestSort('name')}>Name {getSortIcon('name')}</th>
-            <th onClick={() => requestSort('elo')}>Elo {getSortIcon('elo')}</th>
+            <th onClick={() => requestSort('rankTier')}>Rank {getSortIcon('rankTier')}</th>
             <th onClick={() => requestSort('role')}>Primary Role {getSortIcon('role')}</th>
             <th>Secondary Roles</th>
             {/* Disabled is captain for now. */}
@@ -113,7 +116,7 @@ const AllPlayersPage: React.FC = () => {
                   {player.name}
                 </PlayerNameLink>
               </td>
-              <td>{player.elo}</td>
+              <td>{player.rankTier} {player.rankDivision}</td>
               <td>{player.role}</td>
               <td>{player.secondaryRoles.join(', ')}</td>
               {/* Disabled is captain for now. */}

@@ -120,7 +120,7 @@ const PriorityListPage: React.FC = () => {
                             rel="noopener noreferrer" >
                               {player.name}
                           </PlayerName>
-                          <span>{player.elo}</span>
+                          <span>{player.rankTier} {player.rankDivision}</span>
                           <PlayerRole>{player.role}</PlayerRole>
                           {player.secondaryRoles.length > 0 && (
                             <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>
@@ -150,7 +150,7 @@ const PriorityListPage: React.FC = () => {
                             rel="noopener noreferrer" >
                               {index + 1}.{player.name}
                           </PlayerName>
-                          <span>{player.elo}</span>
+                          <span>{player.rankTier} {player.rankDivision}</span>
                           <PlayerRole>{player.role}</PlayerRole>
                           {player.secondaryRoles.length > 0 && (
                             <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>
