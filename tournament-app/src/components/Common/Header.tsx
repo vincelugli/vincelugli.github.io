@@ -42,7 +42,13 @@ const Header: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
         {/* --- DESKTOP NAV --- */}
         <Nav>
-          <NavLink to="/schedule">Schedule</NavLink>
+          <NavItem>
+            Info <FaChevronDown size={12} />
+            <SubMenu>
+              <SubMenuItem to="/schedule">Schedule</SubMenuItem>
+              <SubMenuItem to="/players">Players</SubMenuItem>
+            </SubMenu>
+          </NavItem>
 
           <NavItem>
             Stages <FaChevronDown size={12} />
