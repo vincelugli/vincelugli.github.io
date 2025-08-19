@@ -10,7 +10,7 @@ import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, Team
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
-import { convertRankToElo } from '../../utils';
+import { convertRankToElo, createOpGgUrl } from '../../utils';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -225,8 +225,6 @@ const DraftPage: React.FC = () => {
   if (loadingAuth) {
     return <div>Verifying Access...</div>;
   }
-
-  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
 
   return (
     <DraftPageContainer>
