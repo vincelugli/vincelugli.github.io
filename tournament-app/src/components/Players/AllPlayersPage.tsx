@@ -4,7 +4,7 @@ import { usePlayers } from '../../context/PlayerContext';
 import { Player } from '../../types';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { ControlsContainer, FilterGroup, SubsLabel, SubsPageContainer, SubsPlayerTable, SubsSelect, SubsTableBody, SubsTableHead, SubsTitle } from '../../styles';
-import { convertRankToElo } from '../../utils';
+import { convertRankToElo, createOpGgUrl } from '../../utils';
 
 const PlayerNameLink = styled.a`
   font-weight: 600;
@@ -78,7 +78,6 @@ const AllPlayersPage: React.FC = () => {
     if (sortConfig.key !== key) return <FaSort color="#ccc" />;
     return sortConfig.direction === 'ascending' ? <FaSortUp color="#007bff" /> : <FaSortDown color="#007bff" />;
   };
-  const createOpGgUrl = (playerName: string) => `https://op.gg/summoner/${encodeURIComponent(playerName)}`;
 
   if (playersLoading) {
     return <SubsPageContainer><p>Loading player list...</p></SubsPageContainer>;

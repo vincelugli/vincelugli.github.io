@@ -8,6 +8,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { debounce } from 'lodash';
 import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
+import { createOpGgUrl } from '../../utils';
 
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -97,8 +98,6 @@ const PriorityListPage: React.FC = () => {
   };
 
   if (!authTeamId) return <div>Authenticating...</div>;
-
-  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
 
   return (
     <PageContainer>

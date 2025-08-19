@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player } from '../../types';
 import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../../styles';
-import { convertRankToElo } from '../../utils';
+import { convertRankToElo, createOpGgUrl } from '../../utils';
 
 interface PlayerPoolProps {
   players: Player[];
@@ -46,8 +46,6 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
     // Sort the final filtered list by Rank
     return filtered.sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
   }, [players, searchTerm]);
-
-  const createOpGgUrl = (playerName: string) => `https://op.gg/summoners/na/${encodeURIComponent(playerName)}`;
 
   return (
     <PoolContainer>
