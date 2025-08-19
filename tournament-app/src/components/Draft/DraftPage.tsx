@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Player, Team, DraftState } from '../../types';
 import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DraftTimer from './DraftTimer';
 import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
@@ -11,6 +11,7 @@ import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
 import { convertRankToElo, createOpGgUrl } from '../../utils';
+import { ceil } from 'lodash';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
 
@@ -24,9 +25,22 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
 
 const initializeDraft = (allPlayers: Player[], division: string): DraftState => {
   if (!allPlayers) return emptyDraftState();
-  const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+  let captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+  const numCaptains = captains.length;
+  if (numCaptains * 5 > allPlayers.length) {
+    // there are more captains than players, cut the bottom X captains
+    const diff = numCaptains * 5 - allPlayers.length;
+    const numCaptainsToRemove = ceil(diff / 5);
+
+    for (let i = 0; i < numCaptainsToRemove; i++){
+      captains.pop();
+    }
+  }
+  // Reverse the order so lowest ranked player picks first.
+  captains = captains.reverse();
+
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
-  const allPlayersSorted = [...allPlayers].sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+  const allPlayersSorted = [...allPlayers].sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision)).reverse();
 
   const teams: Team[] = captains.map((captain, index) => ({
     id: index + 1,
@@ -50,6 +64,28 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
     pickOrder.push(...roundOrder);
   }
 
+  let nextRoundNum = numTeams;
+  let isReverseOrder = true;
+  let hasRepeated = true;
+  while (pickOrder.length < allPlayers.length) {
+    // more players than captains, add extra rounds until players are empty.
+    pickOrder.push(nextRoundNum);
+
+    if (nextRoundNum === 0) {
+      isReverseOrder = false;
+      if (!hasRepeated) {
+        continue;
+      }
+    }
+    if (nextRoundNum === numTeams) {
+      isReverseOrder = true;
+      if (!hasRepeated) {
+        continue;
+      }
+    }
+    nextRoundNum = isReverseOrder ? nextRoundNum - 1 : nextRoundNum + 1;
+  }
+
   let playerSkipSlot: { [playerId: number]: number } = {};
   let nextTeamId = 1;
   
@@ -65,24 +101,24 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
     if (playerSkipSlot[captain.id] !== undefined) {
         const captainPercent = playerSkipSlot[captain.id];
         if (captainPercent <= 0.2) {
-            // skip the first round pick
-            pickOrder[calculatePickIndex(1, numTeams, captain.teamId!) - 1] = captain.name;
+          // skip the fifth round pick
+          pickOrder[calculatePickIndex(5, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.4) {
-            // skip the second round pick
-            pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) - 1] = captain.name;
+          // skip the fourth round pick
+          pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.6) {
-            // skip the third round pick
-            pickOrder[calculatePickIndex(3, numTeams, captain.teamId!) - 1] = captain.name;
+          // skip the third round pick
+          pickOrder[calculatePickIndex(3, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 0.8) {
-            // skip the fourth round pick
-            pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) - 1] = captain.name;
+          // skip the second round pick
+          pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) - 1] = captain.name;
         }
         else if (captainPercent <= 1) {
-            // skip the fifth round pick
-            pickOrder[calculatePickIndex(5, numTeams, captain.teamId!) - 1] = captain.name;
+          // skip the first round pick
+          pickOrder[calculatePickIndex(1, numTeams, captain.teamId!) - 1] = captain.name;
         }
     }
   });
@@ -145,6 +181,18 @@ const DraftPage: React.FC = () => {
       setPrevDivision(division);
     }
 
+    async function maybeInitData() {
+      // Draft hasn't been initialized yet, update with initialize draft state
+      const currentData = await getDoc(draftDocRef);
+      if (currentData.exists() && Object.keys(currentData.data()).length <= 1 && allPlayers.length > 0) {
+        const initialDraftState = initializeDraft(allPlayers, division);
+        // --- Atomically write the entire update back to Firestore ---
+        await updateDoc(draftDocRef, {...draftState, ...initialDraftState});
+      }
+    }
+
+    maybeInitData();
+
     // onSnapshot listens for any changes to the document
     const unsubscribe = onSnapshot(draftDocRef, async (docSnap) => {
       setIsLoading(false);
@@ -154,13 +202,6 @@ const DraftPage: React.FC = () => {
             && data.draftId === draftState.draftId 
             && Object.keys(data).length === Object.keys(draftState).length) {
           return;
-        }
-
-        // Draft hasn't been initialized yet, update with initialize draft state
-        if (Object.keys(data).length <= 1) {
-          const initialDraftState = initializeDraft(allPlayers, division);
-          // --- Atomically write the entire update back to Firestore ---
-          await updateDoc(draftDocRef, {...draftState, ...initialDraftState});
         }
         setDraftState(data);
       }

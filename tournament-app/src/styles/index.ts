@@ -479,22 +479,34 @@ export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; i
 `;
 
 export const PickNumber = styled.div`
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: ${({ theme }) => theme.textAlt};
 `;
 
-export const PickedTeamName = styled.div`
-  font-size: 1rem;
+export const PickedTeamName = styled.p`
+  font-size: .8rem;
   font-weight: 600;
   color: ${({ theme }) => theme.text};
   margin: 4px 0;
+
+  white-space: nowrap;
+  white-space: pre-line;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 `;
 
 export const PickedPlayerName = styled.div`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.success};
   font-weight: 500;
+
+  white-space: nowrap;
+  white-space: pre-line;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 `;
 
 export const SkippedText = styled.div`
@@ -569,6 +581,11 @@ export const PlayerName = styled.a`
   font-size: 1.1rem;
   color: ${({ theme }) => theme.primary};
   text-decoration: none;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 
   &:hover {
     text-decoration: underline;
