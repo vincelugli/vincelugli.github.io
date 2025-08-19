@@ -20,7 +20,7 @@ export function convertRankToElo(rankTier: string, rankDivision: number): number
     const rankTierToNumber: {[key: string]: number} = {
         "Challenger": 100,
         "Grandmasters": 90,
-        "Master": 80,
+        "Masters": 80,
         "Diamond": 70,
         "Emerald": 60,
         "Platinum": 50,
@@ -31,5 +31,9 @@ export function convertRankToElo(rankTier: string, rankDivision: number): number
         "Unranked": 0
     };
 
-    return rankTierToNumber[rankTier] + rankDivision;
+    if (rankTier === "Masters" || rankTier === "Grandmasters" || rankTier === "Challenger") {
+        return 100 + rankDivision;
+    }
+
+    return rankTierToNumber[rankTier] + (10 - rankDivision);
 }

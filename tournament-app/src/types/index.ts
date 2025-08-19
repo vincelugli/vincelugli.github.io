@@ -77,8 +77,9 @@ export interface SignUpData {
 
 export interface SubPlayer {
   name: string;
-  rank: string;
+  rankTier: string;
+  rankDivision: number;
   contact: string;
-  primaryRole: string;
+  role: string;
   secondaryRoles: string[];
 }

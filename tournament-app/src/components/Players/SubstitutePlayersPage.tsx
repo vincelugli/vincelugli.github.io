@@ -4,6 +4,8 @@ import { db } from '../../firebase';
 import { SubPlayer } from '../../types';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa'; 
 import { ControlsContainer, FilterGroup, SubsTableHead, ContactInfo, LoadingText, ErrorText, SubsPageContainer, SubsTitle, SubsPlayerTable, SubsLabel, SubsSelect, SubsTableBody, SubsCopyButton } from '../../styles/index';
+import { convertRankToElo } from '../../utils';
+import { useDivision } from '../../context/DivisionContext';
 
 type SortDirection = 'ascending' | 'descending';
 type SortKey = keyof SubPlayer;
@@ -15,37 +17,6 @@ interface SortConfig {
 
 const ALL_ROLES = ['All', 'top', 'mid', 'jungle', 'adc', 'support'];
 
-const RANK_TO_VALUE_MAP: {[key: string]: number} = {
-    'Diamond 1': 60,
-    'Diamond 2': 59,
-    'Diamond 3': 58,
-    'Diamond 4': 57,
-    'Emerald 1': 56,
-    'Emerald 2': 55,
-    'Emerald 3': 54,
-    'Emerald 4': 53,
-    'Platinum 1': 52,
-    'Platinum 2': 51,
-    'Platinum 3': 50,
-    'Platinum 4': 49,
-    'Gold 1': 48,
-    'Gold 2': 47,
-    'Gold 3': 46,
-    'Gold 4': 45,
-    'Silver 1': 44,
-    'Silver 2': 43,
-    'Silver 3': 42,
-    'Silver 4': 41,
-    'Bronze 1': 40,
-    'Bronze 2': 39,
-    'Bronze 3': 38,
-    'Bronze 4': 37,
-    'Iron 1': 36,
-    'Iron 2': 35,
-    'Iron 3': 34,
-    'Iron 4': 32,
-}
-
 const SubstitutesPage: React.FC = () => {
   const [substitutes, setSubstitutes] = useState<SubPlayer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +24,7 @@ const SubstitutesPage: React.FC = () => {
   const [copiedContact, setCopiedContact] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
   const [roleFilter, setRoleFilter] = useState<string>('All');
+  const { division } = useDivision();
 
   useEffect(() => {
     const fetchSubs = async () => {
@@ -60,7 +32,7 @@ const SubstitutesPage: React.FC = () => {
       setError(null);
       
       try {
-        const docRef = doc(db, 'players', 'grumble2025');
+        const docRef = doc(db, 'players', `grumble2025_${division}`);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -80,7 +52,7 @@ const SubstitutesPage: React.FC = () => {
     };
 
     fetchSubs();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [division]);
 
   const handleCopy = (contact: string) => {
     navigator.clipboard.writeText(contact);
@@ -93,7 +65,7 @@ const SubstitutesPage: React.FC = () => {
       return substitutes;
     }
     return substitutes.filter(sub => 
-      sub.primaryRole.toLowerCase() === roleFilter.toLowerCase() ||
+      sub.role.toLowerCase() === roleFilter.toLowerCase() ||
       sub.secondaryRoles.some(secRole => secRole.toLowerCase() === roleFilter.toLowerCase())
     );
   }, [substitutes, roleFilter]);
@@ -104,11 +76,11 @@ const SubstitutesPage: React.FC = () => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
 
-      if (sortConfig.key === 'primaryRole' && typeof(aValue) === 'string' && typeof(bValue) === 'string') {
-        if (RANK_TO_VALUE_MAP[aValue] < RANK_TO_VALUE_MAP[bValue]) {
+      if (sortConfig.key === 'rankTier' && typeof(aValue) === 'string' && typeof(bValue) === 'string') {
+        if (convertRankToElo(aValue, a['rankDivision']) < convertRankToElo(bValue, b['rankDivision'])) {
             return sortConfig.direction === 'ascending' ? -1 : 1;
         }
-        if (RANK_TO_VALUE_MAP[aValue] > RANK_TO_VALUE_MAP[bValue]) {
+        if (convertRankToElo(aValue, a['rankDivision']) > convertRankToElo(bValue, b['rankDivision'])) {
             return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
@@ -159,8 +131,8 @@ const SubstitutesPage: React.FC = () => {
         <SubsTableHead>
           <tr>
             <th onClick={() => requestSort('name')}>Name {getSortIcon('name')}</th>
-            <th onClick={() => requestSort('rank')}>Rank {getSortIcon('rank')}</th>
-            <th onClick={() => requestSort('primaryRole')}>Primary Role {getSortIcon('primaryRole')}</th>
+            <th onClick={() => requestSort('rankTier')}>Rank {getSortIcon('rankTier')}</th>
+            <th onClick={() => requestSort('role')}>Primary Role {getSortIcon('role')}</th>
             <th>Secondary Roles</th>
             <th onClick={() => requestSort('contact')}>Contact Info {getSortIcon('contact')}</th>
           </tr>
@@ -169,8 +141,8 @@ const SubstitutesPage: React.FC = () => {
           {sortedAndFilteredSubs.map((sub, index) => (
             <tr key={index}>
               <td>{sub.name}</td>
-              <td>{sub.rank}</td>
-              <td>{sub.primaryRole}</td>
+              <td>{sub.rankTier} {sub.rankDivision}</td>
+              <td>{sub.role}</td>
               <td>{sub.secondaryRoles?.join(', ')}</td>
               <td>
                 <ContactInfo>
