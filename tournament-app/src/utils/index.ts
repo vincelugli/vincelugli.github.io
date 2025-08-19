@@ -37,3 +37,7 @@ export function convertRankToElo(rankTier: string, rankDivision: number): number
 
     return rankTierToNumber[rankTier] + (10 - rankDivision);
 }
+
+export function createOpGgUrl(name: string): string {
+    return `https://op.gg/summoners/na/${encodeURIComponent(name.replace('#', '-'))}`
+}
