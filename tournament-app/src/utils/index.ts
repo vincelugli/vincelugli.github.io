@@ -15,3 +15,25 @@ export function compareTeams(t1: Team , t2: Team): number {
     // Match wins and losses are equal, game wins are equal, tiebreak on game losses
     return t1.gameLosses - t2.gameLosses;
 }
+
+export function convertRankToElo(rankTier: string, rankDivision: number): number {
+    const rankTierToNumber: {[key: string]: number} = {
+        "Challenger": 100,
+        "Grandmasters": 90,
+        "Masters": 80,
+        "Diamond": 70,
+        "Emerald": 60,
+        "Platinum": 50,
+        "Gold": 40,
+        "Silver": 30,
+        "Bronze": 20,
+        "Iron": 10,
+        "Unranked": 0
+    };
+
+    if (rankTier === "Masters" || rankTier === "Grandmasters" || rankTier === "Challenger") {
+        return 100 + rankDivision;
+    }
+
+    return rankTierToNumber[rankTier] + (10 - rankDivision);
+}

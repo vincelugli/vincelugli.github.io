@@ -1192,7 +1192,7 @@ export const ErrorText = styled(LoadingText)`
 `;
 
 export const SubsPageContainer = styled.div`
-  max-width: 900px;
+  max-width: 1080px;
   margin: 2rem auto;
   padding: 2.5rem;
   background-color: ${({ theme }) => theme.background};

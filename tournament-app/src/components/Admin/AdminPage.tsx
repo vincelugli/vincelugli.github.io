@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { BracketRound, Group, Player, Team } from '../../types';
+import { BracketRound, Group, Player, SubPlayer, Team } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, FormGroup, AdminLabel, AdminSelect } from '../../styles/index';
@@ -14,13 +14,14 @@ const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as 
 
 // --- Component Definition ---
 
-type DataType = 'players' | 'teams' | 'groups' | 'bracket';
+type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs';
 
 const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 101,
     "name": "NewPlayer1",
-    "elo": 2200,
+    "rankTier": "Diamond"
+    "rankDivision": 2,
     "primaryRole": "top",
     "secondaryRoles": ["mid"],
     "isCaptain": false
@@ -28,7 +29,8 @@ const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 102,
     "name": "NewPlayer2",
-    "elo": 2350,
+    "rankTier": "Diamond",
+    "rankDivision": 1,
     "primaryRole": "adc",
     "secondaryRoles": [],
     "isCaptain": false
@@ -69,6 +71,8 @@ const BRACKET_JSON_PLACEHOLDER = `[
   }
 ]`;
 
+const SUBS_JSON_PLACEHOLDER = `[{}]`
+
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
     const { division } = useDivision();
@@ -83,7 +87,8 @@ const AdminPage: React.FC = () => {
     const PlayerSchema = z.array(z.object({
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
-        elo: z.number(),
+        rankTier: z.string(),
+        rankDivision: z.number(),
         role: z.string(),
         secondaryRoles: z.array(z.string()),
         isCaptain: z.boolean()
@@ -119,6 +124,15 @@ const AdminPage: React.FC = () => {
         }))
     }));
 
+    const SubsSchema = z.array(z.object({
+        name: z.string(),
+        rankTier: z.string(),
+        rankDivision: z.number(),
+        contact: z.string(),
+        role: z.string(),
+        secondaryRoles: z.array(z.string())
+    }))
+
     useEffect(() => {
         if (!isAdmin) {
             navigate('/admin-access')
@@ -131,7 +145,7 @@ const AdminPage: React.FC = () => {
         setStatus('loading');
         setStatusMessage('');
 
-        let data: Player[] | Team[] | Group[] | BracketRound[];
+        let data: Player[] | Team[] | Group[] | BracketRound[] | SubPlayer[];
         try {
             data = JSON.parse(jsonString);
             if (!Array.isArray(data)) {
@@ -150,6 +164,9 @@ const AdminPage: React.FC = () => {
                 case 'bracket':
                     BracketSchema.parse(data);
                     break;
+                case 'subs':
+                    SubsSchema.parse(data);
+                    break;
                 default: 
                     return '';
             }
@@ -165,7 +182,7 @@ const AdminPage: React.FC = () => {
 
         try {
             // Get a new write batch
-            const docRef = doc(db, selectedType, `grumble2025_${division}`);
+            const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `grumble2025_${division}`);
 
             await updateDoc(docRef, {
                 [selectedType]: arrayUnion(...data)
@@ -180,7 +197,7 @@ const AdminPage: React.FC = () => {
             setStatusMessage(`Failed to write ${selectedType} to the database. Check the console.`);
         }
 
-    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema]);
+    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema]);
 
     const getPlaceholder = () => {
         switch (selectedType) {
@@ -192,6 +209,8 @@ const AdminPage: React.FC = () => {
                 return GROUPS_JSON_PLACEHOLDER;
             case 'bracket':
                 return BRACKET_JSON_PLACEHOLDER;
+            case 'subs':
+                return SUBS_JSON_PLACEHOLDER;
             default: 
                 return '';
         }
@@ -217,6 +236,7 @@ const AdminPage: React.FC = () => {
                     <option value="teams">Teams</option>
                     <option value="groups">Groups</option>
                     <option value="bracket">Bracket</option>
+                    <option value="subs">Subs</option>
                 </AdminSelect>
                 </FormGroup>
             </SelectionContainer>
