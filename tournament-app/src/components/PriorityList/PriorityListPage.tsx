@@ -6,7 +6,7 @@ import { db } from '../../firebase';
 import { Player } from '../../types';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { debounce } from 'lodash';
-import { PageContainer, Title, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../../styles';
+import { PageContainer, AdminTitle, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
 import { createOpGgUrl } from '../../utils';
 
@@ -101,7 +101,7 @@ const PriorityListPage: React.FC = () => {
 
   return (
     <PageContainer>
-      <Title>My Draft Board</Title>
+      <AdminTitle>My Draft Board</AdminTitle>
       <DragDropContext onDragEnd={onDragEnd}>
         <BoardContainer>
           <Droppable droppableId="available">
@@ -119,7 +119,9 @@ const PriorityListPage: React.FC = () => {
                             rel="noopener noreferrer" >
                               {player.name}
                           </PlayerName>
-                          <span>{player.rankTier} {player.rankDivision}</span>
+                          {player.peakRankTier !== "N/A" && <span>Peak: {player.peakRankTier} {player.peakRankDivision === -1 ? "" : player.peakRankDivision}</span>}
+                          {player.soloRankTier !== "N/A" && <span>Solo: {player.soloRankTier} {player.soloRankDivision}</span>}
+                          {player.flexRankTier !== "N/A" && <span>Flex: {player.flexRankTier} {player.flexRankDivision}</span>}
                           <PlayerRole>{player.role}</PlayerRole>
                           {player.secondaryRoles.length > 0 && (
                             <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>
@@ -149,7 +151,9 @@ const PriorityListPage: React.FC = () => {
                             rel="noopener noreferrer" >
                               {index + 1}.{player.name}
                           </PlayerName>
-                          <span>{player.rankTier} {player.rankDivision}</span>
+                          {player.peakRankTier !== "N/A" && <span>Peak: {player.peakRankTier} {player.peakRankDivision === -1 ? "" : player.peakRankDivision}</span>}
+                          {player.soloRankTier !== "N/A" && <span>Solo: {player.soloRankTier} {player.soloRankDivision}</span>}
+                          {player.flexRankTier !== "N/A" && <span>Flex: {player.flexRankTier} {player.flexRankDivision}</span>}
                           <PlayerRole>{player.role}</PlayerRole>
                           {player.secondaryRoles.length > 0 && (
                             <SecondaryRoles>{player.secondaryRoles.join(', ')}</SecondaryRoles>

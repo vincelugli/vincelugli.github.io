@@ -40,31 +40,7 @@ export const mockMatches: Match[] = [
   }
 ];
 
-// Let's create a pool of players. 4 captains, 16 regular players.
-export const mockPlayers: Player[] = [
-  // Captains
-  { id: 1, name: 'Viper', rankTier: 'Master', rankDivision: 42, isCaptain: true, role: 'top', secondaryRoles: ['jungle', 'mid'] },
-  { id: 2, name: 'Ghost', rankTier: 'Master', rankDivision: 21, isCaptain: true, role: 'jungle', secondaryRoles: [] },
-  { id: 3, name: 'Phoenix', rankTier: 'Diamond', rankDivision: 3, isCaptain: true, role: 'mid', secondaryRoles: ['adc', 'support'] },
-  { id: 4, name: 'Shadow', rankTier: 'Diamond', rankDivision: 4, isCaptain: true, role: 'adc', secondaryRoles: ['jungle'] },
-  // Regular Players
-  { id: 5, name: 'Raptor', rankTier: 'Emerald', rankDivision: 1, isCaptain: false, role: 'support', secondaryRoles: ['top', 'adc', 'mid'] },
-  { id: 6, name: 'Blaze', rankTier: 'Emerald', rankDivision: 2, isCaptain: false, role: 'top', secondaryRoles: ['jungle'] },
-  { id: 7, name: 'Kilo', rankTier: 'Emerald', rankDivision: 3, isCaptain: false, role: 'jungle', secondaryRoles: ['support'] },
-  { id: 8, name: 'Omega', rankTier: 'Emerald', rankDivision: 3, isCaptain: false, role: 'mid', secondaryRoles: ['adc'] },
-  { id: 9, name: 'Fury', rankTier: 'Emerald', rankDivision: 4, isCaptain: false, role: 'adc', secondaryRoles: [] },
-  { id: 10, name: 'Jinx', rankTier: 'Emerald', rankDivision: 4, isCaptain: false, role: 'support', secondaryRoles: ['mid', 'top'] },
-  { id: 11, name: 'Recon', rankTier: 'Platinum', rankDivision: 1, isCaptain: false, role: 'top', secondaryRoles: ['jungle', 'support'] },
-  { id: 12, name: 'Nova', rankTier: 'Platinum', rankDivision: 2, isCaptain: false, role: 'jungle', secondaryRoles: ['adc'] },
-  { id: 13, name: 'Warden', rankTier: 'Platinum', rankDivision: 4, isCaptain: false, role: 'mid', secondaryRoles: ['adc', 'top'] },
-  { id: 14, name: 'Bolt', rankTier: 'Platinum', rankDivision: 4, isCaptain: false, role: 'adc', secondaryRoles: ['support'] },
-  { id: 15, name: 'Spike', rankTier: 'Platinum', rankDivision: 3, isCaptain: false, role: 'support', secondaryRoles: [] },
-  { id: 16, name: 'Titan', rankTier: 'Gold', rankDivision: 1, isCaptain: false, role: 'top', secondaryRoles: ['mid', 'jungle'] },
-  { id: 17, name: 'Gauge', rankTier: 'Gold', rankDivision: 4, isCaptain: false, role: 'jungle', secondaryRoles: ['adc'] },
-  { id: 18, name: 'Rogue', rankTier: 'Silver', rankDivision: 2, isCaptain: false, role: 'mid', secondaryRoles: ['support', 'adc', 'jungle', 'top'] },
-  { id: 19, name: 'Hex', rankTier: 'Bronze', rankDivision: 2, isCaptain: false, role: 'adc', secondaryRoles: ['support'] },
-  { id: 20, name: 'Zero', rankTier: 'Iron', rankDivision: 1, isCaptain: false, role: 'support', secondaryRoles: ['adc'] },
-];
+// Mock players are in DB.
 
 export const draftedTeams: Team[] = [
   // This could be populated after a draft for other pages to use.

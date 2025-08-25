@@ -10,7 +10,7 @@ import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, Team
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
-import { convertRankToElo, createOpGgUrl } from '../../utils';
+import { compareRanks, createOpGgUrl, rankTierToShortName } from '../../utils';
 import { ceil } from 'lodash';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
@@ -25,7 +25,7 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
 
 const initializeDraft = (allPlayers: Player[], division: string): DraftState => {
   if (!allPlayers) return emptyDraftState();
-  let captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+  let captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => compareRanks(b, a));
   const numCaptains = captains.length;
   if (numCaptains * 5 > allPlayers.length) {
     // there are more captains than players, cut the bottom X captains
@@ -40,7 +40,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
   captains = captains.reverse();
 
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
-  const allPlayersSorted = [...allPlayers].sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision)).reverse();
+  const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
 
   const teams: Team[] = captains.map((captain, index) => ({
     id: index + 1,
@@ -301,7 +301,9 @@ const DraftPage: React.FC = () => {
                       </PlayerRolesOnCard>
                     </PlayerInfoOnCard>
 
-                    <PlayerEloOnCard>{p.rankTier} {p.rankDivision}</PlayerEloOnCard>
+                    <PlayerEloOnCard>Peak: {rankTierToShortName(p.peakRankTier)}{p.peakRankDivision === -1 ? "" : p.peakRankDivision}</PlayerEloOnCard>
+                    {p.soloRankTier !== "N/A" && <PlayerEloOnCard>Solo: {rankTierToShortName(p.soloRankTier)}{p.soloRankDivision === -1 ? "" : p.soloRankDivision}</PlayerEloOnCard>}
+                    {p.flexRankTier !== "N/A" && <PlayerEloOnCard>Flex: {rankTierToShortName(p.flexRankTier)}{p.flexRankDivision === -1 ? "" : p.flexRankDivision}</PlayerEloOnCard>}
                   </PlayerListItem>
                 ))}
               </PlayerList>

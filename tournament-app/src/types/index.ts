@@ -47,8 +47,13 @@ export interface BracketRound {
 export interface Player {
   id: number;
   name: string;
-  rankTier: string;
-  rankDivision: number;
+  peakRankTier: string;
+  peakRankDivision: number;
+  soloRankTier: string;
+  soloRankDivision: number;
+  flexRankTier: string;
+  flexRankDivision: number;
+  timezone: string;
   isCaptain: boolean;
   role: string;
   secondaryRoles: string[];
@@ -77,8 +82,13 @@ export interface SignUpData {
 
 export interface SubPlayer {
   name: string;
-  rankTier: string;
-  rankDivision: number;
+  peakRankTier: string;
+  peakRankDivision: number;
+  soloRankTier: string;
+  soloRankDivision: number;
+  flexRankTier: string;
+  flexRankDivision: number;
+  timezone: string;
   contact: string;
   role: string;
   secondaryRoles: string[];

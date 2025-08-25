@@ -1,4 +1,4 @@
-import { Team } from "../types";
+import { Player, Team } from "../types";
 
 export function compareTeams(t1: Team , t2: Team): number {
     let result = t2.wins - t1.wins;
@@ -35,9 +35,37 @@ export function convertRankToElo(rankTier: string, rankDivision: number): number
         return 100 + rankDivision;
     }
 
-    return rankTierToNumber[rankTier] + (10 - rankDivision);
+    return rankTierToNumber[rankTier] + (10 - rankDivision) || 0;
 }
 
 export function createOpGgUrl(name: string): string {
     return `https://op.gg/summoners/na/${encodeURIComponent(name.replace('#', '-'))}`
+}
+
+export function rankTierToShortName(rankTier: string): string {
+    const TIER_TO_SHORT: {[key: string]: string} = {
+        "Challenger": "C",
+        "Grandmasters": "G",
+        "Master": "M",
+        "Diamond": "D",
+        "Emerald": "E",
+        "Platinum": "P",
+        "Gold": "G",
+        "Silver": "S",
+        "Bronze": "B",
+        "Iron": "O",
+        "Unranked": "U"
+    }
+    return TIER_TO_SHORT[rankTier];
+}
+
+export function compareRanks(player1: Player, player2: Player): number {
+    return Math.max(
+            convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
+            convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
+            convertRankToElo(player1.flexRankTier, player1.flexRankDivision)) - 
+        Math.max(
+            convertRankToElo(player2.peakRankTier, player2.peakRankDivision),
+            convertRankToElo(player2.soloRankTier, player2.soloRankDivision),
+            convertRankToElo(player2.flexRankTier, player2.flexRankDivision));
 }

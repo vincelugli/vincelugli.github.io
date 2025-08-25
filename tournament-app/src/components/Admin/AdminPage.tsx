@@ -20,8 +20,8 @@ const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 101,
     "name": "NewPlayer1",
-    "rankTier": "Diamond"
-    "rankDivision": 2,
+    "soloRankTier": "Diamond"
+    "soloRankDivision": 2,
     "primaryRole": "top",
     "secondaryRoles": ["mid"],
     "isCaptain": false
@@ -29,8 +29,8 @@ const PLAYER_JSON_PLACEHOLDER = `[
   {
     "id": 102,
     "name": "NewPlayer2",
-    "rankTier": "Diamond",
-    "rankDivision": 1,
+    "soloRankTier": "Diamond",
+    "soloRankDivision": 1,
     "primaryRole": "adc",
     "secondaryRoles": [],
     "isCaptain": false
@@ -87,8 +87,12 @@ const AdminPage: React.FC = () => {
     const PlayerSchema = z.array(z.object({
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
-        rankTier: z.string(),
-        rankDivision: z.number(),
+        peakRankTier: z.string(),
+        peakRankDivision: z.number(),
+        soloRankTier: z.string(),
+        soloRankDivision: z.number(),
+        flexRankTier: z.string(),
+        flexRankDivision: z.number(),
         role: z.string(),
         secondaryRoles: z.array(z.string()),
         isCaptain: z.boolean()
@@ -126,8 +130,12 @@ const AdminPage: React.FC = () => {
 
     const SubsSchema = z.array(z.object({
         name: z.string(),
-        rankTier: z.string(),
-        rankDivision: z.number(),
+        peakRankTier: z.string(),
+        peakRankDivision: z.number(),
+        soloRankTier: z.string(),
+        soloRankDivision: z.number(),
+        flexRankTier: z.string(),
+        flexRankDivision: z.number(),
         contact: z.string(),
         role: z.string(),
         secondaryRoles: z.array(z.string())

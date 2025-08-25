@@ -75,15 +75,21 @@ const SubstitutesPage: React.FC = () => {
     sortableItems.sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-
-      if (sortConfig.key === 'rankTier' && typeof(aValue) === 'string' && typeof(bValue) === 'string') {
-        if (convertRankToElo(aValue, a['rankDivision']) < convertRankToElo(bValue, b['rankDivision'])) {
-            return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (convertRankToElo(aValue, a['rankDivision']) > convertRankToElo(bValue, b['rankDivision'])) {
-            return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
+      
+      if (sortConfig.key === 'soloRankTier') {
+        return sortConfig.direction === 'ascending' ?
+            convertRankToElo(a.soloRankTier, a.soloRankDivision) - convertRankToElo(b.soloRankTier, b.soloRankDivision) :
+            convertRankToElo(b.soloRankTier, b.soloRankDivision) - convertRankToElo(a.soloRankTier, a.soloRankDivision);
+      }
+      if (sortConfig.key === 'peakRankTier') {
+        return sortConfig.direction === 'ascending' ?
+            convertRankToElo(a.peakRankTier, a.peakRankDivision) - convertRankToElo(b.peakRankTier, b.peakRankDivision) :
+            convertRankToElo(b.peakRankTier, b.peakRankDivision) - convertRankToElo(a.peakRankTier, a.peakRankDivision);
+      }
+      if (sortConfig.key === 'flexRankTier') {
+        return sortConfig.direction === 'ascending' ?
+            convertRankToElo(a.flexRankTier, a.flexRankDivision) - convertRankToElo(b.flexRankTier, b.flexRankDivision) :
+            convertRankToElo(b.flexRankTier, b.flexRankDivision) - convertRankToElo(a.flexRankTier, a.flexRankDivision);
       }
 
       // Simple string comparison, can be expanded for numbers if needed
@@ -131,17 +137,22 @@ const SubstitutesPage: React.FC = () => {
         <SubsTableHead>
           <tr>
             <th onClick={() => requestSort('name')}>Name {getSortIcon('name')}</th>
-            <th onClick={() => requestSort('rankTier')}>Rank {getSortIcon('rankTier')}</th>
+            <th onClick={() => requestSort('peakRankTier')}>Peak Rank {getSortIcon('peakRankTier')}</th>
+            <th onClick={() => requestSort('soloRankTier')}>Solo Rank {getSortIcon('soloRankTier')}</th>
+            <th onClick={() => requestSort('flexRankTier')}>Flex Rank {getSortIcon('flexRankTier')}</th>
             <th onClick={() => requestSort('role')}>Primary Role {getSortIcon('role')}</th>
             <th>Secondary Roles</th>
             <th onClick={() => requestSort('contact')}>Contact Info {getSortIcon('contact')}</th>
+            <th onClick={() => requestSort('timezone')}>Timezone {getSortIcon('timezone')}</th>
           </tr>
         </SubsTableHead>
         <SubsTableBody>
           {sortedAndFilteredSubs.map((sub, index) => (
             <tr key={index}>
               <td>{sub.name}</td>
-              <td>{sub.rankTier} {sub.rankDivision}</td>
+              <td>{sub.peakRankTier} {sub.peakRankDivision === -1 ? "" : sub.peakRankDivision}</td>
+              <td>{sub.soloRankTier === "N/A" ? "" : sub.soloRankTier} {sub.soloRankDivision === -1 ? "" : sub.soloRankDivision}</td>
+              <td>{sub.flexRankTier === "N/A" ? "" : sub.flexRankTier} {sub.flexRankDivision === -1 ? "" : sub.flexRankDivision}</td>
               <td>{sub.role}</td>
               <td>{sub.secondaryRoles?.join(', ')}</td>
               <td>
@@ -152,6 +163,7 @@ const SubstitutesPage: React.FC = () => {
                   </SubsCopyButton>
                 </ContactInfo>
               </td>
+              <td>{sub.timezone}</td>
             </tr>
           ))}
         </SubsTableBody>
