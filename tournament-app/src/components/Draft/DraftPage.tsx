@@ -263,7 +263,7 @@ const DraftPage: React.FC = () => {
 
       <DraftContent>
         <TeamsSection>
-          {latestTeams.map(team => (
+          {draftState.teams.map(team => (
             <TeamCardContainer key={team.id} isPicking={team.id === currentTeamIdPicking}>
               <TeamHeader>{team.name}</TeamHeader>
               <PlayerList>

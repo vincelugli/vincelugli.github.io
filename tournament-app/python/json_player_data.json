@@ -737,12 +737,12 @@
     "timezone": "Pacific"
   },
   {
-    "id": 43,
-    "name": "cartonnnn",
+    "id": 52,
+    "name": "cartonnnn#crisp",
     "peakRankTier": "Silver",
     "peakRankDivision": -1,
-    "soloRankTier": "N/A",
-    "soloRankDivision": -1,
+    "soloRankTier": "Silver",
+    "soloRankDivision": 4,
     "flexRankTier": "N/A",
     "flexRankDivision": -1,
     "role": "mid",
@@ -1237,8 +1237,8 @@
     "timezone": "Eastern"
   },
   {
-    "id": 72,
-    "name": "ryuxik",
+    "id": 84,
+    "name": "ryuxik#NA1",
     "peakRankTier": "Silver",
     "peakRankDivision": 4,
     "soloRankTier": "N/A",
