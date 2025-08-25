@@ -127,7 +127,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/liveDraft",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_test",
   async (event) => {
     functions.logger.debug("Event received: ", event);
     const change = event.data;
@@ -226,7 +226,7 @@ export const executeAutoPick = onTaskDispatched({
 
   // Double-check: Has the pick already been made?
   // This prevents a race condition where a user picks just as the timer expires
-  const now = admin.firestore.Timestamp.now();
+  const now = Timestamp.now();
   if (!draftState.pickEndsAt || draftState.pickEndsAt < now) {
     functions.logger.log(
       "Pick was already made or timer was updated. Aborting auto-pick."
@@ -244,7 +244,7 @@ export const executeAutoPick = onTaskDispatched({
   // 1. Determine the roles already filled on the team
   const filledRoles = new Set(pickingTeam
     .players
-    .map((p: any) => p.primaryRole)
+    .map((p: any) => p.role)
   );
   const neededRoles = allRoles.filter((role) => !filledRoles.has(role));
   functions.logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
@@ -254,7 +254,8 @@ export const executeAutoPick = onTaskDispatched({
     .collection("draftBoards")
     .doc(teamIdPicking.toString())
     .get();
-  const priorityPlayerIds: number[] = draftBoardsDoc.data()?.playerIds || [];
+  const priorityPlayerIds: number[] =
+    draftBoardsDoc.data ? draftBoardsDoc.data()?.playerIds || [] : [];
 
   let playerToDraftId: number | undefined;
 
@@ -262,11 +263,11 @@ export const executeAutoPick = onTaskDispatched({
   if (neededRoles.length > 0) {
     for (const pId of priorityPlayerIds) {
       const player = availablePlayers.find((p: any) => p.id === pId);
-      if (player && neededRoles.includes(player.primaryRole)) {
+      if (player && neededRoles.includes(player.role)) {
         playerToDraftId = pId;
         functions.logger.log(
           `Primary search found: 
-          Player ${pId} (${player.primaryRole}) fills a needed role.`);
+          Player ${pId} (${player.role}) fills a needed role.`);
         break;
       }
     }
@@ -289,13 +290,66 @@ export const executeAutoPick = onTaskDispatched({
     }
   }
 
+
+  const convertRankToElo = (rankTier: string, rankDivision: number): number => {
+    const rankTierToNumber: {[key: string]: number} = {
+      "Challenger": 100,
+      "Grandmasters": 90,
+      "Masters": 80,
+      "Diamond": 70,
+      "Emerald": 60,
+      "Platinum": 50,
+      "Gold": 40,
+      "Silver": 30,
+      "Bronze": 20,
+      "Iron": 10,
+      "Unranked": 0,
+    };
+
+    if (rankTier === "Masters" ||
+        rankTier === "Grandmasters" ||
+        rankTier === "Challenger") {
+      return 100 + rankDivision;
+    }
+
+    return rankTierToNumber[rankTier] + (10 - rankDivision) || 0;
+  };
+
+  interface Player {
+    id: number;
+    name: string;
+    peakRankTier: string;
+    peakRankDivision: number;
+    soloRankTier: string;
+    soloRankDivision: number;
+    flexRankTier: string;
+    flexRankDivision: number;
+    timezone: string;
+    isCaptain: boolean;
+    role: string;
+    secondaryRoles: string[];
+    teamId?: number | null;
+  }
+
+  const compareRanks = (player1: Player, player2: Player): number => {
+    return Math.max(
+      convertRankToElo(player2.peakRankTier, player2.peakRankDivision),
+      convertRankToElo(player2.soloRankTier, player2.soloRankDivision),
+      convertRankToElo(player2.flexRankTier, player2.flexRankDivision)) -
+        Math.max(
+          convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
+          convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
+          convertRankToElo(player1.flexRankTier, player1.flexRankDivision));
+  };
+
+
   // Fallback 2: If priority list exhausted, find the highest Elo player overall
   if (!playerToDraftId) {
     functions.logger.log(
       "Fallback 1 failed. Falling back to best available Elo.");
     // Create a mutable copy to sort
     const sortedAvailable = [...availablePlayers];
-    sortedAvailable.sort((a: any, b: any) => b.elo - a.elo);
+    sortedAvailable.sort(compareRanks);
     playerToDraftId = sortedAvailable[0]?.id;
     functions.logger.log(
       `Fallback 2 found: Player ${playerToDraftId} has the highest Elo.`);
