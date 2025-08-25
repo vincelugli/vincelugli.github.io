@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { getAuth, User } from 'firebase/auth';
 
 
 import Tournament from './components/Tournament';
@@ -21,10 +20,10 @@ import AdminPage from './components/Admin/AdminPage';
 import AdminAuthGate from './components/Admin/AdminAuthGate';
 import RouteChangeTracker from './components/Common/RouteChangeTracker';
 import AllPlayersPage from './components/Players/AllPlayersPage';
+import { useAuth } from './components/Common/AuthContext';
 
 const AppContent: React.FC = () => {
-  const auth = getAuth();
-  const [user] = useState<User | null>(auth.currentUser);
+  const { currentUser: user } = useAuth();
 
   return (
     <Router>
@@ -32,37 +31,37 @@ const AppContent: React.FC = () => {
       <AppContainer>
           <Header />
           <MainContent>
-          <Routes>
-              <Route 
-              path="/" 
-              element={<Tournament />} 
-              />
-              <Route path="/schedule" element={<SchedulePage />} />
-              <Route 
-              path="/swiss" 
-              element={<SwissStage />}
-              />
-              <Route 
-              path="/knockout" 
-              element={<DoubleEliminationBracket />}
-              />
-              <Route 
-              path="/teams" 
-              element={<AllTeamsPage />} 
-              />
-              <Route 
-              path="/teams/:teamId" 
-              element={<TeamPage matches={mockMatches} />} 
-              />
-              <Route path="/draft-access" element={<DraftAuthGate />} />
-              <Route path="/draft/:draftId" element={<DraftPage />} />
-              <Route path="/draft" element={<DraftPage />} />
-              {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
-              <Route path="/subs" element={<SubstitutesPage />} />
-              <Route path="/admin-access" element={<AdminAuthGate />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/players" element={<AllPlayersPage />} />
-          </Routes>
+            <Routes>
+                <Route 
+                path="/" 
+                element={<Tournament />} 
+                />
+                <Route path="/schedule" element={<SchedulePage />} />
+                <Route 
+                path="/swiss" 
+                element={<SwissStage />}
+                />
+                <Route 
+                path="/knockout" 
+                element={<DoubleEliminationBracket />}
+                />
+                <Route 
+                path="/teams" 
+                element={<AllTeamsPage />} 
+                />
+                <Route 
+                path="/teams/:teamId" 
+                element={<TeamPage matches={mockMatches} />} 
+                />
+                <Route path="/draft-access" element={<DraftAuthGate />} />
+                <Route path="/draft/:draftId" element={<DraftPage />} />
+                <Route path="/draft" element={<DraftPage />} />
+                {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
+                <Route path="/subs" element={<SubstitutesPage />} />
+                <Route path="/admin-access" element={<AdminAuthGate />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/players" element={<AllPlayersPage />} />
+            </Routes>
           </MainContent>
           <Footer />
       </AppContainer>

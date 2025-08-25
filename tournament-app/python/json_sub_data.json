@@ -1,0 +1,435 @@
+[
+  {
+    "id": 8,
+    "name": "Zephid99",
+    "peakRankTier": "Emerald",
+    "peakRankDivision": 5,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": [
+      "jungle",
+      "mid"
+    ],
+    "isCaptain": false,
+    "contact": "lordzephid",
+    "timezone": "Mountain"
+  },
+  {
+    "id": 16,
+    "name": "GEN Ruler#NA2",
+    "peakRankTier": "Emerald",
+    "peakRankDivision": 3,
+    "soloRankTier": "Platinum",
+    "soloRankDivision": 1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "adc",
+    "secondaryRoles": [
+      "mid"
+    ],
+    "isCaptain": false,
+    "contact": "jinwoop1206",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 18,
+    "name": "shrestha",
+    "peakRankTier": "Bronze",
+    "peakRankDivision": 1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "top",
+    "secondaryRoles": [
+      "jungle"
+    ],
+    "isCaptain": false,
+    "contact": "settcooking",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 22,
+    "name": "tysouza#CAP1",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 1,
+    "soloRankTier": "Gold",
+    "soloRankDivision": 2,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "top"
+    ],
+    "isCaptain": false,
+    "contact": "tysouza.",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 25,
+    "name": "Off#\u771f\u7684\u96be\u53d7",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 4,
+    "soloRankTier": "Gold",
+    "soloRankDivision": 4,
+    "flexRankTier": "Gold",
+    "flexRankDivision": 2,
+    "role": "jungle",
+    "secondaryRoles": [
+      "mid"
+    ],
+    "isCaptain": false,
+    "contact": "fovgrubby",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 28,
+    "name": "BanBanDD",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 5,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "mid"
+    ],
+    "isCaptain": true,
+    "contact": "GuoooooJing#6196",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 33,
+    "name": "Weigraf",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 3,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "top",
+      "mid",
+      "adc"
+    ],
+    "isCaptain": false,
+    "contact": "Weigraf",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 38,
+    "name": "Heliuuuuuuuuuum#E777",
+    "peakRankTier": "Iron",
+    "peakRankDivision": 2,
+    "soloRankTier": "Iron",
+    "soloRankDivision": 1,
+    "flexRankTier": "Iron",
+    "flexRankDivision": 3,
+    "role": "mid",
+    "secondaryRoles": [
+      "top"
+    ],
+    "isCaptain": false,
+    "contact": "helium_",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 39,
+    "name": "shyamalam#FEET",
+    "peakRankTier": "Silver",
+    "peakRankDivision": 1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "shyamalam",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 45,
+    "name": "Tesla11#NA1",
+    "peakRankTier": "Emerald",
+    "peakRankDivision": -1,
+    "soloRankTier": "Emerald",
+    "soloRankDivision": 4,
+    "flexRankTier": "Platinum",
+    "flexRankDivision": 2,
+    "role": "top",
+    "secondaryRoles": [],
+    "isCaptain": false,
+    "contact": "tesla11",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 59,
+    "name": "riD1Kulus",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 5,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "mid",
+    "secondaryRoles": [
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "DarkKarma 839",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 72,
+    "name": "ArcticMoon#Moon",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 4,
+    "soloRankTier": "Diamond",
+    "soloRankDivision": 4,
+    "flexRankTier": "Emerald",
+    "flexRankDivision": 3,
+    "role": "mid",
+    "secondaryRoles": [
+      "top",
+      "adc"
+    ],
+    "isCaptain": false,
+    "contact": "arcticmoon",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 82,
+    "name": "cardi#6996",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 4,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "top",
+      "jungle",
+      "mid",
+      "adc",
+      "support",
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "_cardi",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 86,
+    "name": "Slippy#7776",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 4,
+    "soloRankTier": "Emerald",
+    "soloRankDivision": 2,
+    "flexRankTier": "Platinum",
+    "flexRankDivision": 1,
+    "role": "top",
+    "secondaryRoles": [],
+    "isCaptain": false,
+    "contact": "_slippytoad",
+    "timezone": "Eastern"
+  },
+  {
+    "id": 87,
+    "name": "Bigbeasts#NA1",
+    "peakRankTier": "Masters",
+    "peakRankDivision": 100,
+    "soloRankTier": "Diamond",
+    "soloRankDivision": 2,
+    "flexRankTier": "Emerald",
+    "flexRankDivision": 3,
+    "role": "mid",
+    "secondaryRoles": [
+      "top"
+    ],
+    "isCaptain": false,
+    "contact": "loobydoober",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 92,
+    "name": "PINKDPIMP#NBAYB",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "Emerald",
+    "flexRankDivision": 4,
+    "role": "adc",
+    "secondaryRoles": [
+      "mid",
+      "support"
+    ],
+    "isCaptain": false,
+    "contact": "biiimama (Biii MAMA#4739)",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 105,
+    "name": "Joe TFT#TACTX",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "Gold",
+    "flexRankDivision": 3,
+    "role": "top",
+    "secondaryRoles": [
+      "support"
+    ],
+    "isCaptain": false,
+    "contact": "MrSerato",
+    "timezone": "Central"
+  },
+  {
+    "id": 106,
+    "name": "sneakyLinkEater #TGDB",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 2,
+    "soloRankTier": "Diamond",
+    "soloRankDivision": 4,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "sneakylinkeater",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 107,
+    "name": "BackToTheFuture",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 2,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "top",
+      "support"
+    ],
+    "isCaptain": false,
+    "contact": "StriderIV",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 111,
+    "name": "Avenire#NA1",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 1,
+    "soloRankTier": "Platinum",
+    "soloRankDivision": 1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "mid",
+    "secondaryRoles": [
+      "top"
+    ],
+    "isCaptain": false,
+    "contact": "avenire",
+    "timezone": "Mountain"
+  },
+  {
+    "id": 122,
+    "name": "laserburps",
+    "peakRankTier": "N/A",
+    "peakRankDivision": -1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "fill",
+    "secondaryRoles": [
+      "support"
+    ],
+    "isCaptain": false,
+    "contact": "chunkysoup",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 124,
+    "name": "BingleLove#NA1",
+    "peakRankTier": "Diamond",
+    "peakRankDivision": 4,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "adc",
+    "secondaryRoles": [
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "BingleLove",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 125,
+    "name": "TbeShyUzi#LPL",
+    "peakRankTier": "Iron",
+    "peakRankDivision": -1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": [
+      "adc",
+      "support"
+    ],
+    "isCaptain": true,
+    "contact": "errorwithbug5994",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 130,
+    "name": "RamenIsLife #Noodl",
+    "peakRankTier": "Gold",
+    "peakRankDivision": -1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "top",
+    "secondaryRoles": [
+      "jungle"
+    ],
+    "isCaptain": false,
+    "contact": "juandju1",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 132,
+    "name": "FrostyTortoise",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 3,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": [
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "FrostyTortoise",
+    "timezone": "Pacific"
+  }
+]

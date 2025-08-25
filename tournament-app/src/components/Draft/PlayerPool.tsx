@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player } from '../../types';
 import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../../styles';
-import { convertRankToElo, createOpGgUrl } from '../../utils';
+import { compareRanks, convertRankToElo, createOpGgUrl, rankTierToShortName } from '../../utils';
 
 interface PlayerPoolProps {
   players: Player[];
@@ -15,7 +15,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
   const filteredPlayers = useMemo(() => {
     // An empty search term should show all players
     if (!searchTerm.trim()) {
-      return players.sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+      return players.sort((a, b) => compareRanks(b, a));
     }
 
     // Prepare a case-insensitive search term once for efficiency
@@ -44,7 +44,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
     });
 
     // Sort the final filtered list by Rank
-    return filtered.sort((a, b) => convertRankToElo(b.rankTier, b.rankDivision) - convertRankToElo(a.rankTier, a.rankDivision));
+    return filtered.sort((a, b) => compareRanks(b, a));
   }, [players, searchTerm]);
 
   return (
@@ -61,7 +61,9 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
           <thead>
             <tr>
               <th>Name</th>
-              <th>Rank</th>
+              <th>Peak</th>
+              <th>Solo</th>
+              <th>Flex</th>
               <th></th>
             </tr>
           </thead>
@@ -88,7 +90,9 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
                       </RolesContainer>
                   </PlayerInfo>
               </td>
-              <td>{player.rankTier} {player.rankDivision}</td>
+              <td>{rankTierToShortName(player.peakRankTier)}{player.peakRankDivision}</td>
+              <td>{rankTierToShortName(player.soloRankTier)}{player.soloRankDivision === -1 ? "" : player.soloRankDivision}</td>
+              <td>{rankTierToShortName(player.flexRankTier)}{player.flexRankDivision === -1 ? "" : player.flexRankDivision}</td>
               <td>
                   <DraftButton onClick={() => onDraft(player)} disabled={disabled}>
                       Draft
