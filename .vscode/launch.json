@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Jest Tests",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/tournament-app/functions/node_modules/.bin/jest",
+        "--runInBand",
+        "--detectOpenHandles"
+      ],
+      "cwd": "${workspaceRoot}/tournament-app/functions",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+    }
+  ]
+}

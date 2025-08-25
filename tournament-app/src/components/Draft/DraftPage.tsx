@@ -281,7 +281,7 @@ const DraftPage: React.FC = () => {
 
       <DraftContent>
         <TeamsSection>
-          {teams.map(team => (
+          {draftState.teams.map(team => (
             <TeamCardContainer key={team.id} isPicking={team.id === currentTeamIdPicking}>
               <TeamHeader>{team.name}</TeamHeader>
               <PlayerList>
@@ -312,7 +312,7 @@ const DraftPage: React.FC = () => {
         </TeamsSection>
         
         <PlayerPool
-          players={availablePlayers}
+          players={draftState.availablePlayers}
           onDraft={handleDraftPlayer}
           disabled={isSpectator || !canDraftNow || isDraftComplete} 
         />
