@@ -12,6 +12,8 @@ interface PlayerPoolProps {
 const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
+  players = players ?? [];
+
   const filteredPlayers = useMemo(() => {
     // An empty search term should show all players
     if (!searchTerm.trim()) {
