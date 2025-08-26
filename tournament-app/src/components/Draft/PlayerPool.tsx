@@ -92,7 +92,7 @@ const PlayerPool: React.FC<PlayerPoolProps> = ({ players, onDraft, disabled }) =
                       </RolesContainer>
                   </PlayerInfo>
               </td>
-              <td>{rankTierToShortName(player.peakRankTier)}{player.peakRankDivision}</td>
+              <td>{rankTierToShortName(player.peakRankTier)}{player.peakRankDivision === -1 ? "" : player.peakRankDivision}</td>
               <td>{rankTierToShortName(player.soloRankTier)}{player.soloRankDivision === -1 ? "" : player.soloRankDivision}</td>
               <td>{rankTierToShortName(player.flexRankTier)}{player.flexRankDivision === -1 ? "" : player.flexRankDivision}</td>
               <td>

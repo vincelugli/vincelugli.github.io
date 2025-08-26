@@ -87,23 +87,6 @@
   },
   {
     "id": 206,
-    "name": "BanBanDD#NA1",
-    "peakRankTier": "Platinum",
-    "peakRankDivision": 5,
-    "soloRankTier": "N/A",
-    "soloRankDivision": -1,
-    "flexRankTier": "N/A",
-    "flexRankDivision": -1,
-    "role": "jungle",
-    "secondaryRoles": [
-      "mid"
-    ],
-    "isCaptain": true,
-    "contact": "GuoooooJing#6196",
-    "timezone": "Pacific"
-  },
-  {
-    "id": 207,
     "name": "Weigraf",
     "peakRankTier": "Diamond",
     "peakRankDivision": 3,
@@ -122,7 +105,7 @@
     "timezone": "Eastern"
   },
   {
-    "id": 208,
+    "id": 207,
     "name": "Heliuuuuuuuuuum#E777",
     "peakRankTier": "Iron",
     "peakRankDivision": 2,
@@ -139,7 +122,7 @@
     "timezone": "Eastern"
   },
   {
-    "id": 209,
+    "id": 208,
     "name": "shyamalam#FEET",
     "peakRankTier": "Silver",
     "peakRankDivision": 1,
@@ -156,7 +139,7 @@
     "timezone": "Eastern"
   },
   {
-    "id": 210,
+    "id": 209,
     "name": "Tesla11#NA1",
     "peakRankTier": "Emerald",
     "peakRankDivision": -1,
@@ -171,7 +154,7 @@
     "timezone": "Eastern"
   },
   {
-    "id": 211,
+    "id": 210,
     "name": "riD1Kulus",
     "peakRankTier": "Platinum",
     "peakRankDivision": 5,
@@ -188,7 +171,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 212,
+    "id": 211,
     "name": "ArcticMoon#Moon",
     "peakRankTier": "Diamond",
     "peakRankDivision": 4,
@@ -206,7 +189,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 213,
+    "id": 212,
     "name": "cardi#6996",
     "peakRankTier": "Platinum",
     "peakRankDivision": 4,
@@ -228,7 +211,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 214,
+    "id": 213,
     "name": "Slippy#7776",
     "peakRankTier": "Diamond",
     "peakRankDivision": 4,
@@ -243,7 +226,7 @@
     "timezone": "Eastern"
   },
   {
-    "id": 215,
+    "id": 214,
     "name": "Bigbeasts#NA1",
     "peakRankTier": "Masters",
     "peakRankDivision": 100,
@@ -260,7 +243,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 216,
+    "id": 215,
     "name": "PINKDPIMP#NBAYB",
     "peakRankTier": "Diamond",
     "peakRankDivision": 1,
@@ -278,7 +261,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 217,
+    "id": 216,
     "name": "Joe TFT#TACTX",
     "peakRankTier": "Platinum",
     "peakRankDivision": 1,
@@ -295,7 +278,7 @@
     "timezone": "Central"
   },
   {
-    "id": 218,
+    "id": 217,
     "name": "sneakyLinkEater #TGDB",
     "peakRankTier": "Diamond",
     "peakRankDivision": 2,
@@ -312,7 +295,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 219,
+    "id": 218,
     "name": "BackToTheFuture",
     "peakRankTier": "Gold",
     "peakRankDivision": 2,
@@ -330,7 +313,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 220,
+    "id": 219,
     "name": "Avenire#NA1",
     "peakRankTier": "Diamond",
     "peakRankDivision": 1,
@@ -347,7 +330,7 @@
     "timezone": "Mountain"
   },
   {
-    "id": 221,
+    "id": 220,
     "name": "laserburps",
     "peakRankTier": "N/A",
     "peakRankDivision": -1,
@@ -364,7 +347,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 222,
+    "id": 221,
     "name": "BingleLove#NA1",
     "peakRankTier": "Diamond",
     "peakRankDivision": 4,
@@ -381,7 +364,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 223,
+    "id": 222,
     "name": "TbeShyUzi#LPL",
     "peakRankTier": "Iron",
     "peakRankDivision": -1,
@@ -399,7 +382,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 224,
+    "id": 223,
     "name": "RamenIsLife #Noodl",
     "peakRankTier": "Gold",
     "peakRankDivision": -1,
@@ -416,7 +399,7 @@
     "timezone": "Pacific"
   },
   {
-    "id": 225,
+    "id": 224,
     "name": "FrostyTortoise",
     "peakRankTier": "Gold",
     "peakRankDivision": 3,

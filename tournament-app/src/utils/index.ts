@@ -18,9 +18,10 @@ export function compareTeams(t1: Team , t2: Team): number {
 
 export function convertRankToElo(rankTier: string, rankDivision: number): number {
     const rankTierToNumber: {[key: string]: number} = {
-        "Challenger": 100,
-        "Grandmasters": 90,
-        "Masters": 80,
+        "Challenger": 10000,
+        "Grandmasters": 1000,
+        "Masters": 400,
+        "Master": 400,
         "Diamond": 70,
         "Emerald": 60,
         "Platinum": 50,
@@ -31,8 +32,8 @@ export function convertRankToElo(rankTier: string, rankDivision: number): number
         "Unranked": 0
     };
 
-    if (rankTier === "Masters" || rankTier === "Grandmasters" || rankTier === "Challenger") {
-        return 100 + rankDivision;
+    if (rankTier === "Masters" || rankTier === "Master" || rankTier === "Grandmasters" || rankTier === "Challenger") {
+        return rankTierToNumber[rankTier] + rankDivision;
     }
 
     return rankTierToNumber[rankTier] + (10 - rankDivision) || 0;
@@ -47,13 +48,14 @@ export function rankTierToShortName(rankTier: string): string {
         "Challenger": "C",
         "Grandmasters": "G",
         "Master": "M",
+        "Masters": "M",
         "Diamond": "D",
         "Emerald": "E",
         "Platinum": "P",
         "Gold": "G",
         "Silver": "S",
         "Bronze": "B",
-        "Iron": "O",
+        "Iron": "I",
         "Unranked": "U"
     }
     return TIER_TO_SHORT[rankTier];
