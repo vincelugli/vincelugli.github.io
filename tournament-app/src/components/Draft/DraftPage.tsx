@@ -187,7 +187,9 @@ const DraftPage: React.FC = () => {
       if (currentData.exists() && Object.keys(currentData.data()).length <= 1 && allPlayers.length > 0) {
         const initialDraftState = initializeDraft(allPlayers, division);
         // --- Atomically write the entire update back to Firestore ---
-        await updateDoc(draftDocRef, {...draftState, ...initialDraftState});
+        if (!isSpectator && isAdmin) {
+          await updateDoc(draftDocRef, {...draftState, ...initialDraftState});
+        }
       }
     }
 
@@ -209,7 +211,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [allPlayers, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
+  }, [allPlayers, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
