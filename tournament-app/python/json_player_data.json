@@ -737,12 +737,12 @@
     "timezone": "Pacific"
   },
   {
-    "id": 42,
-    "name": "cartonnnn#crisp",
+    "id": 43,
+    "name": "cartonnnn",
     "peakRankTier": "Silver",
     "peakRankDivision": -1,
-    "soloRankTier": "Silver",
-    "soloRankDivision": 4,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
     "flexRankTier": "N/A",
     "flexRankDivision": -1,
     "role": "mid",
@@ -1237,8 +1237,8 @@
     "timezone": "Eastern"
   },
   {
-    "id": 71,
-    "name": "ryuxik#NA1",
+    "id": 72,
+    "name": "ryuxik",
     "peakRankTier": "Silver",
     "peakRankDivision": 4,
     "soloRankTier": "N/A",
@@ -1893,25 +1893,10 @@
     "soloRankDivision": -1,
     "flexRankTier": "N/A",
     "flexRankDivision": -1,
-    "role": "mid",
+    "role": "min",
     "secondaryRoles": [],
     "isCaptain": false,
     "contact": "",
     "timezone": "EU"
-  },
-  {
-    "id": 110,
-    "name": "LegendBird#NA5",
-    "peakRankTier": "Emerald",
-    "peakRankDivision": 1,
-    "soloRankTier": "Silver",
-    "soloRankDivision": 4,
-    "flexRankTier": "N/A",
-    "flexRankDivision": -1,
-    "role": "jungle",
-    "secondaryRoles": ["top", "mid"],
-    "isCaptain": true,
-    "contact": "estefycp",
-    "timezone": "Pacific"
   }
 ]
