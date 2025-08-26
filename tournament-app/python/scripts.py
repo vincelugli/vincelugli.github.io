@@ -3,7 +3,7 @@ import json
 import time
 import requests
 
-RIOT_API_DEV_KEY = "RGAPI-ecdb05fd-dc03-401d-8401-bb733aba3f77"
+RIOT_API_DEV_KEY = "RGAPI-c250f553-2a2a-4880-9294-57ccee8c869a"
 
 # Define the structure of a Player object for clarity
 # This matches the TypeScript `Player` interface in your application.
@@ -99,12 +99,12 @@ def process_player(summoner_name: str):
             if league_data:
                 if not league_data: # Handle empty list response
                     print("  > No ranked data found for this player.")
-                else:
-                    print("  > Live Ranked Data:")
-                    for entry in league_data:
-                        print(f"    - Queue: {entry.get('queueType', 'N/A')}")
-                        print(f"      Rank: {entry.get('tier', 'N/A')} {entry.get('rank', 'N/A')}")
-                        print(f"      LP: {entry.get('leaguePoints', 'N/A')}")
+                # else:
+                    # print("  > Live Ranked Data:")
+                    # for entry in league_data:
+                    #     print(f"    - Queue: {entry.get('queueType', 'N/A')}")
+                    #     print(f"      Rank: {entry.get('tier', 'N/A')} {entry.get('rank', 'N/A')}")
+                    #     print(f"      LP: {entry.get('leaguePoints', 'N/A')}")
             return league_data
     return []
 
@@ -152,6 +152,9 @@ def create_players_from_csv(filename: str) -> list[dict]:
     """
     players = []
     subs = []
+
+    player_id = 0
+    sub_id = 200
     
     try:
         with open(filename, mode='r', encoding='utf-8') as csvfile:
@@ -193,9 +196,11 @@ def create_players_from_csv(filename: str) -> list[dict]:
                 contact = row.get('Discord Username')
 
                 timezone = row.get('Timezone')
-                
+
+                user_id = player_id + 1 if not is_sub else sub_id + 1
+
                 player = Player(
-                    id=index + 1,  # Assign a simple, unique ID
+                    id=user_id,
                     name=summoner_name,
                     peakRankTier=peakRankTier,
                     peakRankDivision=rankLp if peakRankDivision == 'LP' else peakRankDivision,
@@ -211,8 +216,10 @@ def create_players_from_csv(filename: str) -> list[dict]:
                 )
                 if (is_sub):
                     subs.append(player.to_dict())
+                    sub_id += 1
                 else:
                     players.append(player.to_dict())
+                    player_id += 1
                 
     except FileNotFoundError:
         print(f"Error: The file '{filename}' was not found.")

@@ -106,7 +106,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
         }
         else if (captainPercent <= 0.4) {
           // skip the fourth round pick
-          pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) - 1] = captain.name;
+          pickOrder[calculatePickIndex(4, numTeams, captain.teamId!) + 1] = captain.name;
         }
         else if (captainPercent <= 0.6) {
           // skip the third round pick
@@ -114,7 +114,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
         }
         else if (captainPercent <= 0.8) {
           // skip the second round pick
-          pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) - 1] = captain.name;
+          pickOrder[calculatePickIndex(2, numTeams, captain.teamId!) + 1] = captain.name;
         }
         else if (captainPercent <= 1) {
           // skip the first round pick
@@ -267,6 +267,8 @@ const DraftPage: React.FC = () => {
     return <div>Verifying Access...</div>;
   }
 
+  const latestTeams = !!draftState.teams ? draftState.teams : teams;
+
   return (
     <DraftPageContainer>
       <DraftHeader>
@@ -281,7 +283,7 @@ const DraftPage: React.FC = () => {
 
       <DraftContent>
         <TeamsSection>
-          {draftState.teams.map(team => (
+          {latestTeams.map(team => (
             <TeamCardContainer key={team.id} isPicking={team.id === currentTeamIdPicking}>
               <TeamHeader>{team.name}</TeamHeader>
               <PlayerList>
