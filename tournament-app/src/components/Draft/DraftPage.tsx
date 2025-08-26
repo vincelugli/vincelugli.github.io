@@ -161,7 +161,7 @@ const DraftPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const isDraftComplete = nextPickIndex >= pickOrder.length;
-  const currentTeamIdPicking = !isDraftComplete ? pickOrder[currentPickIndex] : null;
+  const currentTeamIdPicking = !isDraftComplete ? pickOrder[draftState.currentPickIndex] : null;
 
   //// BEGIN AUTH ////
   useEffect(() => {
@@ -278,7 +278,7 @@ const DraftPage: React.FC = () => {
         <DraftStatus>
           {isDraftComplete
             ? "Draft Complete!"
-            : `Round ${Math.floor(currentPickIndex / teams.length) + 1}, Pick ${currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
+            : `Round ${Math.floor(draftState.currentPickIndex / teams.length) + 1}, Pick ${draftState.currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
         </DraftStatus>
         <DraftTimer deadlineMs={draftState.pickEndsAt} />
       </DraftHeader>
