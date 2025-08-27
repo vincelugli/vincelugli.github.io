@@ -251,7 +251,7 @@ const DraftPage: React.FC = () => {
   }, [draftState, draftDocRef]); // Dependency is now just draftState
 
   const currentTeamPicking = useMemo(() => {
-    return teams.find(t => t.id === currentTeamIdPicking);
+    return draftState.teams.find(t => t.id === currentTeamIdPicking);
   }, [teams, currentTeamIdPicking]);
 
   if (isLoading || !draftState) {
