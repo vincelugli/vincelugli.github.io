@@ -46,9 +46,8 @@ const DraftTimer: React.FC<DraftTimerProps> = ({ deadlineMs }) => {
 
   return (
     <TimerWrapper>
-      <TimerLabel>Time Remaining</TimerLabel>
       <TimerText color={timerColor}>
-        {formattedHours}:{formattedMinutes}:{formattedSeconds}
+        DRAFT COMPLETE!
       </TimerText>
     </TimerWrapper>
   );
