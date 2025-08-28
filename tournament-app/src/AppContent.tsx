@@ -51,7 +51,7 @@ const AppContent: React.FC = () => {
                 />
                 <Route 
                 path="/teams/:teamId" 
-                element={<TeamPage matches={mockMatches} />} 
+                element={<TeamPage matches={[]} />} 
                 />
                 <Route path="/draft-access" element={<DraftAuthGate />} />
                 <Route path="/draft/:draftId" element={<DraftPage />} />

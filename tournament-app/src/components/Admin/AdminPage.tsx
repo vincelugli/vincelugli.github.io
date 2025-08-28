@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { BracketRound, Group, Player, SubPlayer, Team } from '../../types';
 import Button from '../Common/Button';
@@ -11,10 +11,27 @@ import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;
+const JsonOutput = styled.pre`
+  background-color: ${({ theme }) => theme.body};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 5px;
+  padding: 1rem;
+  font-size: 0.9rem;
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre-wrap; /* Allows text to wrap */
+  word-break: break-all; /* Breaks long strings */
+  max-height: 500px;
+  overflow-y: auto;
+  margin-top: 1rem;
+`;
+
+const ActionContainer = styled.div`
+  margin-top: 1rem;
+`;
 
 // --- Component Definition ---
 
-type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs';
+type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams';
 
 const PLAYER_JSON_PLACEHOLDER = `[
   {
@@ -84,6 +101,11 @@ const AdminPage: React.FC = () => {
     const [statusMessage, setStatusMessage] = useState('');
     const [loadingAuth, setLoadingAuth] = useState(true);
 
+    const [exportJson, setExportJson] = useState('');
+    const [exportStatus, setExportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [exportMessage, setExportMessage] = useState('');
+    const [copied, setCopied] = useState(false);
+
     const PlayerSchema = z.array(z.object({
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
@@ -147,6 +169,44 @@ const AdminPage: React.FC = () => {
         }
         setLoadingAuth(false);
     }, [isAdmin, navigate, setLoadingAuth]);
+
+    const handleFetchTeams = useCallback(async () => {
+        setExportStatus('loading');
+        setExportMessage('');
+        setExportJson('');
+        setCopied(false);
+
+        try {
+        const docRef = doc(db, 'drafts', 'grumble2025_master');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.teams && Array.isArray(data.teams)) {
+                // Format the JSON with an indentation of 2 spaces for readability
+                const formattedJson = JSON.stringify(data.teams, null, 2);
+                setExportJson(formattedJson);
+                setExportStatus('success');
+            } else {
+                throw new Error("'teams' field is missing or not an array in the document.");
+            }
+        } else {
+            throw new Error("Document 'drafts/grumble2025_master' not found.");
+        }
+        } catch (error) {
+            console.error("Error fetching teams data:", error);
+            setExportStatus('error');
+            setExportMessage(error instanceof Error ? error.message : "An unknown error occurred.");
+        }
+    }, []);
+
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(exportJson);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
@@ -228,11 +288,65 @@ const AdminPage: React.FC = () => {
         return <div>Verifying Access...</div>;
     }
 
-    return (
-        <AdminPageContainer>
-            <AdminTitle>Admin: Bulk {selectedType} Creation</AdminTitle>
+    const renderAdminForm = () => {
+        switch (selectedType) {
+            case 'teams':
+            case 'subs':
+            case 'bracket':
+            case 'groups':
+            case 'players':
+                return (
+                    <div>
+                    <p>Enter an array {selectedType} objects in JSON format. Each player object will be created as a new document in the "{selectedType}" collection.</p>
+                <Form onSubmit={handleSubmit}>
+                    <TextArea
+                        value={jsonString}
+                        onChange={(e) => setJsonString(e.target.value)}
+                        placeholder={getPlaceholder()}
+                        required
+                    />
+                    <Button type="submit" disabled={status === 'loading'}>
+                        {status === 'loading' ? 'Processing...' : 'Create Documents'}
+                    </Button>
 
-            <SelectionContainer>
+                    {statusMessage && (
+                        <StatusMessage status={status === 'success' ? 'success' : 'error'}>
+                            {statusMessage}
+                        </StatusMessage>
+                    )}
+                </Form>
+                    </div>
+                );
+            case 'exportTeams':
+                return (
+                <div>
+                    <h3>Export Team Rosters from Draft</h3>
+                    <p>Click the button below to fetch the `teams` field from the `drafts/grumble2025_test` document and display it as JSON.</p>
+                    <ActionContainer>
+                    <Button onClick={handleFetchTeams} disabled={exportStatus === 'loading'}>
+                        {exportStatus === 'loading' ? 'Fetching...' : 'Fetch and Print Teams'}
+                    </Button>
+                    {exportJson && (
+                        <Button onClick={handleCopy} style={{ marginLeft: '1rem', background: '#28a745' }}>
+                        {copied ? 'Copied!' : 'Copy JSON'}
+                        </Button>
+                    )}
+                    </ActionContainer>
+                    
+                    {exportStatus === 'error' && <StatusMessage status="error">{exportMessage}</StatusMessage>}
+                    {exportJson && <JsonOutput>{exportJson}</JsonOutput>}
+                </div>
+                );
+            default:
+                return <div><h3>Manage {selectedType}</h3><p>Management form will be here.</p></div>;
+        }
+    };
+
+
+    return (
+    <AdminPageContainer>
+      <AdminTitle>Admin Dashboard</AdminTitle>
+  <SelectionContainer>
                 <FormGroup>
                 <AdminLabel htmlFor="data-type-select">Select Data to Manage</AdminLabel>
                 <AdminSelect
@@ -245,29 +359,21 @@ const AdminPage: React.FC = () => {
                     <option value="groups">Groups</option>
                     <option value="bracket">Bracket</option>
                     <option value="subs">Subs</option>
+                    <option value="exportTeams">Export Teams</option>
                 </AdminSelect>
                 </FormGroup>
             </SelectionContainer>
-            
-            <p>Enter an array {selectedType} objects in JSON format. Each player object will be created as a new document in the "{selectedType}" collection.</p>
-            <Form onSubmit={handleSubmit}>
-                <TextArea
-                    value={jsonString}
-                    onChange={(e) => setJsonString(e.target.value)}
-                    placeholder={getPlaceholder()}
-                    required
-                />
-                <Button type="submit" disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Processing...' : 'Create Documents'}
-                </Button>
 
-                {statusMessage && (
+      {renderAdminForm()}
+      
+      {/* Conditionally show player status message if that was the last action */}
+      {statusMessage && (
                     <StatusMessage status={status === 'success' ? 'success' : 'error'}>
                         {statusMessage}
                     </StatusMessage>
-                )}
-            </Form>
-        </AdminPageContainer>
+      )}
+    </AdminPageContainer>
+
     );
 };
 
