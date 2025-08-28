@@ -64,28 +64,6 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
     pickOrder.push(...roundOrder);
   }
 
-  let nextRoundNum = numTeams;
-  let isReverseOrder = true;
-  let hasRepeated = true;
-  while (pickOrder.length < allPlayers.length) {
-    // more players than captains, add extra rounds until players are empty.
-    pickOrder.push(nextRoundNum);
-
-    if (nextRoundNum === 0) {
-      isReverseOrder = false;
-      if (!hasRepeated) {
-        continue;
-      }
-    }
-    if (nextRoundNum === numTeams) {
-      isReverseOrder = true;
-      if (!hasRepeated) {
-        continue;
-      }
-    }
-    nextRoundNum = isReverseOrder ? nextRoundNum - 1 : nextRoundNum + 1;
-  }
-
   let playerSkipSlot: { [playerId: number]: number } = {};
   let nextTeamId = 1;
   
@@ -150,7 +128,7 @@ const DraftPage: React.FC = () => {
   const { captainTeamId, currentUser, isAdmin } = useAuth();
 
   const initialDraftState = initializeDraft(allPlayers, division);
-  const { teams, pickOrder, availablePlayers, currentPickIndex } = initialDraftState;
+  const { teams, pickOrder, currentPickIndex } = initialDraftState;
 
   const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
   const [draftDocRef, setDraftDocRef] = useState(doc(db, 'drafts', `grumble2025_${division}`));
@@ -211,7 +189,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [allPlayers, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
+  }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -251,8 +229,8 @@ const DraftPage: React.FC = () => {
   }, [draftState, draftDocRef]); // Dependency is now just draftState
 
   const currentTeamPicking = useMemo(() => {
-    return draftState.teams.find(t => t.id === currentTeamIdPicking);
-  }, [teams, currentTeamIdPicking]);
+    return draftState.teams?.find(t => t.id === currentTeamIdPicking);
+  }, [draftState.teams, currentTeamIdPicking]);
 
   if (isLoading || !draftState) {
     return <div>Connecting to Live Draft...</div>;
@@ -325,7 +303,7 @@ const DraftPage: React.FC = () => {
       <PickOrderDisplay
         pickOrder={draftState.pickOrder ?? []}
         teams={draftState.teams}
-        players={allPlayers} 
+        players={allPlayers}
         currentPickIndex={draftState.currentPickIndex}
         completedPicks={draftState.completedPicks}
       />

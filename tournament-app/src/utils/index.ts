@@ -62,12 +62,28 @@ export function rankTierToShortName(rankTier: string): string {
 }
 
 export function compareRanks(player1: Player, player2: Player): number {
-    return Math.max(
+    const p1Max = Math.max(
             convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
             convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
-            convertRankToElo(player1.flexRankTier, player1.flexRankDivision)) - 
-        Math.max(
+            convertRankToElo(player1.flexRankTier, player1.flexRankDivision));
+    const p2Max = Math.max(
             convertRankToElo(player2.peakRankTier, player2.peakRankDivision),
             convertRankToElo(player2.soloRankTier, player2.soloRankDivision),
             convertRankToElo(player2.flexRankTier, player2.flexRankDivision));
+
+    if (p1Max === p2Max) {
+        let p1Sum = convertRankToElo(player1.peakRankTier, player1.peakRankDivision);
+        let p2Sum = convertRankToElo(player2.peakRankTier, player2.peakRankDivision);
+        if (player1.soloRankDivision !== -1 && player2.soloRankDivision !== -1) {
+            p1Sum += convertRankToElo(player1.soloRankTier, player1.soloRankDivision);
+            p2Sum += convertRankToElo(player2.soloRankTier, player2.soloRankDivision);
+        }
+        if (player1.flexRankDivision !== -1 && player2.flexRankDivision !== -1) {
+            p1Sum += convertRankToElo(player1.flexRankTier, player1.flexRankDivision);
+            p2Sum += convertRankToElo(player2.flexRankTier, player2.flexRankDivision);
+        }
+        return p1Sum - p2Sum;
+    }
+
+    return p1Max - p2Max;
 }
