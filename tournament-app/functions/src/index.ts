@@ -127,7 +127,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_test",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
   async (event) => {
     functions.logger.debug("Event received: ", event);
     const change = event.data;
@@ -177,7 +177,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_test",
         url,
         headers: {"Content-Type": "application/json"},
         body: Buffer
-          .from(JSON.stringify({data: {draftId: "liveDraft"}}))
+          .from(JSON.stringify({data: {draftId: "grumble2025_"}}))
           .toString("base64"),
         oidcToken: {
           serviceAccountEmail,
@@ -230,6 +230,14 @@ export const executeAutoPick = onTaskDispatched({
   if (!draftState.pickEndsAt || draftState.pickEndsAt < now) {
     functions.logger.log(
       "Pick was already made or timer was updated. Aborting auto-pick."
+    );
+    return;
+  }
+
+  const dateNow = new Date();
+  if (dateNow.getHours() < 8 && dateNow.getHours() >= 5) {
+    functions.logger.log(
+      "Auto-pick was scheduled outside of draft hours."
     );
     return;
   }
