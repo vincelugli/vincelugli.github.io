@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Player, Team, DraftState } from '../../types';
+import { Player, DraftTeam, DraftState } from '../../types';
 import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
 import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -42,7 +42,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
   const availablePlayers = allPlayers.filter(p => !p.isCaptain);
   const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
 
-  const teams: Team[] = captains.map((captain, index) => ({
+  const teams: DraftTeam[] = captains.map((captain, index) => ({
     id: index + 1,
     name: `Team ${captain.name}`,
     captainId: captain.id,

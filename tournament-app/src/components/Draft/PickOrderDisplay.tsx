@@ -1,10 +1,10 @@
 import React, { useRef, useEffect } from 'react';
-import { Team, Player } from '../../types';
+import { DraftTeam, Player } from '../../types';
 import { PickOrderContainer, PickList, PickItem, PickNumber, PickedTeamName, PickedPlayerName, SkippedText } from '../../styles';
 
 interface PickOrderDisplayProps {
   pickOrder: (number | string)[];
-  teams: Team[];
+  teams: DraftTeam[];
   players: Player[];
   currentPickIndex: number;
   completedPicks: { [pickIndex: number]: number };

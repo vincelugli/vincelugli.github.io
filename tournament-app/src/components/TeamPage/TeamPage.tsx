@@ -1,19 +1,82 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Match } from '../../types';
+import { Match, Player } from '../../types';
 import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, UpcomingMatchCard, OpponentInfo, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
+import styled from 'styled-components';
+import { FaStar } from 'react-icons/fa';
+import { createOpGgUrl } from '../../utils';
+import { usePlayers } from '../../context/PlayerContext';
+
+
+const PlayerList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0 0;
+  display: flex;
+  flex-wrap: wrap; /* Allow player cards to wrap on smaller screens */
+  gap: 1rem;
+`;
+
+const PlayerListItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: ${({ theme }) => theme.body};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  min-width: 200px;
+`;
+
+const PlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const PlayerNameLink = styled.a`
+  font-weight: 600;
+  color: ${({ theme }) => theme.primary};
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+`;
+
+const PlayerRole = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+  margin-top: 2px;
+`;
+
+const CaptainIndicator = styled(FaStar)`
+  color: #ffc107; /* A gold color for the star */
+  font-size: 1.2rem;
+`;
 
 interface TeamPageProps {
   matches: Match[];
 }
 
 const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
+  const { getPlayerById } = usePlayers();
   const { teams } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
   const [copiedCode, setCopiedCode] = useState('');
 
   const team = teams.find(t => t.id === Number(teamId));
+
+  const sortedPlayers: Player[] = useMemo(() => {
+    if (!team?.players) return [];
+
+    const roster: Player[] = team.players
+      .map((playerId: number) => getPlayerById(playerId))
+      .filter((player): player is Player => player !== undefined);
+
+    return roster.sort((a, b) => {
+      if (a.isCaptain) return -1;
+      if (b.isCaptain) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [team]);
 
   if (!team) return <div>Team not found</div>;
 
@@ -35,7 +98,19 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     <PageContainer>
       <TeamHeader>
         <TeamPageTeamName>{team.name}</TeamPageTeamName>
-        {/* You could add team record or players here */}
+        <PlayerList>
+          {sortedPlayers.map(player => (
+            <PlayerListItem key={player.id}>
+              {player.isCaptain && <CaptainIndicator title="Team Captain" />}
+              <PlayerInfo>
+                <PlayerNameLink href={createOpGgUrl(player.name)} target="_blank" rel="noopener noreferrer">
+                  {player.name}
+                </PlayerNameLink>
+                <PlayerRole>{player.role}</PlayerRole>
+              </PlayerInfo>
+            </PlayerListItem>
+          ))}
+        </PlayerList>
       </TeamHeader>
 
       <div>
