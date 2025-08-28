@@ -14,6 +14,20 @@ export interface Team {
   id: number;
   name: string;
   captainId: number;
+  players: number[];
+  wins: number;
+  losses: number;
+  gameWins: number;
+  gameLosses: number;
+  record?: string;
+  gameRecord?: string;
+  matchHistory?: Match[];
+}
+
+export interface DraftTeam {
+  id: number;
+  name: string;
+  captainId: number;
   players: Player[];
   wins: number;
   losses: number;
@@ -61,7 +75,7 @@ export interface Player {
 }
 
 export interface DraftState {
-  teams: Team[];
+  teams: DraftTeam[];
   pickOrder: (number | string)[];
   availablePlayers: Player[];
   completedPicks: { [pickIndex: number]: number }; // Maps pick index to drafted player ID
