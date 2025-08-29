@@ -1,0 +1,142 @@
+[
+  {
+    "id": "m1",
+    "team1Id": 1,
+    "team2Id": 2,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m2",
+    "team1Id": 1,
+    "team2Id": 3,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m3",
+    "team1Id": 1,
+    "team2Id": 4,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m4",
+    "team1Id": 1,
+    "team2Id": 5,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m5",
+    "team1Id": 2,
+    "team2Id": 3,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m6",
+    "team1Id": 2,
+    "team2Id": 4,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m7",
+    "team1Id": 2,
+    "team2Id": 5,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m8",
+    "team1Id": 3,
+    "team2Id": 4,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m9",
+    "team1Id": 3,
+    "team2Id": 5,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m10",
+    "team1Id": 4,
+    "team2Id": 5,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m11",
+    "team1Id": 6,
+    "team2Id": 7,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m12",
+    "team1Id": 6,
+    "team2Id": 8,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m13",
+    "team1Id": 6,
+    "team2Id": 9,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m14",
+    "team1Id": 6,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m15",
+    "team1Id": 7,
+    "team2Id": 8,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m16",
+    "team1Id": 7,
+    "team2Id": 9,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m17",
+    "team1Id": 7,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m18",
+    "team1Id": 8,
+    "team2Id": 9,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m19",
+    "team1Id": 8,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": ""
+  },
+  {
+    "id": "m20",
+    "team1Id": 9,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": ""
+  }
+]

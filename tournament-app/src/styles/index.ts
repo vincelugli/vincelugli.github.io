@@ -856,6 +856,8 @@ export const UpcomingMatchCard = styled.div`
   color: white;
   padding: 2rem;
   border-radius: 8px;
+  margin-top: 2rem;
+  margin-top: 2rem;
   box-shadow: 0 8px 16px ${({ theme }) => theme.matchCard};
 `;
 
