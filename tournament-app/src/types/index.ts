@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase/firestore';
 
 export interface Match {
-  id: string; // Use a string for unique IDs like from a DB
+  id: string|number; // Use a string for unique IDs like from a DB
   team1Id: number;
   team2Id: number;
   status: 'upcoming' | 'completed';
@@ -107,4 +107,9 @@ export interface SubPlayer {
   contact: string;
   role: string;
   secondaryRoles: string[];
+}
+
+export interface TournamentCode {
+  code: string;
+  id: number|string;
 }
