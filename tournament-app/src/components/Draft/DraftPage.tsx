@@ -125,7 +125,7 @@ const DraftPage: React.FC = () => {
   const navigate = useNavigate();
   const { division } = useDivision();
   const { players: allPlayers } = usePlayers();
-  const { captainTeamId, currentUser, isAdmin } = useAuth();
+  const { captainTeamId, currentUser, isAdmin, authDivision } = useAuth();
 
   const initialDraftState = initializeDraft(allPlayers, division);
   const { teams, pickOrder, currentPickIndex } = initialDraftState;
@@ -238,7 +238,7 @@ const DraftPage: React.FC = () => {
 
   const canDraftNow = (
     !isSpectator &&
-    captainTeamId !== null &&
+    (captainTeamId !== null && division === authDivision) &&
     Object.keys(draftState).length > 0 && 
     (draftState?.pickOrder ? 
       draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId) : false)) || isAdmin;

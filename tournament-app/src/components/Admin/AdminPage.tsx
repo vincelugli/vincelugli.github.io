@@ -31,7 +31,7 @@ const ActionContainer = styled.div`
 
 // --- Component Definition ---
 
-type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams';
+type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches';
 
 const PLAYER_JSON_PLACEHOLDER = `[
   {
@@ -88,7 +88,18 @@ const BRACKET_JSON_PLACEHOLDER = `[
   }
 ]`;
 
-const SUBS_JSON_PLACEHOLDER = `[{}]`
+const SUBS_JSON_PLACEHOLDER = `[{}]`;
+
+
+const MATCHES_JSON_PLACEHOLDER = `[{
+    id: 'm2',
+    team1Id: 1,
+    team2Id: 3,
+    status: 'upcoming',
+    tournamentCode: 'ABC789',
+    weekPlayed: 1
+  },
+]`;
 
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
@@ -161,6 +172,16 @@ const AdminPage: React.FC = () => {
         contact: z.string(),
         role: z.string(),
         secondaryRoles: z.array(z.string())
+    }));
+
+    const MatchesSchema = z.array(z.object({
+        id: z.number(),
+        team1Id: z.number(),
+        team2Id: z.number(),
+        status: z.string(),
+        tournamentCode: z.string(),
+        winner: z.optional(z.number()),
+        score: z.optional(z.string())
     }))
 
     useEffect(() => {
@@ -235,6 +256,9 @@ const AdminPage: React.FC = () => {
                 case 'subs':
                     SubsSchema.parse(data);
                     break;
+                case 'matches':
+                    MatchesSchema.parse(data);
+                    break;
                 default: 
                     return '';
             }
@@ -265,7 +289,7 @@ const AdminPage: React.FC = () => {
             setStatusMessage(`Failed to write ${selectedType} to the database. Check the console.`);
         }
 
-    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema]);
+    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema, MatchesSchema]);
 
     const getPlaceholder = () => {
         switch (selectedType) {
@@ -279,6 +303,8 @@ const AdminPage: React.FC = () => {
                 return BRACKET_JSON_PLACEHOLDER;
             case 'subs':
                 return SUBS_JSON_PLACEHOLDER;
+            case 'matches':
+                return MATCHES_JSON_PLACEHOLDER;
             default: 
                 return '';
         }
@@ -294,6 +320,7 @@ const AdminPage: React.FC = () => {
             case 'subs':
             case 'bracket':
             case 'groups':
+            case 'matches':
             case 'players':
                 return (
                     <div>
@@ -346,23 +373,24 @@ const AdminPage: React.FC = () => {
     return (
     <AdminPageContainer>
       <AdminTitle>Admin Dashboard</AdminTitle>
-  <SelectionContainer>
-                <FormGroup>
-                <AdminLabel htmlFor="data-type-select">Select Data to Manage</AdminLabel>
-                <AdminSelect
-                    id="data-type-select"
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value as DataType)}
-                >
-                    <option value="players">Players</option>
-                    <option value="teams">Teams</option>
-                    <option value="groups">Groups</option>
-                    <option value="bracket">Bracket</option>
-                    <option value="subs">Subs</option>
-                    <option value="exportTeams">Export Teams</option>
-                </AdminSelect>
-                </FormGroup>
-            </SelectionContainer>
+        <SelectionContainer>
+            <FormGroup>
+            <AdminLabel htmlFor="data-type-select">Select Data to Manage</AdminLabel>
+            <AdminSelect
+                id="data-type-select"
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value as DataType)}
+            >
+                <option value="players">Players</option>
+                <option value="teams">Teams</option>
+                <option value="groups">Groups</option>
+                <option value="bracket">Bracket</option>
+                <option value="subs">Subs</option>
+                <option value="matches">Matches</option>
+                <option value="exportTeams">Export Teams</option>
+            </AdminSelect>
+            </FormGroup>
+        </SelectionContainer>
 
       {renderAdminForm()}
       

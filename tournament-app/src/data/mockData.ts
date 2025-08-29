@@ -15,6 +15,7 @@ export const mockMatches: Match[] = [
   // A completed match
   {
     id: 'm1',
+    weekPlayed: 1,
     team1Id: 1,
     team2Id: 2,
     status: 'completed',
@@ -25,6 +26,7 @@ export const mockMatches: Match[] = [
   // An upcoming match
   {
     id: 'm2',
+    weekPlayed: 1,
     team1Id: 1,
     team2Id: 3,
     status: 'upcoming',
@@ -33,6 +35,7 @@ export const mockMatches: Match[] = [
   // Another upcoming match for a different team
   {
     id: 'm3',
+    weekPlayed: 1,
     team1Id: 2,
     team2Id: 4,
     status: 'upcoming',

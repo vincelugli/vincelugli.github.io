@@ -44,10 +44,15 @@ const DraftTimer: React.FC<DraftTimerProps> = ({ deadlineMs }) => {
   const formattedMinutes = String(minutes).padStart(2, '0');
   const formattedSeconds = String(seconds).padStart(2, '0');
 
+  // Pause outside of 8 - 5.
+  const now = new Date();
+  const isDraftPaused = now.getHours() < 8 || now.getHours() > 5;
+
   return (
     <TimerWrapper>
+      {!isDraftPaused && <TimerLabel>Time Remaining</TimerLabel>}
       <TimerText color={timerColor}>
-        DRAFT COMPLETE!
+        {isDraftPaused ? "DRAFT PAUSED" : formattedHours + ":" + formattedMinutes + ":" + formattedSeconds}
       </TimerText>
     </TimerWrapper>
   );

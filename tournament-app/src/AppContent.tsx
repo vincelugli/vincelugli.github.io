@@ -10,7 +10,6 @@ import TeamPage from './components/TeamPage/TeamPage';
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
 import DraftAuthGate from './components/Draft/DraftAuthGate';
-import { mockMatches } from './data/mockData';
 import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
 import { AppContainer, MainContent } from './styles';
@@ -21,9 +20,11 @@ import AdminAuthGate from './components/Admin/AdminAuthGate';
 import RouteChangeTracker from './components/Common/RouteChangeTracker';
 import AllPlayersPage from './components/Players/AllPlayersPage';
 import { useAuth } from './components/Common/AuthContext';
+import { useGameMatches } from './context/MatchesContext';
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
+  const { matches } = useGameMatches();
 
   return (
     <Router>
@@ -51,7 +52,7 @@ const AppContent: React.FC = () => {
                 />
                 <Route 
                 path="/teams/:teamId" 
-                element={<TeamPage matches={[]} />} 
+                element={<TeamPage matches={matches} />} 
                 />
                 <Route path="/draft-access" element={<DraftAuthGate />} />
                 <Route path="/draft/:draftId" element={<DraftPage />} />

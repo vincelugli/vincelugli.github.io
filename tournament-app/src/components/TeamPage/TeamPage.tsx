@@ -76,13 +76,13 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       if (b.isCaptain) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [team]);
+  }, [getPlayerById, team]);
 
   if (!team) return <div>Team not found</div>;
 
   const upcomingMatches = matches.filter(m =>
     m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
-  );
+  ).sort((m1, m2) => m1.weekPlayed - m2.weekPlayed);
   
   const completedMatches = matches.filter(m =>
     m.status === 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
@@ -121,8 +121,9 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
             const opponent = teams.find(t => t.id === opponentId);
             return (
               <UpcomingMatchCard key={match.id}>
+                WEEK {match.weekPlayed}
                 <OpponentInfo>
-                  vs <span>{opponent ? opponent.name : 'TBD'}</span>
+                  vs <span>{opponent ? opponent.name : 'Bye'}</span>
                 </OpponentInfo>
                 <TournamentCodeContainer>
                   <label>TOURNAMENT CODE</label>
