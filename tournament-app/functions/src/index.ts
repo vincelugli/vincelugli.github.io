@@ -118,7 +118,10 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     }
 
     // Get the teamId from the matched document's ID
-    const teamId = snapshot.docs[0].id;
+    const isLegacyTeamId = !Number.isNaN(Number(snapshot.docs[0].id));
+    const teamId = isLegacyTeamId ?
+      Number(snapshot.docs[0].id) :
+      snapshot.docs[0].data().teamId;
     const division = snapshot.docs[0].data().division ?? "";
     functions.logger.debug(`Team access for division ${division}`);
     const uid = `captain-${teamId}`; // Create a unique ID for this user
