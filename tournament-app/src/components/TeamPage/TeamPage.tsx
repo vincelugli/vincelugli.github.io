@@ -76,7 +76,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       if (b.isCaptain) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [team]);
+  }, [getPlayerById, team]);
 
   if (!team) return <div>Team not found</div>;
 

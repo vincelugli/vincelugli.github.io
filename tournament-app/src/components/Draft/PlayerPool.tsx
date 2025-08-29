@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player } from '../../types';
 import { PoolContainer, PoolHeader, SearchInput, PlayerTable, DraftButton, PlayerInfo, PlayerName, RolesContainer, PrimaryRole, SecondaryRoles } from '../../styles';
-import { compareRanks, convertRankToElo, createOpGgUrl, rankTierToShortName } from '../../utils';
+import { compareRanks, createOpGgUrl, rankTierToShortName } from '../../utils';
 
 interface PlayerPoolProps {
   players: Player[];

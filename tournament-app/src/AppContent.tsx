@@ -10,7 +10,6 @@ import TeamPage from './components/TeamPage/TeamPage';
 import Header from './components/Common/Header';
 import Footer from './components/Common/Footer';
 import DraftAuthGate from './components/Draft/DraftAuthGate';
-import { mockMatches } from './data/mockData';
 import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
 import { AppContainer, MainContent } from './styles';
