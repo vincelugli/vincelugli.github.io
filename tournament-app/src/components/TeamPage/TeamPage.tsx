@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
 import { createOpGgUrl } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
+import { useGameMatches } from '../../context/MatchesContext';
 
 
 const PlayerList = styled.ul`
@@ -58,11 +59,19 @@ interface TeamPageProps {
 
 const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { getPlayerById } = usePlayers();
+  const { tournamentCodes } = useGameMatches();
   const { teams } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
   const [copiedCode, setCopiedCode] = useState('');
 
   const team = teams.find(t => t.id === Number(teamId));
+
+  for (const m of matches) {
+    if (m.tournamentCode === "") {
+      const maybeCode = tournamentCodes.find(tc => tc.id === m.id)?.code;
+      m.tournamentCode = maybeCode ?? "";
+    }
+  }
 
   const sortedPlayers: Player[] = useMemo(() => {
     if (!team?.players) return [];
@@ -123,9 +132,9 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
               <UpcomingMatchCard key={match.id}>
                 WEEK {match.weekPlayed}
                 <OpponentInfo>
-                  vs <span>{opponent ? opponent.name : 'Bye'}</span>
+                  {!!opponent && "vs"} <span>{opponent ? opponent.name : 'Bye'}</span>
                 </OpponentInfo>
-                <TournamentCodeContainer>
+                {!!match.tournamentCode && <TournamentCodeContainer>
                   <label>TOURNAMENT CODE</label>
                   <CodeBox>
                     <Code>{match.tournamentCode}</Code>
@@ -133,7 +142,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
                       {copiedCode === match.tournamentCode ? 'Copied!' : 'Copy'}
                     </CopyButton>
                   </CodeBox>
-                </TournamentCodeContainer>
+                </TournamentCodeContainer>}
               </UpcomingMatchCard>
             );
           })
