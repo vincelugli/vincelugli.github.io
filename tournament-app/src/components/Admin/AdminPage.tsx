@@ -97,6 +97,7 @@ const MATCHES_JSON_PLACEHOLDER = `[{
     team2Id: 3,
     status: 'upcoming',
     tournamentCode: 'ABC789',
+    weekPlayed: 1
   },
 ]`;
 
@@ -174,7 +175,7 @@ const AdminPage: React.FC = () => {
     }));
 
     const MatchesSchema = z.array(z.object({
-        id: z.string(),
+        id: z.number(),
         team1Id: z.number(),
         team2Id: z.number(),
         status: z.string(),
