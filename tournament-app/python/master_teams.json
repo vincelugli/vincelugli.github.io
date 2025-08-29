@@ -1,0 +1,122 @@
+[
+  {
+    "gameLosses": 0,
+    "wins": 0,
+    "name": "Team Thiên#vn111",
+    "losses": 0,
+    "gameWins": 0,
+    "players": [49,57,59,40,4],
+    "id": 1,
+    "captainId": 49,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "losses": 0,
+    "name": "Team lucidorangee#na1",
+    "id": 2,
+    "gameWins": 0,
+    "captainId": 69,
+    "wins": 0,
+    "players": [ 69,26,81, 25,54],
+    "gameLosses": 0,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "players": [1,71,87, 63, 61],
+    "gameWins": 0,
+    "wins": 0,
+    "losses": 0,
+    "id": 3,
+    "captainId": 1,
+    "gameLosses": 0,
+    "name": "Team midbaked#NA1",
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "losses": 0,
+    "name": "Team LegendBird#NA5",
+    "gameWins": 0,
+    "players": [107,82,37,103,16],
+    "id": 4,
+    "gameLosses": 0,
+    "captainId": 107,
+    "wins": 0,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "players": [73,6,17, 3,110],
+    "id": 5,
+    "losses": 0,
+    "wins": 0,
+    "gameWins": 0,
+    "name": "Team SödiumHydrøxide#NA1",
+    "captainId": 73,
+    "gameLosses": 0,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "gameWins": 0,
+    "players": [73,85,90,58,105],
+    "name": "Team 80 kg man#176lb",
+    "losses": 0,
+    "id": 6,
+    "captainId": 74,
+    "gameLosses": 0,
+    "wins": 0,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "gameWins": 0,
+    "id": 7,
+    "losses": 0,
+    "name": "Team John#Noob",
+    "wins": 0,
+    "captainId": 108,
+    "gameLosses": 0,
+    "players": [108,41, 11,28,5],
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "captainId": 32,
+    "gameWins": 0,
+    "name": "Team TomyTomm#NA1",
+    "players": [32,21, 77,24,60],
+    "id": 8,
+    "gameLosses": 0,
+    "wins": 0,
+    "losses": 0,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "players": [27,22,20, 38,67],
+    "gameLosses": 0,
+    "id": 9,
+    "name": "Code As A Minion",
+    "losses": 0,
+    "wins": 0,
+    "gameWins": 0,
+    "captainId": 27,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  },
+  {
+    "gameWins": 0,
+    "name": "Team asdfjklg#777",
+    "players": [ 83,93, 53, 84,101],
+    "losses": 0,
+    "gameLosses": 0,
+    "wins": 0,
+    "id": 10,
+    "captainId": 83,
+    "gameRecord": "0-0",
+    "record": "0-0"
+  }
+]

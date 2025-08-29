@@ -649,6 +649,7 @@ export const Score = styled.span<{ win: boolean }>`
 export const PageContainer = styled.div`
   background-color: ${({ theme }) => theme.background};
   color: ${({ theme }) => theme.text};
+  padding: 2rem;
 `;
 
 export const BoardContainer = styled.div`
