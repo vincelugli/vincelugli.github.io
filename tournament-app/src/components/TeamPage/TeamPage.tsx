@@ -68,7 +68,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
 
   for (const m of matches) {
     if (m.tournamentCodes.length === 0) {
-      const maybeCodes = tournamentCodes.filter(tc => tc.id === m.id).map(tc => tc.code);
+      const maybeCodes = tournamentCodes.filter(tc => tc.matchId === m.id).map(tc => tc.code);
       m.tournamentCodes = maybeCodes;
     }
   }

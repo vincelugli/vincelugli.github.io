@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
-import { arrayUnion, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { BracketRound, Group, Player, SubPlayer, Team } from '../../types';
+import { BracketRound, Group, Player, SubPlayer, Team, TournamentCode } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, FormGroup, AdminLabel, AdminSelect } from '../../styles/index';
@@ -101,6 +101,12 @@ const MATCHES_JSON_PLACEHOLDER = `[{
   },
 ]`;
 
+const MATCH_CODES_JSON_PLACEHOLDER = `[{
+    code: "NA123",
+    matchId: 1,
+    division: "master"
+}]`
+
 const AdminPage: React.FC = () => {
     const navigate = useNavigate();
     const { division } = useDivision();
@@ -182,6 +188,11 @@ const AdminPage: React.FC = () => {
         tournamentCode: z.string(),
         winner: z.optional(z.number()),
         score: z.optional(z.string())
+    }));
+
+    const MatchCodesSchema = z.array(z.object({
+        matchId: z.number(),
+        code: z.string(),
     }))
 
     useEffect(() => {
@@ -234,7 +245,7 @@ const AdminPage: React.FC = () => {
         setStatus('loading');
         setStatusMessage('');
 
-        let data: Player[] | Team[] | Group[] | BracketRound[] | SubPlayer[];
+        let data: Player[] | Team[] | Group[] | BracketRound[] | SubPlayer[] | TournamentCode[];
         try {
             data = JSON.parse(jsonString);
             if (!Array.isArray(data)) {
@@ -259,6 +270,9 @@ const AdminPage: React.FC = () => {
                 case 'matches':
                     MatchesSchema.parse(data);
                     break;
+                case 'matchCodes': 
+                    MatchCodesSchema.parse(data);
+                    break;
                 default: 
                     return '';
             }
@@ -273,12 +287,24 @@ const AdminPage: React.FC = () => {
         }
 
         try {
-            // Get a new write batch
-            const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `grumble2025_${division}`);
+            if (selectedType === 'matchCodes') {
+                // write in batch
+                const batch = writeBatch(db)
 
-            await updateDoc(docRef, {
-                [selectedType]: arrayUnion(...data)
-            });
+                for (const code of data) {
+                    const tournamentCode = code as TournamentCode;
+                    const matchRef = doc(db, 'matches', tournamentCode.code);
+                    batch.set(matchRef, { matchId: tournamentCode.matchId, division });
+                }
+                
+                await batch.commit();
+            } else {
+                const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `grumble2025_${division}`);
+                await updateDoc(docRef, {
+                    [selectedType]: arrayUnion(...data)
+                });
+            }
+
 
             setStatus('success');
             setStatusMessage(`Successfully created or updated ${data.length} ${selectedType}.`);
@@ -289,7 +315,7 @@ const AdminPage: React.FC = () => {
             setStatusMessage(`Failed to write ${selectedType} to the database. Check the console.`);
         }
 
-    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema, MatchesSchema]);
+    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema, MatchesSchema, MatchCodesSchema]);
 
     const getPlaceholder = () => {
         switch (selectedType) {
@@ -305,6 +331,8 @@ const AdminPage: React.FC = () => {
                 return SUBS_JSON_PLACEHOLDER;
             case 'matches':
                 return MATCHES_JSON_PLACEHOLDER;
+            case 'matchCodes':
+                return MATCH_CODES_JSON_PLACEHOLDER;
             default: 
                 return '';
         }
@@ -321,6 +349,7 @@ const AdminPage: React.FC = () => {
             case 'bracket':
             case 'groups':
             case 'matches':
+            case 'matchCodes':
             case 'players':
                 return (
                     <div>
@@ -388,6 +417,7 @@ const AdminPage: React.FC = () => {
                 <option value="subs">Subs</option>
                 <option value="matches">Matches</option>
                 <option value="exportTeams">Export Teams</option>
+                <option value="matchCodes">Match Codes</option>
             </AdminSelect>
             </FormGroup>
         </SelectionContainer>
