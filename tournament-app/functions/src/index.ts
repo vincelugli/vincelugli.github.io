@@ -134,7 +134,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
   async (event) => {
     functions.logger.debug("Event received: ", event);
     const change = event.data;
@@ -184,7 +184,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
         url,
         headers: {"Content-Type": "application/json"},
         body: Buffer
-          .from(JSON.stringify({data: {draftId: "grumble2025_"}}))
+          .from(JSON.stringify({data: {draftId: "grumble2025_gold"}}))
           .toString("base64"),
         oidcToken: {
           serviceAccountEmail,

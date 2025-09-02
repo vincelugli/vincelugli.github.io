@@ -31,7 +31,7 @@ const ActionContainer = styled.div`
 
 // --- Component Definition ---
 
-type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches';
+type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes';
 
 const PLAYER_JSON_PLACEHOLDER = `[
   {
