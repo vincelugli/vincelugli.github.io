@@ -45,6 +45,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
 
   return (
     <UpcomingMatchCard>
+      WEEK {match.weekPlayed}
       <OpponentInfo>
         {!!opponent && "vs"} <span>{opponent ? opponent.name : 'Bye'}</span>
       </OpponentInfo>
