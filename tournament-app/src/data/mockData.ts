@@ -11,38 +11,6 @@ export const mockTeams: Team[] = [
   { id: 8, name: 'Team Eight', captainId: 4, players: [], record: '0-1', wins: 0, losses: 1, gameWins: 0, gameLosses: 2, gameRecord: "0-2" },
 ];
 
-export const mockMatches: Match[] = [
-  // A completed match
-  {
-    id: 'm1',
-    weekPlayed: 1,
-    team1Id: 1,
-    team2Id: 2,
-    status: 'completed',
-    tournamentCode: 'XYZ123',
-    winnerId: 1,
-    score: '2-1',
-  },
-  // An upcoming match
-  {
-    id: 'm2',
-    weekPlayed: 1,
-    team1Id: 1,
-    team2Id: 3,
-    status: 'upcoming',
-    tournamentCode: 'ABC789',
-  },
-  // Another upcoming match for a different team
-  {
-    id: 'm3',
-    weekPlayed: 1,
-    team1Id: 2,
-    team2Id: 4,
-    status: 'upcoming',
-    tournamentCode: 'DEF456',
-  }
-];
-
 // Mock players are in DB.
 
 export const draftedTeams: Team[] = [

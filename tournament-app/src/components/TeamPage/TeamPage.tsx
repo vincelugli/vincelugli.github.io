@@ -8,6 +8,7 @@ import { FaStar } from 'react-icons/fa';
 import { createOpGgUrl } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
+import UpcomingMatch from './UpcomingMatch';
 
 
 const PlayerList = styled.ul`
@@ -67,9 +68,9 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const team = teams.find(t => t.id === Number(teamId));
 
   for (const m of matches) {
-    if (m.tournamentCode === "") {
-      const maybeCode = tournamentCodes.find(tc => tc.id === m.id)?.code;
-      m.tournamentCode = maybeCode ?? "";
+    if (m.tournamentCodes.length === 0) {
+      const maybeCodes = tournamentCodes.filter(tc => tc.id === m.id).map(tc => tc.code);
+      m.tournamentCodes = maybeCodes;
     }
   }
 
@@ -125,27 +126,15 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       <div>
         <SectionTitle>Upcoming Match</SectionTitle>
         {upcomingMatches.length > 0 ? (
-          upcomingMatches.map(match => {
-            const opponentId = match.team1Id === team.id ? match.team2Id : match.team1Id;
-            const opponent = teams.find(t => t.id === opponentId);
-            return (
-              <UpcomingMatchCard key={match.id}>
-                WEEK {match.weekPlayed}
-                <OpponentInfo>
-                  {!!opponent && "vs"} <span>{opponent ? opponent.name : 'Bye'}</span>
-                </OpponentInfo>
-                {!!match.tournamentCode && <TournamentCodeContainer>
-                  <label>TOURNAMENT CODE</label>
-                  <CodeBox>
-                    <Code>{match.tournamentCode}</Code>
-                    <CopyButton onClick={() => handleCopyCode(match.tournamentCode)}>
-                      {copiedCode === match.tournamentCode ? 'Copied!' : 'Copy'}
-                    </CopyButton>
-                  </CodeBox>
-                </TournamentCodeContainer>}
-              </UpcomingMatchCard>
-            );
-          })
+          // 2. Render the new component for each upcoming match
+          upcomingMatches.map(match => (
+            <UpcomingMatch 
+              key={match.id} 
+              match={match} 
+              teams={teams} 
+              currentTeamId={team.id} 
+            />
+          ))
         ) : (
           <p>No upcoming matches scheduled.</p>
         )}

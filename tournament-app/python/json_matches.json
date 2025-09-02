@@ -5,6 +5,11 @@
     "team2Id": 3,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [
+"NA04f69-6dce5cee-ca37-4d86-a2a3-980e56fcba1c",
+"NA04f6d-473de031-deac-4ee6-aee4-27a57861675a",
+"NA04f6d-c69803c3-40d1-4cf9-a862-c2e691e4b860"
+    ],
     "weekPlayed": 1
   },
   {
@@ -13,6 +18,11 @@
     "team2Id": 5,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [
+"NA04f69-4b8bd703-c98b-4c11-a83a-81a96d6ea826",
+"NA04f6d-11091b62-bd2a-420d-85e4-1d83051c2414",
+"NA04f6d-7a2220e5-8069-49b0-8863-6c40027e7354"
+    ],
     "weekPlayed": 2
   },
   {
@@ -21,6 +31,11 @@
     "team2Id": 7,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [
+      "NA04f69-33a33d6f-56b7-4f14-8879-6dcbebb8e1cb",
+"NA04f6d-5931a670-5a99-422d-af1b-e5baabc13560",
+"NA04f6d-7841ffa3-fac4-4287-9a69-c07aea526c86"
+    ],
     "weekPlayed": 3
   },
   {
@@ -29,6 +44,7 @@
     "team2Id": 9,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-ea08f8fa-e65c-48f7-b395-c900d9109f26","NA04f6d-19c6a419-7d4a-4f1b-9654-5115d75e1bf1","NA04f6d-8e95ae2c-cc5a-443b-acb0-2407c6e45776"],
     "weekPlayed": 4
   },
   {
@@ -37,6 +53,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 5
   },
   {
@@ -45,6 +62,7 @@
     "team2Id": 5,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-4628d9f4-d808-41eb-a162-01294d538844","NA04f6d-215aee63-6cce-4de3-a081-d22c831a578a","NA04f6d-9c332383-ec7b-4329-9e12-a71d66212171"],
     "weekPlayed": 5
   },
   {
@@ -53,6 +71,7 @@
     "team2Id": 7,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-8dd91595-257c-46b8-9ce9-4c040b94acca","NA04f6d-8e62f649-fce1-47d5-a19a-d020f33ffc2e","NA04f6d-5660de80-d16e-4833-af96-47b167d54c14"],
     "weekPlayed": 4
   },
   {
@@ -61,6 +80,7 @@
     "team2Id": 9,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-6257b0f4-5251-46cf-bc13-ebeb73330a86","NA04f6d-1100c320-64e7-4908-abd9-be3e1f24d0e8","NA04f6d-df811c43-4285-4084-8e21-c43a96d86167"],
     "weekPlayed": 2
   },
   {
@@ -69,6 +89,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 3
   },
   {
@@ -77,6 +98,7 @@
     "team2Id": 7,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-fe3b9180-2bbc-4643-9467-116637657153","NA04f6d-9d355079-dd18-4ba7-a93a-a81d22a7f5ed","NA04f6d-90de6e60-93ce-43bb-b21f-676bee3e25b5"],
     "weekPlayed": 1
   },
   {
@@ -85,6 +107,7 @@
     "team2Id": 9,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-524d135e-bd64-4183-a805-16d67efc6bf6","NA04f6d-76607a43-ae9e-412c-9687-8fa763e6347e","NA04f6d-d559bd6f-55ad-4cbf-a220-0b84b9f41d56"],
     "weekPlayed": 3
   },
   {
@@ -93,6 +116,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 4
   },
   {
@@ -101,6 +125,7 @@
     "team2Id": 9,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-f51815d4-e265-4c6e-a4d2-fd6d225f97a4","NA04f6d-87187361-74f6-4943-bdf7-e714484dfea9","NA04f6d-a7ccd3f0-44f7-4f81-833b-ebd07b96d130"],
     "weekPlayed": 5
   },
   {
@@ -109,6 +134,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 2
   },
   {
@@ -117,6 +143,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 1
   },
 
@@ -132,6 +159,7 @@
     "team2Id": 4,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-2cf1cd6e-687a-468d-bbd4-b71883d3125f","NA04f6d-4fc33ec1-97d6-44d8-adfe-82856741a57d","NA04f6d-c5262713-8504-4d41-a5f8-0e0dde6a7f39"],
     "weekPlayed": 1
   },
   {
@@ -140,6 +168,7 @@
     "team2Id": 6,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-f8eda66a-b3bc-481b-bada-813f77eecc30","NA04f6d-20497ff9-8615-4128-8200-62b44faaf487","NA04f6d-9217eb9a-3236-4819-ab4b-eff00e1d4d20"],
     "weekPlayed": 2
   },
   {
@@ -148,6 +177,7 @@
     "team2Id": 8,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-04acd6bf-e5db-48df-a4c0-718f3bc8edfd","NA04f6d-9a70fd1b-bad3-4dc1-b1fd-0d7d83d4e2b4","NA04f6d-a96341fd-c0a9-4256-abcf-ccbecedacd50"],
     "weekPlayed": 3
   },
   {
@@ -156,6 +186,7 @@
     "team2Id": 10,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-023d27a0-e6ac-4e62-a4ec-ee19d40a3975","NA04f6d-220bc8b9-69be-4bf1-80a7-e1732e572023","NA04f6d-11eda16c-a880-451d-a0df-a73c6de99f5e"],
     "weekPlayed": 4
   },
   {
@@ -164,6 +195,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 5
   },
   {
@@ -172,6 +204,7 @@
     "team2Id": 6,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-5271a8c6-42e4-4a69-8ddf-9d61c0e2aaef","NA04f6d-a737b3a7-dbee-4614-aed5-ddfdfbc6a97d","NA04f6d-d15cbc12-abf6-4354-8bf4-4c52bd6bd9c6"],
     "weekPlayed": 5
   },
   {
@@ -180,6 +213,7 @@
     "team2Id": 8,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-5997a68b-3f9e-4e5d-822f-c77f0416d451","NA04f6d-fe55766f-5046-4d1d-adb0-8a248d9bbdcc","NA04f6d-c4bc874b-5ced-4c94-9758-cdc879bf9641"],
     "weekPlayed": 4
   },
   {
@@ -188,6 +222,7 @@
     "team2Id": 10,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-cfeb9e66-9e91-4542-a3d3-d36082f3c4fa","NA04f6d-30051e44-305e-42ff-94fa-e66424f056d0","NA04f6d-9d781143-1adc-4475-918f-f21b18ea8d58"],
     "weekPlayed": 2
   },
   {
@@ -196,6 +231,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 3
   },
   {
@@ -204,6 +240,7 @@
     "team2Id": 8,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-751d6766-5321-43c2-8667-9f951da9e7e5","NA04f6d-9ace59fb-ec8d-49c0-93d0-1a2a86e35c21","NA04f6d-34668efa-fcda-422a-94af-140f9cf2fdd6"],
     "weekPlayed": 1
   },
   {
@@ -212,6 +249,7 @@
     "team2Id": 10,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-4b49ba7d-3d59-4b95-b007-6541532c916f","NA04f6d-cf948e21-3eb1-4201-bc0e-c9ade098a4db","NA04f6d-4356b20b-0e71-4c1b-bc26-b23d0811e7bd"],
     "weekPlayed": 2
   },
   {
@@ -220,6 +258,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 4
   },
   {
@@ -228,6 +267,7 @@
     "team2Id": 10,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": ["NA04f69-a7ee30d6-3659-4613-b526-e4ab95759d3c","NA04f6d-1bb5f30e-0b18-432e-8ae1-c95371e93fd9","NA04f6d-9727c115-8046-4752-a4f2-effd516645a5"],
     "weekPlayed": 5
   },
   {
@@ -236,6 +276,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 2
   },
   {
@@ -244,6 +285,7 @@
     "team2Id": -1,
     "status": "upcoming",
     "tournamentCode": "",
+    "tournamentCodes": [],
     "weekPlayed": 1
   }
 ]
