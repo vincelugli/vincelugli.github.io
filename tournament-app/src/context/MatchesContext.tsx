@@ -55,7 +55,7 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     setTournamentCodes([]);
                 }
                 
-                setTournamentCodes(querySnapshot.docs.map((d) => ({code: d.id, id: d.data().matchId})));
+                setTournamentCodes(querySnapshot.docs.map((d) => ({code: d.id, matchId: d.data().matchId})));
             } catch (error) {
                 console.error(`Error querying for match for division ${division} data:`, error);
                 setTournamentCodes([]);

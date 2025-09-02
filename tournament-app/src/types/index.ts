@@ -111,5 +111,5 @@ export interface SubPlayer {
 
 export interface TournamentCode {
   code: string;
-  id: number|string;
+  matchId: number|string;
 }
