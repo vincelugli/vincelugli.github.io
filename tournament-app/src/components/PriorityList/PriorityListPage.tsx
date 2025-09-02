@@ -18,7 +18,7 @@ const PriorityListPage: React.FC = () => {
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([]);
   const [priorityPlayers, setPriorityPlayers] = useState<Player[]>([]);
 
-  const { players: allPlayers } = usePlayers();
+  const { draftablePlayers: allPlayers } = usePlayers();
 
   // Auth checking effect
   useEffect(() => {

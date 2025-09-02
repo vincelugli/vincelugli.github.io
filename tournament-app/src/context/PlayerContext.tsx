@@ -7,6 +7,7 @@ import { useDivision } from './DivisionContext';
 // Define the shape of the data the context will provide
 interface PlayerContextType {
   players: Player[];
+  draftablePlayers: Player[];
   loading: boolean;
   getPlayerById: (id: number) => Player | undefined;
 }
@@ -17,6 +18,7 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 // Create the Provider component
 export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [draftablePlayers, setDraftablePlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { division } = useDivision();
@@ -26,7 +28,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const fetchPlayers = async () => {
       setLoading(true);
       try {
-        const playersRef = doc(db, 'players', `grumble2025_${division}`)
+        const playersRef = doc(db, 'players', `grumble2025_${division}`);
         const snapshot = await getDoc(playersRef);
 
         if (snapshot.exists()) {
@@ -39,7 +41,25 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
     };
 
+    const fetchRemainingDraftablePlayers = async () => {
+      setLoading(true);
+
+      try {
+        const draftRef = doc(db, 'drafts', `grumble2025_${division}`);
+        const snapshot = await getDoc(draftRef);
+
+        if (snapshot.exists()) {
+          setDraftablePlayers(snapshot.data().availablePlayers);
+        }
+      } catch (error) {
+        console.error("Failed to fetch draft data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     fetchPlayers();
+    fetchRemainingDraftablePlayers();
   }, [division]);
 
   // Helper function to find a player by ID, memoized for performance
@@ -47,6 +67,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const value = {
     players,
+    draftablePlayers,
     loading,
     getPlayerById,
   };
