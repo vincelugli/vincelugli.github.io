@@ -95,6 +95,7 @@ export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
 export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
   async (rawRequest) => {
     const accessCode = rawRequest.data.accessCode;
+    functions.logger.debug(`Requesting access for ${accessCode}`);
 
     if (!accessCode || typeof accessCode !== "string") {
       throw new functions.https.HttpsError(
@@ -116,6 +117,8 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
         "Invalid access code."
       );
     }
+    functions.logger.debug(
+      `Access granted to ${snapshot.docs[0].data().captainName}`);
 
     // Get the teamId from the matched document's ID
     const isLegacyTeamId = !Number.isNaN(Number(snapshot.docs[0].id));
@@ -134,7 +137,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
   async (event) => {
     functions.logger.debug("Event received: ", event);
     const change = event.data;
@@ -184,7 +187,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
         url,
         headers: {"Content-Type": "application/json"},
         body: Buffer
-          .from(JSON.stringify({data: {draftId: "grumble2025_gold"}}))
+          .from(JSON.stringify({data: {draftId: "grumble2025_"}}))
           .toString("base64"),
         oidcToken: {
           serviceAccountEmail,
