@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Match, Player } from '../../types';
-import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, UpcomingMatchCard, OpponentInfo, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
+import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
@@ -63,7 +63,6 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { tournamentCodes } = useGameMatches();
   const { teams } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
-  const [copiedCode, setCopiedCode] = useState('');
 
   const team = teams.find(t => t.id === Number(teamId));
 
@@ -97,12 +96,6 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const completedMatches = matches.filter(m =>
     m.status === 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
   );
-
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(''), 2000); // Reset after 2 seconds
-  };
   
   return (
     <PageContainer>
