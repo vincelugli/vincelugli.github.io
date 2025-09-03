@@ -46,7 +46,7 @@ const DraftTimer: React.FC<DraftTimerProps> = ({ deadlineMs }) => {
 
   // Pause outside of 8 - 5.
   const now = new Date();
-  const isDraftPaused = now.getUTCHours() < 15 && now.getUTCHours() > 0;
+  const isDraftPaused = now.getUTCHours() < 15 && now.getUTCHours() >= 0;
 
   return (
     <TimerWrapper>
