@@ -11,11 +11,7 @@ const Tournament: React.FC = () => {
         <SwissStage />
       </div>
       <div>
-        <SectionTitle>Upper Bracket</SectionTitle>
-        <DoubleEliminationBracket />
-      </div>
-      <div>
-        <SectionTitle>Lower Bracket</SectionTitle>
+        <SectionTitle>Knockout</SectionTitle>
         <DoubleEliminationBracket />
       </div>
     </TournamentContainer>

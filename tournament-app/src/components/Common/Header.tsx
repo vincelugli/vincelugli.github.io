@@ -47,7 +47,6 @@ const Header: React.FC = () => {
             <SubMenu>
               <SubMenuItem to="/schedule">Schedule</SubMenuItem>
               <SubMenuItem to="/players">Players</SubMenuItem>
-              <SubMenuItem to="/match/:matchId"></SubMenuItem>
             </SubMenu>
           </NavItem>
 

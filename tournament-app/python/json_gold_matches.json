@@ -1,0 +1,169 @@
+[
+  {
+    "id": 1,
+    "team1Id": 1,
+    "team2Id": 4,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  },
+  {
+    "id": 2,
+    "team1Id": 1,
+    "team2Id": 7,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 3,
+    "team1Id": 1,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 4,
+    "team1Id": 4,
+    "team2Id": 7,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 5,
+    "team1Id": 4,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 6,
+    "team1Id": 7,
+    "team2Id": 10,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  },
+
+
+
+  {
+    "id": 7,
+    "team1Id": 2,
+    "team2Id": 5,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  },
+  {
+    "id": 8,
+    "team1Id": 2,
+    "team2Id": 8,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 9,
+    "team1Id": 2,
+    "team2Id": 11,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 10,
+    "team1Id": 5,
+    "team2Id": 8,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 11,
+    "team1Id": 5,
+    "team2Id": 11,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 12,
+    "team1Id": 8,
+    "team2Id": 11,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  },
+
+
+  {
+    "id": 13,
+    "team1Id": 3,
+    "team2Id": 6,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  },
+  {
+    "id": 14,
+    "team1Id": 3,
+    "team2Id": 9,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 15,
+    "team1Id": 6,
+    "team2Id": 9,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 16,
+    "team1Id": 3,
+    "team2Id": -1,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 3
+  },
+  {
+    "id": 17,
+    "team1Id": 6,
+    "team2Id": -1,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 2
+  },
+  {
+    "id": 18,
+    "team1Id": 9,
+    "team2Id": -1,
+    "status": "upcoming",
+    "tournamentCode": "",
+    "tournamentCodes": [],
+    "weekPlayed": 1
+  }
+]
