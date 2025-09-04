@@ -9,6 +9,7 @@ import { createOpGgUrl } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
+import MatchResultPage from '../MatchResult/MatchResultPage';
 
 
 const PlayerList = styled.ul`
@@ -143,18 +144,12 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
               const opponent = teams.find(t => t.id === opponentId);
               const didWin = match.winnerId === team.id;
 
+              if (!opponent) {
+                return <></>
+              }
+
               return (
-                <MatchItem key={match.id}>
-                  <MatchInfo>
-                    vs <span>{opponent ? opponent.name : 'Unknown'}</span>
-                  </MatchInfo>
-                  <MatchResult>
-                    <ResultIndicator win={didWin}>
-                      {didWin ? 'WIN' : 'LOSS'}
-                    </ResultIndicator>
-                    <TeamPageScore>{match.score}</TeamPageScore>
-                  </MatchResult>
-                </MatchItem>
+                <MatchResultPage match={match} teams={teams}></MatchResultPage>
               );
             })
           ) : (

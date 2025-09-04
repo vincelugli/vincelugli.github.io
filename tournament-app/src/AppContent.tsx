@@ -21,6 +21,7 @@ import RouteChangeTracker from './components/Common/RouteChangeTracker';
 import AllPlayersPage from './components/Players/AllPlayersPage';
 import { useAuth } from './components/Common/AuthContext';
 import { useGameMatches } from './context/MatchesContext';
+import MatchResultPage from './components/MatchResult/MatchResultPage';
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
@@ -62,6 +63,7 @@ const AppContent: React.FC = () => {
                 <Route path="/admin-access" element={<AdminAuthGate />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/players" element={<AllPlayersPage />} />
+                <Route path="/match/:matchId" element={<MatchResultPage />} />
             </Routes>
           </MainContent>
           <Footer />

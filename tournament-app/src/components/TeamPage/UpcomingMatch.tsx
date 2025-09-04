@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { Match, Team } from '../../types';
-import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton } from '../../styles';
+import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchNavLink } from '../../styles';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
 
@@ -53,7 +53,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
     <UpcomingMatchCard>
       WEEK {match.weekPlayed}
       <OpponentInfo>
-        {!!opponent && "vs"} <span>{opponent ? opponent.name : 'Bye'}</span>
+        {!!opponent && "vs"} <span>{opponent ? <MatchNavLink to={`/teams/${opponent?.id}`}>{opponent.name}</MatchNavLink> : 'Bye'}</span>
       </OpponentInfo>
       {!!opponent && isUserTeamCaptain && <TournamentCodeContainer>
         <label>TOURNAMENT CODE</label>

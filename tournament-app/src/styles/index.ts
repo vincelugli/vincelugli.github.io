@@ -104,6 +104,16 @@ export const NavLink = styled(Link)`
   }
 `;
 
+export const MatchNavLink = styled(Link)`
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
 export const NavItem = styled.div`
   position: relative;
   display: flex;
