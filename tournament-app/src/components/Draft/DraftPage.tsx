@@ -138,7 +138,7 @@ const DraftPage: React.FC = () => {
   const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
   const [isLoading, setIsLoading] = useState(true);
 
-  const isDraftComplete = nextPickIndex >= pickOrder.length;
+  const isDraftComplete = draftState.currentPickIndex >= pickOrder.length;
   const currentTeamIdPicking = !isDraftComplete ? pickOrder[draftState.currentPickIndex] : null;
 
   //// BEGIN AUTH ////
@@ -258,7 +258,7 @@ const DraftPage: React.FC = () => {
             ? "Draft Complete!"
             : `Round ${Math.floor(draftState.currentPickIndex / teams.length) + 1}, Pick ${draftState.currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
         </DraftStatus>
-        <DraftTimer deadlineMs={draftState.pickEndsAt} />
+        {!isDraftComplete && <DraftTimer deadlineMs={draftState.pickEndsAt} />}
       </DraftHeader>
 
       <DraftContent>
