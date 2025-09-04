@@ -128,12 +128,11 @@ const DraftPage: React.FC = () => {
   const { captainTeamId, currentUser, isAdmin, authDivision } = useAuth();
 
   const initialDraftState = initializeDraft(allPlayers, division);
-  const { teams, pickOrder, currentPickIndex } = initialDraftState;
+  const { teams, pickOrder } = initialDraftState;
 
   const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
   const [draftDocRef, setDraftDocRef] = useState(doc(db, 'drafts', `grumble2025_${division}`));
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const [nextPickIndex, setNextPickIndex] = useState(currentPickIndex);
   const [prevDivision, setPrevDivision] = useState('');
   const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
   const [isLoading, setIsLoading] = useState(true);
@@ -210,8 +209,6 @@ const DraftPage: React.FC = () => {
     while (typeof(pickOrder[nextPickIndex]) === "string" && nextPickIndex < pickOrder.length) {
       nextPickIndex++;
     }
-
-    setNextPickIndex(nextPickIndex);
 
     // --- Create the final update object ---
     const updatedDraft = {

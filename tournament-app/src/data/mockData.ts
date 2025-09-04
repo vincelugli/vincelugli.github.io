@@ -18,8 +18,9 @@ export const draftedTeams: Team[] = [
 ];
 
 export const mockGroups: Group[] = [
-  { id: 1, name: 'Group A', teams: [1, 2, 3, 4] },
-  { id: 2, name: 'Group B', teams: [5, 6, 7, 8] },
+  { "id": 1, "name": "Group A", "teams": [1,4,7,10] },
+  { "id": 2, "name": "Group B", "teams": [2,5,8,11] },
+  { "id": 3, "name": "Group C", "teams": [3,6,9] }
 ];
 
 export const mockBracket: BracketRound[] = [
