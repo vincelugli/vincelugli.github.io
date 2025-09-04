@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Match, Player } from '../../types';
-import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
+import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
@@ -9,6 +9,7 @@ import { createOpGgUrl } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
+import MatchResultPage from '../MatchResult/MatchResultPage';
 
 
 const PlayerList = styled.ul`
@@ -141,20 +142,13 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
             completedMatches.map(match => {
               const opponentId = match.team1Id === team.id ? match.team2Id : match.team1Id;
               const opponent = teams.find(t => t.id === opponentId);
-              const didWin = match.winnerId === team.id;
+
+              if (!opponent) {
+                return <></>
+              }
 
               return (
-                <MatchItem key={match.id}>
-                  <MatchInfo>
-                    vs <span>{opponent ? opponent.name : 'Unknown'}</span>
-                  </MatchInfo>
-                  <MatchResult>
-                    <ResultIndicator win={didWin}>
-                      {didWin ? 'WIN' : 'LOSS'}
-                    </ResultIndicator>
-                    <TeamPageScore>{match.score}</TeamPageScore>
-                  </MatchResult>
-                </MatchItem>
+                <MatchResultPage match={match} teams={teams}></MatchResultPage>
               );
             })
           ) : (
