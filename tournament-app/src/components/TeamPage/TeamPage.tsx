@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Match, Player } from '../../types';
-import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchItem, MatchInfo, MatchResult, ResultIndicator, TeamPageScore } from '../../styles';
+import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
@@ -142,7 +142,6 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
             completedMatches.map(match => {
               const opponentId = match.team1Id === team.id ? match.team2Id : match.team1Id;
               const opponent = teams.find(t => t.id === opponentId);
-              const didWin = match.winnerId === team.id;
 
               if (!opponent) {
                 return <></>
