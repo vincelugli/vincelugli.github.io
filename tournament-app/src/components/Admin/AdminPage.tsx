@@ -209,22 +209,22 @@ const AdminPage: React.FC = () => {
         setCopied(false);
 
         try {
-        const docRef = doc(db, 'drafts', 'grumble2025_master');
-        const docSnap = await getDoc(docRef);
+            const docRef = doc(db, 'drafts', 'grumble2025_master');
+            const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.teams && Array.isArray(data.teams)) {
-                // Format the JSON with an indentation of 2 spaces for readability
-                const formattedJson = JSON.stringify(data.teams, null, 2);
-                setExportJson(formattedJson);
-                setExportStatus('success');
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.teams && Array.isArray(data.teams)) {
+                    // Format the JSON with an indentation of 2 spaces for readability
+                    const formattedJson = JSON.stringify(data.teams, null, 2);
+                    setExportJson(formattedJson);
+                    setExportStatus('success');
+                } else {
+                    throw new Error("'teams' field is missing or not an array in the document.");
+                }
             } else {
-                throw new Error("'teams' field is missing or not an array in the document.");
+                throw new Error("Document 'drafts/grumble2025_master' not found.");
             }
-        } else {
-            throw new Error("Document 'drafts/grumble2025_master' not found.");
-        }
         } catch (error) {
             console.error("Error fetching teams data:", error);
             setExportStatus('error');

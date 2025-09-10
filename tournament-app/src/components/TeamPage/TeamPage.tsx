@@ -68,9 +68,12 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const team = teams.find(t => t.id === Number(teamId));
 
   for (const m of matches) {
+    const maybeCodes = tournamentCodes.filter(tc => tc.matchId === m.id);
     if (m.tournamentCodes.length === 0) {
-      const maybeCodes = tournamentCodes.filter(tc => tc.matchId === m.id).map(tc => tc.code);
-      m.tournamentCodes = maybeCodes;
+      m.tournamentCodes = maybeCodes.map(tc => tc.code);
+    }
+    else {
+      m.status = maybeCodes.some(tc => tc.status === 'completed') ? 'completed' : 'upcoming';
     }
   }
 

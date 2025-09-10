@@ -112,6 +112,8 @@ export interface SubPlayer {
 export interface TournamentCode {
   code: string;
   matchId: number|string;
+  status: string;
+  winnerId: number;
 }
 
 export interface PlayerResult {
@@ -119,6 +121,9 @@ export interface PlayerResult {
   championName: string;      // e.g., "Aatrox", "Fiddlesticks"
   summonerSpells: string[];  // e.g., ["SummonerFlash", "SummonerTeleport"]
   items: (number | null)[];  // An array of 6 item IDs or null for empty slots
+  kills: number;
+  deaths: number;
+  assists: number;
 }
 
 export interface TeamResult {
@@ -129,4 +134,6 @@ export interface TeamResult {
 export interface MatchResultData {
   blueTeam: TeamResult;
   redTeam: TeamResult;
+  gameDuration: number;
+  winner: number;
 }

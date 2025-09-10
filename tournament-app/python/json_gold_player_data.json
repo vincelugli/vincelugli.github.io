@@ -1080,5 +1080,22 @@
     "isCaptain": true,
     "contact": "errorwithbug5994",
     "timezone": "Pacific"
+  },
+  {
+    "id": 63,
+    "name": "Off#\u771f\u7684\u96be\u53d7",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 4,
+    "soloRankTier": "Gold",
+    "soloRankDivision": 4,
+    "flexRankTier": "Gold",
+    "flexRankDivision": 2,
+    "role": "jungle",
+    "secondaryRoles": [
+      "mid"
+    ],
+    "isCaptain": false,
+    "contact": "fovgrubby",
+    "timezone": "Pacific"
   }
 ]

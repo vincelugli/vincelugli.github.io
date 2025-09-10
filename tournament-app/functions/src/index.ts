@@ -16,6 +16,9 @@ import {z} from "zod";
 import {Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
+import {transformRiotDataToMatchResult} from "./riotApiTransformer";
+import axios from "axios";
+import {defineSecret} from "firebase-functions/params";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -24,7 +27,7 @@ import * as functions from "firebase-functions";
 // running at the same time. This helps mitigate the impact of unexpected
 // traffic spikes by instead downgrading performance. This limit is a
 // per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
+// `maxInstances` option in the function"s options, e.g.
 // `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
 // NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
 // functions should each use functions.runWith({ maxInstances: 10 }) instead.
@@ -43,21 +46,23 @@ interface AuthData {
 }
 
 const GameNotificationSchema = z.object({
-  startTime: z.number(),
-  shortCode: z.string(),
-  metaData: z.string(),
-  gameId: z.number(),
-  gameName: z.string(),
-  gameType: z.string(),
-  gameMap: z.number(),
-  gameMode: z.string(),
-  region: z.string(),
+  startTime: z.optional(z.number()),
+  shortCode: z.optional(z.string()),
+  metadata: z.optional(z.string()),
+  gameId: z.optional(z.number()),
+  gameName: z.optional(z.string()),
+  gameType: z.optional(z.string()),
+  gameMap: z.optional(z.number()),
+  gameMode: z.optional(z.string()),
+  region: z.optional(z.string()),
 });
 
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 2 * 60 * 60;
 const PROJECT = "grumble-5885f";
-const LOCATION = "us-central1"; // Or your function's location
+const LOCATION = "us-central1"; // Or your function"s location
 const QUEUE = "executeautopick"; // The default queue created by Firebase
+
+const riotApiKey = defineSecret("RIOT_API_KEY");
 
 export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
   async (rawRequest) => {
@@ -81,7 +86,7 @@ export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
       );
     }
 
-    // Get the adminId from the matched document's ID
+    // Get the adminId from the matched document"s ID
     const adminId = snapshot.docs[0].id;
     const uid = `admin-${adminId}`; // Create a unique ID for this user
 
@@ -120,7 +125,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     functions.logger.debug(
       `Access granted to ${snapshot.docs[0].data().captainName}`);
 
-    // Get the teamId from the matched document's ID
+    // Get the teamId from the matched document"s ID
     const isLegacyTeamId = !Number.isNaN(Number(snapshot.docs[0].id));
     const teamId = isLegacyTeamId ?
       Number(snapshot.docs[0].id) :
@@ -137,7 +142,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
   async (event) => {
     functions.logger.debug("Event received: ", event);
     const change = event.data;
@@ -170,7 +175,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
       }
     }
 
-    // Don't schedule a new task if the draft is over
+    // Don"t schedule a new task if the draft is over
     if (after.currentPickIndex >= after.pickOrder.length) {
       return;
     }
@@ -187,7 +192,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_gold",
         url,
         headers: {"Content-Type": "application/json"},
         body: Buffer
-          .from(JSON.stringify({data: {draftId: "grumble2025_gold"}}))
+          .from(JSON.stringify({data: {draftId: "grumble2025_"}}))
           .toString("base64"),
         oidcToken: {
           serviceAccountEmail,
@@ -267,7 +272,7 @@ export const executeAutoPick = onTaskDispatched({
   const neededRoles = allRoles.filter((role) => !filledRoles.has(role));
   functions.logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
 
-  // Fetch the captain's priority list
+  // Fetch the captain"s priority list
   const draftBoardsDoc = await db
     .collection("draftBoards")
     .doc(teamIdPicking.toString())
@@ -416,9 +421,16 @@ export const executeAutoPick = onTaskDispatched({
   functions.logger.log(`Auto-pick un-successful for draft: ${draftId}`);
 });
 
+
+/** ****************** **
+ *  POST-GAME ENDPOINTS *
+ ** ****************** **/
 export const gameNotificationEndpoint = onRequest(
-  {},
+  {secrets: [riotApiKey]},
   async (req, res) => {
+    functions.logger.info(
+      `Received post game notification 
+      ${req} with body ${JSON.stringify(req.body)}`);
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
       return;
@@ -430,21 +442,53 @@ export const gameNotificationEndpoint = onRequest(
         `Received valid notification for match: ${notificationData.shortCode}`
       );
 
-      const matchRef = db.collection("matches").doc(notificationData.shortCode);
+      functions.logger.info(
+        `Processing request for game with Riot gameId ${notificationData.gameId}
+        `
+      );
+
+      let matchResultData = {winner: -1};
+
+      try {
+        const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
+        const riotApiResponse = await axios.get(riotApiUrl, {
+          headers: {"X-Riot-Token": riotApiKey.value()},
+        });
+
+        matchResultData =
+          await transformRiotDataToMatchResult(riotApiResponse.data);
+
+        functions.logger.info(
+          `Fetched match result data ${JSON.stringify(matchResultData)}`);
+      } catch (e) {
+        functions.logger.error(
+          `Failed to fetch match data for ${notificationData.gameId}.`);
+        functions.logger.error(`Failed with error ${e}`);
+      }
+
+      const matchRef = db
+        .collection("matches")
+        .doc(notificationData.shortCode ?? "grumble2025_unknown");
       const resultRef = db
         .collection("match_results")
-        .doc(notificationData.shortCode);
+        .doc(notificationData.shortCode ?? "grumble2025_unknown");
 
       const batch = db.batch();
 
       const resultPayload = {
         ...notificationData,
+        ...matchResultData,
         submittedAt: Timestamp.now(),
       };
+
+      functions.logger.info(
+        `Attempting to update results with ${JSON.stringify(resultPayload)}`
+      );
 
       batch.set(resultRef, resultPayload);
       batch.update(matchRef, {
         status: "completed",
+        winnerId: matchResultData.winner,
       });
 
       await batch.commit();

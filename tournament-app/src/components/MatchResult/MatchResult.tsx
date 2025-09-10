@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { MatchResultData, PlayerResult, TeamResult } from '../../types';
 
 // --- Data Dragon Configuration ---
-const LATEST_PATCH = '14.9.1'; // It's good practice to manage this globally
+const LATEST_PATCH = '15.18.1';
 const getChampionImage = (championName: string) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/champion/${championName}.png`;
 const getItemImage = (itemId: number) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/item/${itemId}.png`;
 const getSpellImage = (spellName: string) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/spell/${spellName}.png`;
@@ -81,7 +81,6 @@ const SpellIcon = styled.img`
 
 const PlayerName = styled.span`
   font-weight: 600;
-  flex-grow: 1;
 `;
 
 const ItemsGrid = styled.div`
@@ -105,6 +104,27 @@ const EmptyItemSlot = styled.div`
 `;
 
 
+// NEW: A container to hold the name and KDA together
+const PlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* This will now be the element that expands */
+  min-width: 0; /* Important for allowing text to truncate if needed */
+`;
+
+// NEW: A styled component for the K/D/A text
+const KDA = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+  margin-top: 2px;
+  font-weight: 500;
+
+  span {
+    color: ${({ theme }) => theme.text};
+    font-weight: 700;
+  }
+`;
+
 // --- Sub-Components for Clarity ---
 
 const PlayerRow: React.FC<{ player: PlayerResult }> = ({ player }) => (
@@ -114,7 +134,12 @@ const PlayerRow: React.FC<{ player: PlayerResult }> = ({ player }) => (
       <SpellIcon src={getSpellImage(player.summonerSpells[0])} alt={player.summonerSpells[0]} />
       <SpellIcon src={getSpellImage(player.summonerSpells[1])} alt={player.summonerSpells[1]} />
     </SummonerSpells>
-    <PlayerName>{player.playerName}</PlayerName>
+    <PlayerInfo>
+      <PlayerName>{player.playerName}</PlayerName>
+      <KDA>
+        <span>{player.kills}</span> / <span>{player.deaths}</span> / <span>{player.assists}</span>
+      </KDA>
+    </PlayerInfo>
     <ItemsGrid>
       {player.items.map((itemId, index) => 
         itemId ? (
@@ -145,10 +170,13 @@ const TeamPanel: React.FC<{ teamData: TeamResult, teamColor: 'blue' | 'red' }> =
 // --- Main Component ---
 
 interface MatchResultProps {
-  result: MatchResultData;
+  result?: MatchResultData;
 }
 
 const MatchResult: React.FC<MatchResultProps> = ({ result }) => {
+  if (result === undefined) {
+    return <></>
+  }
   return (
     <MatchResultContainer>
       <TeamPanel teamData={result.blueTeam} teamColor="blue" />
