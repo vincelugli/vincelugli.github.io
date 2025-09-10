@@ -14,11 +14,11 @@ export interface InfoDto {
   gameCreation: number;
   gameDuration: number;
   gameEndTimestamp: number;
-  gameId: number; 
+  gameId: number;
   gameMode: string;
-  gameName: string; 
+  gameName: string;
   gameStartTimestamp: number;
-  gameType: string; 
+  gameType: string;
   gameVersion: string;
   mapId: number;
   participants: ParticipantDto[];
