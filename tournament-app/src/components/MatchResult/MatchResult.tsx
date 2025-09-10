@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { MatchResultData, PlayerResult, TeamResult } from '../../types';
 
 // --- Data Dragon Configuration ---
@@ -20,13 +20,34 @@ const MatchResultContainer = styled.div`
   }
 `;
 
-const TeamPanelContainer = styled.div<{ teamColor: 'blue' | 'red' }>`
+const TeamPanelContainer = styled.div<{ teamColor: 'blue' | 'red'; isWinner: boolean }>`
   flex: 1;
   background: ${({ theme }) => theme.background};
   border-radius: 8px;
   border-top: 5px solid ${({ teamColor }) => (teamColor === 'blue' ? '#007bff' : '#dc3545')};
   box-shadow: ${({ theme }) => theme.boxShadow};
+  transition: all 0.3s ease-in-out;
+
+  /* Apply special styling if this team is the winner */
+  ${({ isWinner, theme }) =>
+    isWinner &&
+    css`
+      /* Make the shadow more prominent */
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+
+      /* Add a subtle background gradient */
+      background: linear-gradient(180deg, ${theme.background}, ${theme.body});
+    `}
+
+  /* If the team is NOT the winner, make them slightly faded */
+  ${({ isWinner }) =>
+    !isWinner &&
+    css`
+      opacity: 0.7;
+      transform: scale(0.98);
+    `}
 `;
+
 
 const BansContainer = styled.div`
   display: flex;
@@ -152,8 +173,8 @@ const PlayerRow: React.FC<{ player: PlayerResult }> = ({ player }) => (
   </PlayerRowContainer>
 );
 
-const TeamPanel: React.FC<{ teamData: TeamResult, teamColor: 'blue' | 'red' }> = ({ teamData, teamColor }) => (
-  <TeamPanelContainer teamColor={teamColor}>
+const TeamPanel: React.FC<{ teamData: TeamResult, teamColor: 'blue' | 'red', isWinner: boolean }> = ({ teamData, teamColor, isWinner }) => (
+  <TeamPanelContainer teamColor={teamColor} isWinner={isWinner}>
     <BansContainer>
       {teamData.bans.map(championName => (
         <BanIcon key={championName} src={getChampionImage(championName)} alt={`Banned ${championName}`} />
@@ -179,8 +200,16 @@ const MatchResult: React.FC<MatchResultProps> = ({ result }) => {
   }
   return (
     <MatchResultContainer>
-      <TeamPanel teamData={result.blueTeam} teamColor="blue" />
-      <TeamPanel teamData={result.redTeam} teamColor="red" />
+      <TeamPanel 
+        teamData={result.blueTeam} 
+        teamColor="blue" 
+        isWinner={result.winner === 100} 
+      />
+      <TeamPanel 
+        teamData={result.redTeam} 
+        teamColor="red" 
+        isWinner={result.winner === 200} 
+      />
     </MatchResultContainer>
   );
 };
