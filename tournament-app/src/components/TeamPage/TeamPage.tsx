@@ -94,7 +94,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   if (!team) return <div>Team not found</div>;
 
   const upcomingMatches = matches.filter(m =>
-    m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
+    (m.team1Id === team.id || m.team2Id === team.id)
   ).sort((m1, m2) => m1.weekPlayed - m2.weekPlayed);
   
   const completedMatches = matches.filter(m =>
