@@ -116,6 +116,11 @@ export interface TournamentCode {
   winnerId: number;
 }
 
+export interface MatchResult {
+  code: string;
+  result: MatchResultData;
+}
+
 export interface PlayerResult {
   playerName: string;
   championName: string;      // e.g., "Aatrox", "Fiddlesticks"
