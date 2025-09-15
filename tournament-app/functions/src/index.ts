@@ -8,14 +8,13 @@
  */
 
 import {CloudTasksClient} from "@google-cloud/tasks";
-import {setGlobalOptions} from "firebase-functions";
+import {setGlobalOptions, logger, https} from "firebase-functions";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onTaskDispatched} from "firebase-functions/v2/tasks";
 import {onRequest} from "firebase-functions/v2/https";
 import {z} from "zod";
 import {Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
-import * as functions from "firebase-functions";
 import {transformRiotDataToMatchResult} from "./riotApiTransformer";
 import axios from "axios";
 import {defineSecret} from "firebase-functions/params";
@@ -57,18 +56,23 @@ const GameNotificationSchema = z.object({
   region: z.optional(z.string()),
 });
 
+const UpdateStandingsSchema = z.object({
+  shortCode: z.optional(z.string()),
+});
+
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 2 * 60 * 60;
 const PROJECT = "grumble-5885f";
 const LOCATION = "us-central1"; // Or your function"s location
 const QUEUE = "executeautopick"; // The default queue created by Firebase
+const WINS_NEEDED_FOR_MATCH = 2;
 
 const riotApiKey = defineSecret("RIOT_API_KEY");
 
-export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
+export const getAuthTokenForAdminAccessCode = https.onCall<AuthData>(
   async (rawRequest) => {
     const accessCode = rawRequest.data.accessCode;
     if (!accessCode || typeof accessCode !== "string") {
-      throw new functions.https.HttpsError(
+      throw new https.HttpsError(
         "invalid-argument",
         "You must provide a valid access code."
       );
@@ -80,7 +84,7 @@ export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
       .limit(1)
       .get();
     if (snapshot.empty) {
-      throw new functions.https.HttpsError(
+      throw new https.HttpsError(
         "not-found",
         "Invalid access code."
       );
@@ -97,13 +101,13 @@ export const getAuthTokenForAdminAccessCode = functions.https.onCall<AuthData>(
   }
 );
 
-export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
+export const getAuthTokenForAccessCode = https.onCall<AuthData>(
   async (rawRequest) => {
     const accessCode = rawRequest.data.accessCode;
-    functions.logger.debug(`Requesting access for ${accessCode}`);
+    logger.debug(`Requesting access for ${accessCode}`);
 
     if (!accessCode || typeof accessCode !== "string") {
-      throw new functions.https.HttpsError(
+      throw new https.HttpsError(
         "invalid-argument",
         "You must provide a valid access code."
       );
@@ -117,12 +121,12 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
       .get();
 
     if (snapshot.empty) {
-      throw new functions.https.HttpsError(
+      throw new https.HttpsError(
         "not-found",
         "Invalid access code."
       );
     }
-    functions.logger.debug(
+    logger.debug(
       `Access granted to ${snapshot.docs[0].data().captainName}`);
 
     // Get the teamId from the matched document"s ID
@@ -131,7 +135,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
       Number(snapshot.docs[0].id) :
       snapshot.docs[0].data().teamId;
     const division = snapshot.docs[0].data().division ?? "";
-    functions.logger.debug(`Team access for division ${division}`);
+    logger.debug(`Team access for division ${division}`);
     const uid = `captain-${teamId}`; // Create a unique ID for this user
 
     // Create a custom auth token with the teamId as a custom claim
@@ -144,7 +148,7 @@ export const getAuthTokenForAccessCode = functions.https.onCall<AuthData>(
 
 export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
   async (event) => {
-    functions.logger.debug("Event received: ", event);
+    logger.debug("Event received: ", event);
     const change = event.data;
     if (!change) return;
 
@@ -165,11 +169,11 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
         before.activeTimerTaskName);
       try {
         await tasksClient.deleteTask({name: taskPath});
-        functions.logger.log(
+        logger.log(
           `Canceled old task: ${before.activeTimerTaskName}`
         );
       } catch (error) {
-        functions.logger.warn(
+        logger.warn(
           "Failed to cancel task, it may have already run:", error
         );
       }
@@ -208,7 +212,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
     const taskName = response.name!.split("/").pop()!;
 
     // Schedule the new task
-    functions.logger.log(`Scheduled new task: ${taskName}`);
+    logger.log(`Scheduled new task: ${taskName}`);
 
     // Update the draft document with the new task name for tracking
     return change.after.ref.update({activeTimerTaskName: taskName});
@@ -220,7 +224,7 @@ export const executeAutoPick = onTaskDispatched({
   rateLimits: {maxDispatchesPerSecond: 500},
 }, async (req: any) => {
   const {draftId} = req.data;
-  functions.logger.log(`Executing auto-pick for draft: ${draftId}`);
+  logger.log(`Executing auto-pick for draft: ${draftId}`);
 
   const draftRef = db.collection("drafts").doc(draftId);
   const draftDoc = await draftRef.get();
@@ -230,7 +234,7 @@ export const executeAutoPick = onTaskDispatched({
 
   const draftState = draftDoc.data();
   if (!draftState) return;
-  functions.logger.log(
+  logger.log(
     `Draft state current pick index: ${draftState.currentPickIndex}`
   );
 
@@ -243,7 +247,7 @@ export const executeAutoPick = onTaskDispatched({
   // This prevents a race condition where a user picks just as the timer expires
   const now = Timestamp.now();
   if (!draftState.pickEndsAt || draftState.pickEndsAt < now) {
-    functions.logger.log(
+    logger.log(
       "Pick was already made or timer was updated. Aborting auto-pick."
     );
     return;
@@ -251,7 +255,7 @@ export const executeAutoPick = onTaskDispatched({
 
   const dateNow = new Date();
   if (dateNow.getHours() < 8 && dateNow.getHours() >= 5) {
-    functions.logger.log(
+    logger.log(
       "Auto-pick was scheduled outside of draft hours."
     );
     return;
@@ -270,7 +274,7 @@ export const executeAutoPick = onTaskDispatched({
     .map((p: any) => p.role)
   );
   const neededRoles = allRoles.filter((role) => !filledRoles.has(role));
-  functions.logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
+  logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
 
   // Fetch the captain"s priority list
   const draftBoardsDoc = await db
@@ -288,9 +292,9 @@ export const executeAutoPick = onTaskDispatched({
       const player = availablePlayers.find((p: any) => p.id === pId);
       if (player && neededRoles.includes(player.role)) {
         playerToDraftId = pId;
-        functions.logger.log(
+        logger.log(
           `Primary search found: 
-          Player ${pId} (${player.role}) fills a needed role.`);
+Player ${pId} (${player.role}) fills a needed role.`);
         break;
       }
     }
@@ -298,15 +302,15 @@ export const executeAutoPick = onTaskDispatched({
 
   // Fallback 1: If no role-fit found find the highest priority player available
   if (!playerToDraftId) {
-    functions.logger.log(
+    logger.log(
       `Primary search failed. 
-      Falling back to best available from priority list.`);
+Falling back to best available from priority list.`);
     for (const pId of priorityPlayerIds) {
       if (availablePlayers.some((p: any) => p.id === pId)) {
         playerToDraftId = pId;
-        functions.logger.log(
+        logger.log(
           `Fallback 1 found: 
-          Player ${pId} is the highest available priority pick.`
+Player ${pId} is the highest available priority pick.`
         );
         break;
       }
@@ -368,13 +372,13 @@ export const executeAutoPick = onTaskDispatched({
 
   // Fallback 2: If priority list exhausted, find the highest Elo player overall
   if (!playerToDraftId) {
-    functions.logger.log(
+    logger.log(
       "Fallback 1 failed. Falling back to best available Elo.");
     // Create a mutable copy to sort
     const sortedAvailable = [...availablePlayers];
     sortedAvailable.sort(compareRanks);
     playerToDraftId = sortedAvailable[0]?.id;
-    functions.logger.log(
+    logger.log(
       `Fallback 2 found: Player ${playerToDraftId} has the highest Elo.`);
   }
 
@@ -412,13 +416,13 @@ export const executeAutoPick = onTaskDispatched({
       pickEndsAt: nextDeadline,
     };
     await draftRef.update(updatedDraftState);
-    functions.logger.log(
+    logger.log(
       `Auto-picked player ${playerToDraft.name} for team ${teamIdPicking}`
     );
     return;
   }
 
-  functions.logger.log(`Auto-pick un-successful for draft: ${draftId}`);
+  logger.log(`Auto-pick un-successful for draft: ${draftId}`);
 });
 
 
@@ -428,7 +432,7 @@ export const executeAutoPick = onTaskDispatched({
 export const gameNotificationEndpoint = onRequest(
   {secrets: [riotApiKey]},
   async (req, res) => {
-    functions.logger.info(
+    logger.info(
       `Received post game notification 
       ${req} with body ${JSON.stringify(req.body)}`);
     if (req.method !== "POST") {
@@ -438,16 +442,24 @@ export const gameNotificationEndpoint = onRequest(
 
     try {
       const notificationData = GameNotificationSchema.parse(req.body);
-      functions.logger.info(
+      logger.info(
         `Received valid notification for match: ${notificationData.shortCode}`
       );
 
-      functions.logger.info(
-        `Processing request for game with Riot gameId ${notificationData.gameId}
-        `
+      logger.info(
+        `Processing request for game with Riot gameId 
+${notificationData.gameId}`
       );
 
-      let matchResultData = {winner: -1};
+      let matchResultData = {
+        winner: -1,
+        blueTeam: {
+          players: [{playerName: ""}],
+        },
+        redTeam: {
+          players: [{playerName: ""}],
+        },
+      };
 
       try {
         const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
@@ -458,12 +470,12 @@ export const gameNotificationEndpoint = onRequest(
         matchResultData =
           await transformRiotDataToMatchResult(riotApiResponse.data);
 
-        functions.logger.info(
+        logger.info(
           `Fetched match result data ${JSON.stringify(matchResultData)}`);
       } catch (e) {
-        functions.logger.error(
+        logger.error(
           `Failed to fetch match data for ${notificationData.gameId}.`);
-        functions.logger.error(`Failed with error ${e}`);
+        logger.error(`Failed with error ${e}`);
       }
 
       const matchRef = db
@@ -481,7 +493,7 @@ export const gameNotificationEndpoint = onRequest(
         submittedAt: Timestamp.now(),
       };
 
-      functions.logger.info(
+      logger.info(
         `Attempting to update results with ${JSON.stringify(resultPayload)}`
       );
 
@@ -492,19 +504,265 @@ export const gameNotificationEndpoint = onRequest(
       });
 
       await batch.commit();
-      functions.logger.info(`Successfully created result for match 
+
+      // ////////////////////
+      // Update Standings //
+      // ////////////////////
+      const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
+      const shortCodeDoc = await shortCodeDocRef.get();
+      if (!shortCodeDoc.exists) {
+        throw new Error(
+          `Document for shortCode '${notificationData.shortCode}' not found.`
+        );
+      }
+      const {division, matchId} = shortCodeDoc.data()!;
+      logger.info(`Found division ${division} and matchId ${matchId}`);
+      if (!division || !matchId) {
+        throw new Error(
+          `Document '${notificationData.shortCode}'
+is missing 'division' or 'matchId' field.`);
+      }
+      const winnerId = await findTeamIdByPlayerNames(
+        matchResultData.winner === 100 ?
+          matchResultData.blueTeam.players.map((p) => p.playerName) :
+          matchResultData.redTeam.players.map((p) => p.playerName),
+        division);
+      updateStandings(
+        notificationData.shortCode || "grumble2025_unknown",
+        winnerId || -1,
+        division,
+        matchId);
+
+      logger.info(`Successfully created result for match 
         ${notificationData.shortCode} and updated match status.`);
       res.status(201).send({message: "Match result created successfully."});
     } catch (error) {
       if (error instanceof z.ZodError) {
-        functions.logger.error("Validation failed:", error.message);
+        logger.error("Validation failed:", error.message);
         res.status(400).send({
           message: "Invalid request body.", errors: error.message,
         });
       } else {
-        functions.logger.error("Internal server error:", error);
+        logger.error("Internal server error:", error);
         res.status(500).send({message: "An internal error occurred."});
       }
     }
   }
 );
+
+const updateStandings = async (
+  shortCode: string,
+  winnerId: number,
+  division: string,
+  matchId: number) => {
+  logger.info(`Updating standings for ${shortCode}`);
+
+  if (winnerId === -1) {
+    throw new Error("Invalid winner id.");
+  }
+
+  await db.runTransaction(async (transaction) => {
+    const divisionTeamsDocRef = db.doc(`teams/grumble2025_${division}`);
+    const divisionMatchesDocRef = db.doc(`matches/grumble2025_${division}`);
+
+    // Read all necessary documents within the transaction
+    const [divisionMatchesDoc, divisionTeamsDoc] =
+      await transaction.getAll(divisionMatchesDocRef, divisionTeamsDocRef);
+
+    if (!divisionMatchesDoc.exists) {
+      throw new Error(
+        `Matches document 'grumble2025_${division}' not found.`);
+    }
+    if (!divisionTeamsDoc.exists) {
+      throw new Error(
+        `Teams document 'grumble2025_${division}' not found.`);
+    }
+
+    const allMatches = divisionMatchesDoc.data()!.matches || [];
+    const allTeams = divisionTeamsDoc.data()!.teams || [];
+
+    const currentMatch = allMatches.find((m: any) => m.id === matchId);
+    if (!currentMatch) {
+      throw new Error(
+        `Match with id '${matchId}' not found in division '${division}'.`
+      );
+    }
+    logger.info(`Current match ${JSON.stringify(currentMatch)}`);
+
+    const {team1Id, team2Id} = currentMatch;
+    const loserId = winnerId === team1Id ? team2Id : team1Id;
+
+    const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
+    const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
+    if (winnerIndex === -1 || loserIndex === -1) {
+      throw new Error(
+        `One or both teams
+(${winnerId}, ${loserId})
+not found in division '${division}'.`);
+    }
+
+    allTeams[winnerIndex].gameWins += 1;
+    allTeams[winnerIndex].gameRecord =
+      `${allTeams[winnerIndex].gameWins}-${allTeams[winnerIndex].gameLosses}`;
+    allTeams[loserIndex].gameLosses += 1;
+    allTeams[loserIndex].gameRecord =
+      `${allTeams[loserIndex].gameWins}-${allTeams[loserIndex].gameLosses}`;
+    logger.info(
+      `Updated game records for match ${matchId}.
+Winner: ${allTeams[winnerIndex].gameRecord},
+Loser: ${allTeams[loserIndex].gameRecord}`);
+
+    // check if winner has enough games
+    if (allTeams[winnerIndex].gameWins >= WINS_NEEDED_FOR_MATCH) {
+      logger.info(
+        `Match win condition met for Team ${winnerId} in match ${matchId}!`);
+      allTeams[winnerIndex].wins += 1;
+      allTeams[winnerIndex].record =
+        `${allTeams[winnerIndex].wins}-${allTeams[winnerIndex].losses}`;
+      allTeams[loserIndex].losses += 1;
+      allTeams[loserIndex].record =
+        `${allTeams[loserIndex].wins}-${allTeams[loserIndex].losses}`;
+    }
+
+    transaction.update(divisionTeamsDocRef, {teams: allTeams});
+  });
+};
+
+
+/**
+ * Finds the team ID that a given list of player names belongs to.
+ * Returns a match if even one player from the list is found on a team.
+ *
+ * @param {string[]} playerNames - An array of player names to check.
+ * @param {string} division - The tournament division
+ * @return {Promise<number |null>} Matching team's ID (number)
+ */
+export async function findTeamIdByPlayerNames(
+  playerNames: string[],
+  division: "gold" | "master"
+): Promise<number | null> {
+  if (!playerNames || playerNames.length === 0) {
+    logger.info("No player names provided, skipping lookup.");
+    return null;
+  }
+
+  logger.info(
+    `Searching for team in '${division}' division for players:`,
+    playerNames
+  );
+
+  const teamsDocRef = db.doc(`teams/grumble2025_${division}`);
+  const playersDocRef = db.doc(`players/grumble2025_${division}`);
+
+  try {
+    const [teamsDocSnap, playersDocSnap] = await Promise.all([
+      teamsDocRef.get(),
+      playersDocRef.get(),
+    ]);
+
+    if (!teamsDocSnap.exists) {
+      throw new Error(`Teams document 'grumble2025_${division}' not found.`);
+    }
+    if (!playersDocSnap.exists) {
+      throw new Error(`Players document 'grumble2025_${division}' not found.`);
+    }
+
+    const allTeams = teamsDocSnap.data()!.teams;
+    const allPlayers = playersDocSnap.data()!.players;
+
+    if (!allTeams || !allPlayers) {
+      throw new Error(
+        "Required 'teams' or 'players' array field is missing in the documents."
+      );
+    }
+
+    const playerNamesToFindSet =
+      new Set(playerNames.map((p: any) => p.split("#")[0]));
+    const playerIdsToFindSet = new Set<number>();
+
+    logger.info(`Searching for ${playerNames}`);
+
+    for (const player of allPlayers) {
+      if (playerNamesToFindSet.has(player.name.split("#")[0])) {
+        playerIdsToFindSet.add(player.id);
+      }
+    }
+
+    if (playerIdsToFindSet.size === 0) {
+      logger.info(
+        "None of the player names were found in the master player list."
+      );
+      return null;
+    }
+
+    for (const team of allTeams) {
+      for (const playerIdOnTeam of team.players) {
+        if (playerIdsToFindSet.has(playerIdOnTeam)) {
+          logger.info(
+            `Found match!
+Player ID ${playerIdOnTeam} is on
+Team ID ${team.id} (${team.name}).`);
+          return team.id;
+        }
+      }
+    }
+
+    logger.info("No team found containing any of the specified players.");
+    return null;
+  } catch (error) {
+    logger.info("Error finding team by player names:", error);
+    // In case of an error, we should not return a team ID.
+    return null;
+  }
+}
+
+export const updateStandingsWithExistingMatchResult = onRequest(
+  {secrets: [riotApiKey]},
+  async (req, res) => {
+    const reqData = UpdateStandingsSchema.parse(req.body);
+
+    const resultRef = db
+      .collection("match_results")
+      .doc(reqData.shortCode ?? "grumble2025_unknown");
+
+    try {
+      const resultData = await resultRef.get();
+      if (!resultData.exists) {
+        throw new Error(
+          `Result doc for ${reqData.shortCode} not found.`
+        );
+      }
+
+      const {winner, blueTeam, redTeam} = resultData.data()!;
+
+      const shortCodeDocRef = db.doc(`matches/${reqData.shortCode}`);
+      const shortCodeDoc = await shortCodeDocRef.get();
+      if (!shortCodeDoc.exists) {
+        throw new Error(
+          `Document for shortCode '${reqData.shortCode}' not found.`
+        );
+      }
+      const {division, matchId} = shortCodeDoc.data()!;
+      logger.info(`Found division ${division} and matchId ${matchId}`);
+      if (!division || !matchId) {
+        throw new Error(
+          `Document '${reqData.shortCode}'
+is missing 'division' or 'matchId' field.`);
+      }
+      const winnerId = await findTeamIdByPlayerNames(
+        winner === 100 ?
+          blueTeam.players.map((p: any) => p.playerName) :
+          redTeam.players.map((p: any) => p.playerName),
+        division);
+      updateStandings(
+        reqData.shortCode || "grumble2025_unknown",
+        winnerId || -1,
+        division,
+        matchId);
+    } catch (e) {
+      logger.error(
+        `Failed to fetch match data for ${reqData.shortCode}.`);
+      logger.error(`Failed with error ${e}`);
+    }
+    res.status(201).send({message: "Standings updated successfully."});
+  });

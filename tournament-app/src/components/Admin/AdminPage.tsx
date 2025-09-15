@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { arrayUnion, doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { BracketRound, Group, Player, SubPlayer, Team, TournamentCode } from '../../types';
+import { BracketRound, Group, MatchResult, Player, SubPlayer, Team, TournamentCode } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, FormGroup, AdminLabel, AdminSelect } from '../../styles/index';
@@ -31,7 +31,7 @@ const ActionContainer = styled.div`
 
 // --- Component Definition ---
 
-type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes';
+type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes' | 'matchResults';
 
 const PLAYER_JSON_PLACEHOLDER = `[
   {
@@ -193,7 +193,9 @@ const AdminPage: React.FC = () => {
     const MatchCodesSchema = z.array(z.object({
         matchId: z.number(),
         code: z.string(),
-    }))
+    }));
+
+    const MatchResultsSchema = z.object({});
 
     useEffect(() => {
         if (!isAdmin) {
@@ -248,9 +250,9 @@ const AdminPage: React.FC = () => {
         let data: Player[] | Team[] | Group[] | BracketRound[] | SubPlayer[] | TournamentCode[];
         try {
             data = JSON.parse(jsonString);
-            if (!Array.isArray(data)) {
-                throw new Error("JSON data must be an array.");
-            }
+            // if (!Array.isArray(data)) {
+            //     throw new Error("JSON data must be an array.");
+            // }
             switch(selectedType) {
                 case 'players':
                     PlayerSchema.parse(data);
@@ -272,6 +274,9 @@ const AdminPage: React.FC = () => {
                     break;
                 case 'matchCodes': 
                     MatchCodesSchema.parse(data);
+                    break;
+                case 'matchResults': 
+                    // MatchResultsSchema.parse(data);
                     break;
                 default: 
                     return '';
@@ -298,13 +303,18 @@ const AdminPage: React.FC = () => {
                 }
                 
                 await batch.commit();
+            } else if (selectedType === 'matchResults') {
+                const batch = writeBatch(db)
+                const resultRef = doc(db, 'match_results', (data as unknown as MatchResult).code);
+                batch.set(resultRef, (data as unknown as MatchResult).result);
+
+                await batch.commit();
             } else {
                 const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `grumble2025_${division}`);
                 await updateDoc(docRef, {
                     [selectedType]: arrayUnion(...data)
                 });
             }
-
 
             setStatus('success');
             setStatusMessage(`Successfully created or updated ${data.length} ${selectedType}.`);
@@ -333,6 +343,8 @@ const AdminPage: React.FC = () => {
                 return MATCHES_JSON_PLACEHOLDER;
             case 'matchCodes':
                 return MATCH_CODES_JSON_PLACEHOLDER;
+            case 'matchResults':
+                return SUBS_JSON_PLACEHOLDER;
             default: 
                 return '';
         }
@@ -350,6 +362,7 @@ const AdminPage: React.FC = () => {
             case 'groups':
             case 'matches':
             case 'matchCodes':
+            case 'matchResults':
             case 'players':
                 return (
                     <div>
@@ -418,6 +431,7 @@ const AdminPage: React.FC = () => {
                 <option value="matches">Matches</option>
                 <option value="exportTeams">Export Teams</option>
                 <option value="matchCodes">Match Codes</option>
+                <option value="matchResults">Match Results</option>
             </AdminSelect>
             </FormGroup>
         </SelectionContainer>
