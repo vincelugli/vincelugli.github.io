@@ -5,7 +5,7 @@ export function compareTeams(t1: Team , t2: Team): number {
     if (result !== 0) return result;
     
     // Match wins are equal, tiebreak on losses
-    result = t2.losses - t1.losses;
+    result = t1.losses - t2.losses;
     if (result !== 0) return result;
 
     // Match wins and losses are equal, tiebreak on game wins
@@ -13,7 +13,7 @@ export function compareTeams(t1: Team , t2: Team): number {
     if (result !== 0) return result;
 
     // Match wins and losses are equal, game wins are equal, tiebreak on game losses
-    return t2.gameLosses - t1.gameLosses;
+    return t1.gameLosses - t2.gameLosses;
 }
 
 export function convertRankToElo(rankTier: string, rankDivision: number): number {
