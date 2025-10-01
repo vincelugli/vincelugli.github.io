@@ -276,7 +276,7 @@ const AdminPage: React.FC = () => {
                     MatchCodesSchema.parse(data);
                     break;
                 case 'matchResults': 
-                    // MatchResultsSchema.parse(data);
+                    MatchResultsSchema.parse(data);
                     break;
                 default: 
                     return '';
@@ -325,7 +325,7 @@ const AdminPage: React.FC = () => {
             setStatusMessage(`Failed to write ${selectedType} to the database. Check the console.`);
         }
 
-    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema, MatchesSchema, MatchCodesSchema]);
+    }, [division, jsonString, selectedType, PlayerSchema, TeamSchema, GroupsSchema, BracketSchema, SubsSchema, MatchesSchema, MatchCodesSchema, MatchResultsSchema]);
 
     const getPlaceholder = () => {
         switch (selectedType) {

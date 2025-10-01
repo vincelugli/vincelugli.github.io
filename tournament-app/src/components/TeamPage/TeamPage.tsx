@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Match, Player } from '../../types';
-import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList } from '../../styles';
+import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchNavLink } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
@@ -72,9 +72,6 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     if (m.tournamentCodes.length === 0) {
       m.tournamentCodes = maybeCodes.map(tc => tc.code);
     }
-    else {
-      m.status = maybeCodes.some(tc => tc.status === 'completed') ? 'completed' : 'upcoming';
-    }
   }
 
   const sortedPlayers: Player[] = useMemo(() => {
@@ -119,6 +116,12 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
           ))}
         </PlayerList>
       </TeamHeader>
+
+      <div>
+        <SectionTitle>
+          <MatchNavLink to={`/teams/${teamId}/knockout`}>View Knockout Matches</MatchNavLink>
+        </SectionTitle>
+      </div>
 
       <div>
         <SectionTitle>Upcoming Match</SectionTitle>

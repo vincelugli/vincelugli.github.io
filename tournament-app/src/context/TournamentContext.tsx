@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useDivision } from './DivisionContext'; // We'll use this to react to division changes
-import { Team, Group, BracketRound, Player } from '../types'; // Import your types
+import { useDivision } from './DivisionContext';
+import { Team, Group, BracketRound, Player } from '../types';
 
 // Define the shape of the data the context will provide
 interface TournamentContextType {

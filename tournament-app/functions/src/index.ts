@@ -581,16 +581,38 @@ const updateStandings = async (
     const allMatches = divisionMatchesDoc.data()!.matches || [];
     const allTeams = divisionTeamsDoc.data()!.teams || [];
 
-    const currentMatch = allMatches.find((m: any) => m.id === matchId);
-    if (!currentMatch) {
+    const currentMatchIndex = allMatches
+      .findIndex((m: any) => m.id === matchId);
+    if (!allMatches[currentMatchIndex]) {
       throw new Error(
         `Match with id '${matchId}' not found in division '${division}'.`
       );
     }
-    logger.info(`Current match ${JSON.stringify(currentMatch)}`);
+    logger.info(`Current match 
+${JSON.stringify(allMatches[currentMatchIndex])}`);
 
-    const {team1Id, team2Id} = currentMatch;
+    const {team1Id, team2Id} = allMatches[currentMatchIndex];
+    let {team1Wins, team2Wins} = allMatches[currentMatchIndex];
+    if (!team1Wins) {
+      team1Wins = 0;
+    }
+    if (!team2Wins) {
+      team2Wins = 0;
+    }
+    logger.debug(`Team 1 ${team1Wins} and team 2 ${team2Wins}`);
     const loserId = winnerId === team1Id ? team2Id : team1Id;
+    if (winnerId === team1Id) {
+      team1Wins++;
+      allMatches[currentMatchIndex].team1Wins = team1Wins;
+      allMatches[currentMatchIndex].team2Wins = team2Wins;
+    } else {
+      team2Wins++;
+      allMatches[currentMatchIndex].team1Wins = team1Wins;
+      allMatches[currentMatchIndex].team2Wins = team2Wins;
+    }
+
+    logger.debug(`Updated wins:
+ Team 1 ${team1Wins} and team 2 ${team2Wins}`);
 
     const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
     const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
@@ -613,7 +635,11 @@ Winner: ${allTeams[winnerIndex].gameRecord},
 Loser: ${allTeams[loserIndex].gameRecord}`);
 
     // check if winner has enough games
-    if (allTeams[winnerIndex].gameWins >= WINS_NEEDED_FOR_MATCH) {
+
+    logger.debug(`Checking if enough wins
+ ${(winnerId === team1Id ? team1Wins : team2Wins)}`);
+    if ((winnerId === team1Id ? team1Wins : team2Wins) >=
+         WINS_NEEDED_FOR_MATCH) {
       logger.info(
         `Match win condition met for Team ${winnerId} in match ${matchId}!`);
       allTeams[winnerIndex].wins += 1;
@@ -622,9 +648,11 @@ Loser: ${allTeams[loserIndex].gameRecord}`);
       allTeams[loserIndex].losses += 1;
       allTeams[loserIndex].record =
         `${allTeams[loserIndex].wins}-${allTeams[loserIndex].losses}`;
+      allMatches[currentMatchIndex].status = "completed";
     }
 
     transaction.update(divisionTeamsDocRef, {teams: allTeams});
+    transaction.update(divisionMatchesDocRef, {matches: allMatches});
   });
 };
 

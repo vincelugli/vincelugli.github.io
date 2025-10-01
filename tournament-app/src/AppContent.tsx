@@ -22,6 +22,7 @@ import AllPlayersPage from './components/Players/AllPlayersPage';
 import { useAuth } from './components/Common/AuthContext';
 import { useGameMatches } from './context/MatchesContext';
 import MatchResultPage from './components/MatchResult/MatchResultPage';
+import TeamKnockoutPage from './components/TeamPage/TeamKnockoutPage';
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
@@ -54,6 +55,10 @@ const AppContent: React.FC = () => {
                 <Route 
                 path="/teams/:teamId" 
                 element={<TeamPage matches={matches} />} 
+                />
+                <Route 
+                path="/teams/:teamId/knockout" 
+                element={<TeamKnockoutPage />} 
                 />
                 <Route path="/draft-access" element={<DraftAuthGate />} />
                 <Route path="/draft/:draftId" element={<DraftPage />} />
