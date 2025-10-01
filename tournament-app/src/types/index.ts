@@ -46,12 +46,20 @@ export interface Group {
 }
 
 export interface BracketTeam {
+  id?: number;
   name?: string;
 }
 
 export interface BracketSeed {
   id: number;
+  status: 'upcoming' | 'completed';
   teams: BracketTeam[];
+  team1Id: number;
+  team2Id: number;
+  tournamentCodes: string[];
+  weekPlayed: number;
+  winnerId?: number | null;
+  score?: string;
 }
 
 export interface BracketRound {

@@ -1913,5 +1913,20 @@
     "isCaptain": false,
     "contact": "chanishere149",
     "timezone": "Pacific"
+  },
+  {
+    "id": 110,
+    "name": "kirbyquerby#000",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 5,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": [""],
+    "isCaptain": false,
+    "contact": "kirbyquerby",
+    "timezone": "Pacific"
   }
 ]

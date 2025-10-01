@@ -1,0 +1,110 @@
+[
+  {
+    "title": "Quarterfinals",
+    "seeds": [
+      {
+        "id": 1,
+        "team1Id": 7,
+        "team2Id": 8,
+        "tournamentCodes": [
+          "NA04f8a-d863332f-030f-4de6-aa0f-521c989f1cf4",
+          "NA04f8a-a2a87a49-954d-4cde-922c-365f52c50ab0",
+          "NA04f8a-a4d3630a-d562-41ee-92c9-49ebed501fbf"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Gold Digger", "id": 7 }, { "name": "Team reuben12358#NA1", "id": 8 }]
+      },
+      {
+        "id": 2,
+        "team1Id": 2,
+        "team2Id": 6,
+        "tournamentCodes": [
+          "NA04f8a-9d5a4158-3943-46a2-8c37-35e92ead5b89",
+          "NA04f8a-a71f5979-7948-42e6-886d-ade384cb7824",
+          "NA04f8a-a31828bc-8d87-461e-be71-d3f466fcbb12"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Team cartonnnnn#crisp", "id": 2 }, { "name": "Team Belindel#888", "id": 6 }]
+      },
+      {
+        "id": 3,
+        "team1Id": 3,
+        "team2Id": 4,
+        "tournamentCodes": [
+          "NA04f8a-0654e254-876f-4cd7-a5c5-9d7aafd29884",
+          "NA04f8a-a82bff4f-95be-449b-930b-2a28987e9d4d",
+          "NA04f8a-0d373961-81cd-4e32-96c6-b27bc93b01af"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Team DA VINKI#NA1", "id": 3 }, { "name": "Team of Theseus", "id": 4 }]
+      },
+      {
+        "id": 4,
+        "team1Id": 10,
+        "team2Id": 5,
+        "tournamentCodes": [
+          "NA04f8a-38522c70-70b0-476d-9d1f-ba8e2fd3016e",
+          "NA04f8a-a8250682-c8ec-4180-b642-4e4c13592845",
+          "NA04f8a-538e10e3-b451-4338-99c5-9239d9dc179f"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "10xKO", "id": 10 }, { "name": "D&R - Dive and Regret", "id": 5 }]
+      }
+    ]
+  },
+  {
+    "title": "Semifinals",
+    "seeds": [
+      {
+        "id": 1,
+        "team1Id": -1,
+        "team2Id": -1,
+        "tournamentCodes": [],
+        "weekPlayed": 2,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": []
+      },
+      {
+        "id": 2,
+        "team1Id": -1,
+        "team2Id": 1,
+        "tournamentCodes": [],
+        "weekPlayed": 2,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": []
+      }
+    ]
+  },
+  {
+    "title": "Finals",
+    "seeds": [
+      {
+        "id": 3,
+        "team1Id": -1,
+        "team2Id": -1,
+        "tournamentCodes": [],
+        "weekPlayed": 3,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [  ]
+      }
+    ]
+  }
+]

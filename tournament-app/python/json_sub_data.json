@@ -172,28 +172,6 @@
     "timezone": "Pacific"
   },
   {
-    "id": 212,
-    "name": "cardi#6996",
-    "peakRankTier": "Platinum",
-    "peakRankDivision": 4,
-    "soloRankTier": "N/A",
-    "soloRankDivision": -1,
-    "flexRankTier": "N/A",
-    "flexRankDivision": -1,
-    "role": "jungle",
-    "secondaryRoles": [
-      "top",
-      "jungle",
-      "mid",
-      "adc",
-      "support",
-      "fill"
-    ],
-    "isCaptain": false,
-    "contact": "_cardi",
-    "timezone": "Pacific"
-  },
-  {
     "id": 213,
     "name": "Slippy#7776",
     "peakRankTier": "Diamond",
@@ -242,23 +220,6 @@
     "isCaptain": false,
     "contact": "biiimama (Biii MAMA#4739)",
     "timezone": "Pacific"
-  },
-  {
-    "id": 216,
-    "name": "Joe TFT#TACTX",
-    "peakRankTier": "Platinum",
-    "peakRankDivision": 1,
-    "soloRankTier": "N/A",
-    "soloRankDivision": -1,
-    "flexRankTier": "Gold",
-    "flexRankDivision": 3,
-    "role": "top",
-    "secondaryRoles": [
-      "support"
-    ],
-    "isCaptain": false,
-    "contact": "MrSerato",
-    "timezone": "Central"
   },
   {
     "id": 217,
@@ -485,6 +446,67 @@
     "isCaptain": false,
     "contact": "DiracEquation",
     "timezone": "Eastern"
+  },
+  {
+    "id": 230,
+    "name": "vzuhqo#NA1",
+    "peakRankTier": "Emerald",
+    "peakRankDivision": 4,
+    "soloRankTier": "Platinum",
+    "soloRankDivision": 4,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "top",
+    "secondaryRoles": [
+      "mid"
+    ],
+    "isCaptain": false,
+    "contact": "mk1234",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 231,
+    "name": "kirbyquerby#000",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 5,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": [],
+    "isCaptain": false,
+    "contact": "kirbyquerby",
+    "timezone": "Pacific"
+  },
+  {
+    "id": 232,
+    "name": "mutha truckr#NA1",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 3,
+    "soloRankTier": "Gold",
+    "soloRankDivision": 2,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "support",
+    "secondaryRoles": ["fill"],
+    "isCaptain": false,
+    "contact": "mutha3596",
+    "timezone": "Central"
+  },
+  {
+    "id": 233,
+    "name": "MisterPander#NA1",
+    "peakRankTier": "Gold",
+    "peakRankDivision": 3,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "top",
+    "secondaryRoles": ["adc"],
+    "isCaptain": false,
+    "contact": "changish",
+    "timezone": "Pacific"
   }
 ]
-

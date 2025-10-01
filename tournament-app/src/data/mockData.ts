@@ -25,60 +25,51 @@ export const mockGroups: Group[] = [
 
 export const mockBracket: BracketRound[] = [
   {
-    title: 'Round 1',
-    seeds: [
-      {
-        id: 1,
-        teams: [{ name: 'Cybernetic Champions' }, { name: 'Goliath Gamers' }],
-      },
-      {
-        id: 2,
-        teams: [{ name: 'Quantum Questers' }, { name: 'Phoenix Phantoms' }],
-      },
-      {
-        id: 3,
-        teams: [{ name: 'team 3' }, { name: 'three' }],
-      },
-      {
-        id: 4,
-        teams: [{ name: 'team 4' }, { name: 'four' }],
-      },
-      {
-        id: 5,
-        teams: [{ name: 'team 5' }, { name: 'five' }],
-      },
-      {
-        id: 6,
-        teams: [{ name: 'team 6' }, { name: 'six' }],
-      },
-      {
-        id: 7,
-        teams: [{ name: 'team 7' }, { name: 'seven' }],
-      },
-      {
-        id: 8,
-        teams: [{ name: 'team 8' }, { name: 'eight' }],
-      },
-    ],
-  },
-  {
     title: 'quarterfinals',
     seeds: [
       {
         id: 1,
-        teams: [],
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
+        teams: [{ name: 'Gold Digger' }, { name: 'Team reuben12358#NA1' }],
       },
       {
         id: 2,
-        teams: [],
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
+        teams: [{ name: 'Team cartonnnn#crisp' }, { name: 'Team Belindel#888' }],
       },
       {
         id: 3,
-        teams: [],
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
+        teams: [{ name: 'Team DA VINKl#NA1' }, { name: 'Team of Theseus' }],
       },
       {
         id: 4,
-        teams: [],
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
+        teams: [{ name: '10xKO' }, { name: 'Team Kiwi #Shiba' }],
       },
     ],
   },
@@ -87,10 +78,24 @@ export const mockBracket: BracketRound[] = [
     seeds: [
       {
         id: 1,
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
         teams: [],
       },
       {
         id: 2,
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
         teams: [],
       },
     ],
@@ -98,10 +103,17 @@ export const mockBracket: BracketRound[] = [
   {
     title: 'Finals',
     seeds: [
-        {
-          id: 3,
-          teams: [  ]
-        }
+      {
+        id: 3,
+        team1Id: 1,
+        team2Id: 2,
+        tournamentCodes: [],
+        weekPlayed: 1,
+        winnerId: null,
+        score: "0-0",
+        status: "upcoming",
+        teams: [  ]
+      }
     ]
   }
 ];

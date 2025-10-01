@@ -1097,5 +1097,46 @@
     "isCaptain": false,
     "contact": "fovgrubby",
     "timezone": "Pacific"
+  },
+
+  {
+    "id": 64,
+    "name": "cardi#6996",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 4,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "N/A",
+    "flexRankDivision": -1,
+    "role": "jungle",
+    "secondaryRoles": [
+      "top",
+      "jungle",
+      "mid",
+      "adc",
+      "support",
+      "fill"
+    ],
+    "isCaptain": false,
+    "contact": "_cardi",
+    "timezone": "Pacific"
+  },
+
+  {
+    "id": 65,
+    "name": "Joe TFT#TACTX",
+    "peakRankTier": "Platinum",
+    "peakRankDivision": 1,
+    "soloRankTier": "N/A",
+    "soloRankDivision": -1,
+    "flexRankTier": "Gold",
+    "flexRankDivision": 3,
+    "role": "top",
+    "secondaryRoles": [
+      "support"
+    ],
+    "isCaptain": false,
+    "contact": "MrSerato",
+    "timezone": "Central"
   }
 ]
