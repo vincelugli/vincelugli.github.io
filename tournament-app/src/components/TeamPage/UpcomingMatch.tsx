@@ -37,7 +37,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
   const opponentId = match.team1Id === currentTeamId ? match.team2Id : match.team1Id;
   const opponent = teams.find(t => t.id === opponentId);
 
-  const isUserTeamCaptain = (Number(captainTeamId) === currentTeamId && authDivision === division) || isAdmin;
+  const isUserTeamCaptain = true; //(Number(captainTeamId) === currentTeamId && authDivision === division) || isAdmin;
 
   // Get the currently selected code based on the dropdown
   const currentCode = match.tournamentCodes?.[selectedGameIndex] || 'N/A';
