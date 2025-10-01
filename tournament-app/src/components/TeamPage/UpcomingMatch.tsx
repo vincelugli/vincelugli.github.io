@@ -51,7 +51,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
 
   return (
     <UpcomingMatchCard>
-      WEEK {match.weekPlayed}
+      {match.isKnockout ? match.stage : "WEEK " + match.weekPlayed}
       <OpponentInfo>
         {!!opponent && "vs"} <span>{opponent ? <MatchNavLink to={`/teams/${opponent?.id}`}>{opponent.name}</MatchNavLink> : 'Bye'}</span>
       </OpponentInfo>
