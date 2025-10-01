@@ -29,7 +29,7 @@ const DoubleEliminationBracket: React.FC = () => {
 
   const handleTeamClick = (e: React.MouseEvent, teamId: number) => {
     e.stopPropagation();
-    navigate(`/teams/${teamId}/knockout`);
+    navigate(`/teams/${teamId}`);
   };
 
   return (
