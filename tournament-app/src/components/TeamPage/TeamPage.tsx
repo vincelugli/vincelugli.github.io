@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Match, Player } from '../../types';
+import { BracketRound, BracketSeed, Match, Player } from '../../types';
 import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchNavLink } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
@@ -62,7 +62,7 @@ interface TeamPageProps {
 const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { getPlayerById } = usePlayers();
   const { tournamentCodes } = useGameMatches();
-  const { teams } = useTournament();
+  const { teams, bracket } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
 
   const team = teams.find(t => t.id === Number(teamId));
@@ -88,15 +88,36 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     });
   }, [getPlayerById, team]);
 
+  const teamKnockoutMatches: BracketSeed[] = useMemo(() => {
+    const seeds: BracketSeed[][] = bracket.map((round: BracketRound) => {
+      const title = round.title;
+      return round.seeds
+        .filter((seed: BracketSeed) => {
+          const [team1, team2] = seed.teams;
+          if (team1 === undefined || team2 === undefined) return false;
+          return team1.id === Number(teamId) || team2.id === Number(teamId);
+        })
+        .map((seed: BracketSeed) => {
+          seed.stage = title;
+          seed.isKnockout = true;
+          return seed;
+        });
+    });
+    return ([] as BracketSeed[]).concat(...seeds);
+  }, [bracket, teamId]);
+
   if (!team) return <div>Team not found</div>;
 
+  const upcomingKnockoutMatches = teamKnockoutMatches.filter(m => m.status === 'upcoming');
+  const completedKnockoutMatches = teamKnockoutMatches.filter(m => m.status === 'completed');
+
   const upcomingMatches = matches.filter(m =>
-    (m.team1Id === team.id || m.team2Id === team.id)
-  ).sort((m1, m2) => m1.weekPlayed - m2.weekPlayed);
+    m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
+  ).sort((m1, m2) => m1.weekPlayed - m2.weekPlayed).concat(upcomingKnockoutMatches);
   
   const completedMatches = matches.filter(m =>
     m.status === 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
-  );
+  ).concat(completedKnockoutMatches);
   
   return (
     <PageContainer>
@@ -126,7 +147,6 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       <div>
         <SectionTitle>Upcoming Match</SectionTitle>
         {upcomingMatches.length > 0 ? (
-          // 2. Render the new component for each upcoming match
           upcomingMatches.map(match => (
             <UpcomingMatch 
               key={match.id} 

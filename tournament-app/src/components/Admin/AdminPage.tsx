@@ -193,6 +193,7 @@ const AdminPage: React.FC = () => {
     const MatchCodesSchema = z.array(z.object({
         matchId: z.number(),
         code: z.string(),
+        isKnockout: z.optional(z.boolean())
     }));
 
     const MatchResultsSchema = z.object({});
@@ -299,7 +300,7 @@ const AdminPage: React.FC = () => {
                 for (const code of data) {
                     const tournamentCode = code as TournamentCode;
                     const matchRef = doc(db, 'matches', tournamentCode.code);
-                    batch.set(matchRef, { matchId: tournamentCode.matchId, division });
+                    batch.set(matchRef, { matchId: tournamentCode.matchId, division, isKnockout: tournamentCode.isKnockout });
                 }
                 
                 await batch.commit();

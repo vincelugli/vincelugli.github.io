@@ -9,6 +9,8 @@ export interface Match {
   weekPlayed: number;
   winnerId?: number | null; // Only for 'completed' status
   score?: string; // e.g., "2-1", only for 'completed' status
+  isKnockout?: boolean;
+  stage?: string;
 }
 
 export interface Team {
@@ -60,6 +62,8 @@ export interface BracketSeed {
   weekPlayed: number;
   winnerId?: number | null;
   score?: string;
+  isKnockout: boolean;
+  stage?: string;
 }
 
 export interface BracketRound {
@@ -122,6 +126,7 @@ export interface TournamentCode {
   matchId: number|string;
   status: string;
   winnerId: number;
+  isKnockout?: boolean;
 }
 
 export interface MatchResult {
