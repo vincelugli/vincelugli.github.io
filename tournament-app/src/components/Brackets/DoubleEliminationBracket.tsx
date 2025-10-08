@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 const TeamNameLink = styled.div`
   font-size: 0.85rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.text};
+  color: ${({ theme }) => theme.bracketText};
   text-decoration: none;
   display: block;
   padding: 0.5rem;
