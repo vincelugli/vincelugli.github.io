@@ -13,8 +13,8 @@
         ],
         "weekPlayed": 1,
         "winnerId": null,
-        "score": "0-0",
-        "status": "upcoming",
+        "score": "2-1",
+        "status": "completed",
         "teams": [{ "name": "Gold Digger", "id": 7 }, { "name": "Team reuben12358#NA1", "id": 8 }]
       },
       {
@@ -28,8 +28,8 @@
         ],
         "weekPlayed": 1,
         "winnerId": null,
-        "score": "0-0",
-        "status": "upcoming",
+        "score": "1-2",
+        "status": "completed",
         "teams": [{ "name": "Team cartonnnnn#crisp", "id": 2 }, { "name": "Team Belindel#888", "id": 6 }]
       },
       {
@@ -43,8 +43,8 @@
         ],
         "weekPlayed": 1,
         "winnerId": null,
-        "score": "0-0",
-        "status": "upcoming",
+        "score": "2-1",
+        "status": "completed",
         "teams": [{ "name": "Team DA VINKI#NA1", "id": 3 }, { "name": "Team of Theseus", "id": 4 }]
       },
       {
@@ -58,8 +58,8 @@
         ],
         "weekPlayed": 1,
         "winnerId": null,
-        "score": "0-0",
-        "status": "upcoming",
+        "score": "2-0",
+        "status": "completed",
         "teams": [{ "name": "10xKO", "id": 10 }, { "name": "D&R - Dive and Regret", "id": 5 }]
       }
     ]
@@ -69,25 +69,33 @@
     "seeds": [
       {
         "id": 1,
-        "team1Id": -1,
-        "team2Id": -1,
-        "tournamentCodes": [],
+        "team1Id": 7,
+        "team2Id": 6,
+        "tournamentCodes": [
+          "NA04f90-49754f64-d813-4309-bee3-55f0677eeb4f",
+          "NA04f90-b28c9532-6cc1-4c4b-bc72-63d4f5ba7f0b",
+          "NA04f90-5e753169-eb9c-49fd-bf56-46f969a41ad0"
+        ],
         "weekPlayed": 2,
         "winnerId": null,
         "score": "0-0",
         "status": "upcoming",
-        "teams": []
+        "teams": [{ "name": "Gold Digger", "id": 7 }, { "name": "Team Belindel#888", "id": 6 }]
       },
       {
         "id": 2,
-        "team1Id": -1,
-        "team2Id": 1,
-        "tournamentCodes": [],
+        "team1Id": 3,
+        "team2Id": 10,
+        "tournamentCodes": [
+          "NA04f90-0a3b540f-d910-4a92-a89d-dc52a5756d17",
+          "NA04f90-9791c20d-4172-4aa3-9b21-1395bad2c734",
+          "NA04f90-cf485859-ac72-4b6d-9a36-bea51b45ad2a"
+        ],
         "weekPlayed": 2,
         "winnerId": null,
         "score": "0-0",
         "status": "upcoming",
-        "teams": []
+        "teams": [{ "name": "Team DA VINKI#NA1", "id": 3 }, { "name": "10xKO", "id": 10 }]
       }
     ]
   },

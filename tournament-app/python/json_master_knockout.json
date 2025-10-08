@@ -1,0 +1,110 @@
+[
+  {
+    "title": "Quarterfinals",
+    "seeds": [
+      {
+        "id": 1,
+        "team1Id": 7,
+        "team2Id": -1,
+        "tournamentCodes": [
+            "NA04f90-cba69b2b-0ad4-4c37-8dfa-0b0b3fd941b9",
+            "NA04f90-10c88e14-b81f-473e-bc28-82fb08471a0d",
+            "NA04f90-328d32da-cb5f-42ad-9643-b118fb6ff181"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "sudo rm -rf enemy_nexus", "id": 7 }, { "name": "Team 80kg man#176lb || Gscript || Age of Empires", "id": -1 }]
+      },
+      {
+        "id": 2,
+        "team1Id": 2,
+        "team2Id": 5,
+        "tournamentCodes": [
+            "NA04f90-926d5cec-5efa-43d8-abc2-27370acde110",
+            "NA04f90-c279f588-c9e3-4f90-8e67-ffd763d773e0",
+            "NA04f90-831b9da1-c65b-48b7-9fd4-42abd5cb018b"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Team lucidorangee#na1", "id": 2 }, { "name": "Ok Google, gank bot", "id": 5 }]
+      },
+      {
+        "id": 3,
+        "team1Id": 8,
+        "team2Id": 1,
+        "tournamentCodes": [
+            "NA04f90-6fe4d177-27ae-4808-8eb1-15c5f29d71ca",
+            "NA04f90-6a98aef4-90f8-47dd-ba00-46fad156b6ba",
+            "NA04f90-d6bde121-4eaa-4a40-bd3d-db96d3e04a6e"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Team TomyTomm#NA1", "id": 8 }, { "name": "The Boiz", "id": 1 }]
+      },
+      {
+        "id": 4,
+        "team1Id": 9,
+        "team2Id": -1,
+        "tournamentCodes": [
+            "NA04f90-7616f55e-aaaa-4fb8-84e7-62913b68f527",
+            "NA04f90-236e733f-369d-4d0e-a575-358a477af6a5",
+            "NA04f90-93df7c5d-417d-411d-b271-17cfce25fed3"
+        ],
+        "weekPlayed": 1,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [{ "name": "Coded As A Minion", "id": 9 }, { "name": "Team 80kg man#176lb || Gscript || Age of Empires", "id": -1 }]
+      }
+    ]
+  },
+  {
+    "title": "Semifinals",
+    "seeds": [
+      {
+        "id": 1,
+        "team1Id": -1,
+        "team2Id": -1,
+        "tournamentCodes": [],
+        "weekPlayed": 2,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": []
+      },
+      {
+        "id": 2,
+        "team1Id": -1,
+        "team2Id": 1,
+        "tournamentCodes": [],
+        "weekPlayed": 2,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": []
+      }
+    ]
+  },
+  {
+    "title": "Finals",
+    "seeds": [
+      {
+        "id": 3,
+        "team1Id": -1,
+        "team2Id": -1,
+        "tournamentCodes": [],
+        "weekPlayed": 3,
+        "winnerId": null,
+        "score": "0-0",
+        "status": "upcoming",
+        "teams": [  ]
+      }
+    ]
+  }
+]

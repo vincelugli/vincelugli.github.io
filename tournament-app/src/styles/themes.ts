@@ -2,6 +2,7 @@
 export interface Theme {
   body: string;
   text: string;
+  bracketText: string;
   secondaryText: string;
   background: string;
   backgroundTwo: string;
@@ -27,6 +28,7 @@ export interface Theme {
 export const lightTheme: Theme = {
   body: '#F0F2F5',
   text: '#333333',
+  bracketText: '#F0F2F5',
   secondaryText: '#555',
   background: '#FFFFFF',
   backgroundTwo: '#f8f9fa',
@@ -52,6 +54,7 @@ export const lightTheme: Theme = {
 export const darkTheme: Theme = {
   body: '#121212',
   text: '#EAEAEA',
+  bracketText: '#EAEAEA',
   secondaryText: '#A0A0A0',
   background: '#1E1E1E',
   backgroundTwo: '#1E1E1E',
