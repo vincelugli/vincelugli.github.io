@@ -197,8 +197,8 @@ const PlayerProfilePage: React.FC = () => {
             if (!resultSnap.exists()) return undefined;
 
             const resultData = resultSnap.data() as MatchResultData;
-            const playerPerfBlue = resultData['blueTeam'].players.find(p => p.playerName === playerData.name);
-            const playerPerfRed = resultData['redTeam'].players.find(p => p.playerName === playerData.name);
+            const playerPerfBlue = resultData['blueTeam'].players.find(p => p.playerName.toLowerCase() === playerData.name.toLowerCase());
+            const playerPerfRed = resultData['redTeam'].players.find(p => p.playerName.toLowerCase() === playerData.name.toLowerCase());
             
             // Update champion stats
             if (playerPerfBlue) {
