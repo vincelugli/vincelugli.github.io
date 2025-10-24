@@ -23,6 +23,7 @@ import { useAuth } from './components/Common/AuthContext';
 import { useGameMatches } from './context/MatchesContext';
 import MatchResultPage from './components/MatchResult/MatchResultPage';
 import TeamKnockoutPage from './components/TeamPage/TeamKnockoutPage';
+import PlayerProfilePage from './components/Players/PlayerProfilePage';
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
@@ -69,6 +70,8 @@ const AppContent: React.FC = () => {
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/players" element={<AllPlayersPage />} />
                 <Route path="/match/:matchId" element={<MatchResultPage />} />
+
+                <Route path="/players/:playerId" element={<PlayerProfilePage />} />
             </Routes>
           </MainContent>
           <Footer />
