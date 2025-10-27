@@ -31,7 +31,7 @@ interface TwitchEmbedProps {
 
 const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
   const parentDomain = process.env.NODE_ENV === 'production' 
-    ? 'grumble.cc'
+    ? 'www.grumble.cc'
     : 'localhost';
 
   const embedUrl = `https://player.twitch.tv/?video=2602218681&parent=${parentDomain}&autoplay=true&muted=true`;
