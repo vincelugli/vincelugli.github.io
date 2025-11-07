@@ -34,8 +34,7 @@ const TwitchEmbed: React.FC<TwitchEmbedProps> = ({ channel }) => {
     ? 'www.grumble.cc'
     : 'localhost';
 
-  const embedUrl = `https://player.twitch.tv/?video=2602218681&parent=${parentDomain}&autoplay=true&muted=true`;
-
+  const embedUrl = `https://player.twitch.tv/?channel=${channel}&parent=${parentDomain}&autoplay=true&muted=true`;
   return (
     <EmbedContainer>
       <StyledIframe
