@@ -4,7 +4,7 @@ import DoubleEliminationBracket from './Brackets/DoubleEliminationBracket';
 import { TournamentContainer, SectionTitle } from '../styles';
 import TwitchEmbed from './Common/TwitchEmbed';
 
-const STREAM_START_ISO_WITH_OFFSET = '2025-10-26T15:00:00-07:00';
+const STREAM_START_ISO_WITH_OFFSET = '2025-11-09T15:00:00-07:00';
 
 const Tournament: React.FC = () => {
   const [isStreamLive, setIsStreamLive] = useState(false);
@@ -41,7 +41,7 @@ const Tournament: React.FC = () => {
   return (
     <TournamentContainer>
       <div>
-        <SectionTitle>Master Finals - October 26th 3pm PT / 6pm ET</SectionTitle>
+        <SectionTitle>Gold Finals - November 9th 3pm PT / 6pm ET</SectionTitle>
         {isStreamLive ? (
           <TwitchEmbed channel="grumbleofficial" />
         ) : <></>}
