@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext, ReactNode } from
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useDivision } from './DivisionContext';
+import { getFirebasePrefix } from '../utils';
 import { Team, Group, BracketRound, Player } from '../types';
 
 // Define the shape of the data the context will provide
@@ -13,9 +14,16 @@ interface TournamentContextType {
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
-const GRUMBLE_YEAR_PREFIX = "grumble2025";
 
 export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const GRUMBLE_YEAR_PREFIX = getFirebasePrefix();
   const { division } = useDivision(); 
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -23,7 +31,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [bracket, setBracket] = useState<BracketRound[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // This effect will run whenever the component mounts OR whenever the `division` changes
+  // This effect will run whenever the component mounts OR whenever the `division` or year prefix changes
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -45,18 +53,26 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
         if (playersSnap.exists()) {
             const playersData = playersSnap.data();
             setPlayers(playersData.players);
+        } else {
+            setPlayers([]);
         }
         if (teamsSnap.exists()) {
             const teamsData = teamsSnap.data()
             setTeams(teamsData.teams);
+        } else {
+            setTeams([]);
         }
         if (groupsSnap.exists()) {
             const groupsData = groupsSnap.data();
             setGroups(groupsData.groups);
+        } else {
+            setGroups([]);
         }
         if (bracketSnap.exists()) {
             const bracketData = bracketSnap.data();
             setBracket(bracketData.bracket);
+        } else {
+            setBracket([]);
         }
 
 
@@ -72,7 +88,7 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     };
 
     fetchData();
-  }, [division]); 
+  }, [division, GRUMBLE_YEAR_PREFIX]); 
 
   const value = { players, teams, groups, bracket, loading };
 

@@ -5,6 +5,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import Button from '../Common/Button';
 import { GateContainer, AuthBox, Input, ErrorMessage } from '../../styles';
 import { useAuth } from '../Common/AuthContext';
+import { getYearFromHash } from '../../utils';
 
 const DraftAuthGate: React.FC = () => {
   const navigate = useNavigate();
@@ -22,7 +23,8 @@ const DraftAuthGate: React.FC = () => {
     try {
       const functions = getFunctions();
       const getToken = httpsCallable(functions, 'getAuthTokenForAccessCode');
-      const result = await getToken({ accessCode });
+      const year = getYearFromHash(window.location.hash) || '2026';
+      const result = await getToken({ accessCode, year });
       const token = (result.data as { token: string }).token;
       
       await signInWithCustomToken(auth, token);

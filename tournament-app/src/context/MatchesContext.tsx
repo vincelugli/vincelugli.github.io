@@ -3,6 +3,7 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import { db } from '../firebase';
 import { Match, TournamentCode } from '../types';
 import { useDivision } from './DivisionContext';
+import { getFirebasePrefix } from '../utils';
 
 // Define the shape of the data the context will provide
 interface MatchesContextType {
@@ -16,6 +17,13 @@ const MatchesContext = createContext<MatchesContextType | undefined>(undefined);
 
 // Create the Provider component
 export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [hash, setHash] = useState(window.location.hash);
+    useEffect(() => {
+        const handleHashChange = () => setHash(window.location.hash);
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+
     const [matches, setMatches] = useState<Match[]>([]);
     const [tournamentCodes, setTournamentCodes] = useState<TournamentCode[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,11 +35,14 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const fetchMatches = async () => {
             setLoading(true);
             try {
-                const matchesRef = doc(db, 'matches', `grumble2025_${division}`)
+                const prefix = getFirebasePrefix();
+                const matchesRef = doc(db, 'matches', `${prefix}_${division}`)
                 const snapshot = await getDoc(matchesRef);
 
                 if (snapshot.exists()) {
                     setMatches(snapshot.data().matches);
+                } else {
+                    setMatches([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch player data:", error);
@@ -66,7 +77,7 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         fetchMatches();
         fetchTournamentCodes();
-    }, [division]);
+    }, [division, hash]);
 
 
   const value = {

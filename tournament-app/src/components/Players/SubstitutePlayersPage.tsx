@@ -4,7 +4,7 @@ import { db } from '../../firebase';
 import { SubPlayer } from '../../types';
 import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa'; 
 import { ControlsContainer, FilterGroup, SubsTableHead, ContactInfo, LoadingText, ErrorText, SubsPageContainer, SubsTitle, SubsPlayerTable, SubsLabel, SubsSelect, SubsTableBody, SubsCopyButton } from '../../styles/index';
-import { convertRankToElo } from '../../utils';
+import { convertRankToElo, getFirebasePrefix } from '../../utils';
 import { useDivision } from '../../context/DivisionContext';
 
 type SortDirection = 'ascending' | 'descending';
@@ -32,7 +32,8 @@ const SubstitutesPage: React.FC = () => {
       setError(null);
       
       try {
-        const docRef = doc(db, 'players', `grumble2025_${division}`);
+        const prefix = getFirebasePrefix();
+        const docRef = doc(db, 'players', `${prefix}_${division}`);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {

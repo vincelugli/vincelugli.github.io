@@ -11,7 +11,7 @@ import { useTournament } from '../../context/TournamentContext';
 
 // --- TYPES & UTILS ---
 import { Player, Team, Match, MatchResultData, BracketSeed, BracketRound } from '../../types';
-import { createOpGgUrl } from '../../utils';
+import { createOpGgUrl, getFirebasePrefix } from '../../utils';
 import { MatchInfo, MatchResult, ResultIndicator, Score } from '../../styles';
 
 // --- STYLED COMPONENTS ---
@@ -170,8 +170,9 @@ const PlayerProfilePage: React.FC = () => {
       setPlayerTeam(team);
 
       // 3. Fetch all matches (Swiss and Knockout)
-      const swissMatchesDocRef = doc(db, 'matches', `grumble2025_${division}`);
-      const knockoutMatchesColRef = doc(db, 'bracket', `grumble2025_${division}`);
+      const prefix = getFirebasePrefix();
+      const swissMatchesDocRef = doc(db, 'matches', `${prefix}_${division}`);
+      const knockoutMatchesColRef = doc(db, 'bracket', `${prefix}_${division}`);
       
       const [swissSnap, knockoutSnap] = await Promise.all([
         getDoc(swissMatchesDocRef),

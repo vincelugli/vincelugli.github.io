@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 
@@ -24,13 +24,26 @@ import { useGameMatches } from './context/MatchesContext';
 import MatchResultPage from './components/MatchResult/MatchResultPage';
 import TeamKnockoutPage from './components/TeamPage/TeamKnockoutPage';
 import PlayerProfilePage from './components/Players/PlayerProfilePage';
+import { getYearFromHash } from './utils';
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
   const { matches } = useGameMatches();
+  
+  const [hash, setHash] = useState(window.location.hash);
+  
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const year = getYearFromHash(hash) || '2026';
+  const basename = getYearFromHash(hash) ? `/${getYearFromHash(hash)}` : undefined;
+  const is2026 = year === '2026';
 
   return (
-    <Router>
+    <Router basename={basename}>
       <RouteChangeTracker />
       <AppContainer>
           <Header />
@@ -38,8 +51,8 @@ const AppContent: React.FC = () => {
             <Routes>
                 <Route 
                 path="/" 
-                element={<Tournament />} 
-                />
+                  element={<Tournament />} 
+                  />
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route 
                 path="/swiss" 

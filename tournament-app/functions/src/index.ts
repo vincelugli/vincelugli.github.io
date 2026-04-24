@@ -113,28 +113,57 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
       );
     }
 
-    // Query the secure collection for a matching access code
-    const codesRef = db.collection("teamAccessCodes");
-    const snapshot = await codesRef
-      .where("accessCode", "==", accessCode)
-      .limit(1)
-      .get();
+    const year = (rawRequest.data as any).year || "2026";
+    const prefix = `grumble${year}`;
 
-    if (snapshot.empty) {
+    const masterRef = db.collection("teamAccessCodes").doc(`${prefix}_master`);
+    const goldRef = db.collection("teamAccessCodes").doc(`${prefix}_gold`);
+
+    const [masterSnap, goldSnap] = await Promise.all([
+      masterRef.get(),
+      goldRef.get(),
+    ]);
+
+    let matchedData: any = null;
+    let matchedId: string | null = null;
+
+    if (masterSnap.exists) {
+      const data = masterSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          break;
+        }
+      }
+    }
+
+    if (!matchedData && goldSnap.exists) {
+      const data = goldSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          break;
+        }
+      }
+    }
+
+    if (!matchedData) {
       throw new https.HttpsError(
         "not-found",
         "Invalid access code."
       );
     }
-    logger.debug(
-      `Access granted to ${snapshot.docs[0].data().captainName}`);
+
+    logger.debug(`Access granted to ${matchedData.captainName}`);
 
     // Get the teamId from the matched document"s ID
-    const isLegacyTeamId = !Number.isNaN(Number(snapshot.docs[0].id));
+    const isLegacyTeamId = !Number.isNaN(Number(matchedId));
     const teamId = isLegacyTeamId ?
-      Number(snapshot.docs[0].id) :
-      snapshot.docs[0].data().teamId;
-    const division = snapshot.docs[0].data().division ?? "";
+      Number(matchedId) :
+      matchedData.teamId;
+    const division = matchedData.division ?? "";
     logger.debug(`Team access for division ${division}`);
     const uid = `captain-${teamId}`; // Create a unique ID for this user
 

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, User } from 'firebase/auth';
-import {  HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem } from '../../styles';
+import { HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction } from '../../styles';
 import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
+import { getYearDisplayString } from '../../utils';
 
 const Header: React.FC = () => {
   const auth = getAuth();
@@ -27,15 +28,19 @@ const Header: React.FC = () => {
   }
 
   // Listen to auth state to show/hide the captain link
+  const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe();
-  }, [auth]);
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const logoText = getYearDisplayString(hash);
 
   return (
     <HeaderContainer>
       <HeaderLeft>
-        <Logo to="/" onClick={closeAllMenus}>GRumble 2025</Logo>
+        <Logo to="/" onClick={closeAllMenus}>{logoText}</Logo>
         <DivisionSelector />
       </HeaderLeft>
       
@@ -66,6 +71,27 @@ const Header: React.FC = () => {
               <SubMenuItem to="/draft-access">Draft</SubMenuItem>
               {user && (<SubMenuItem to="/pick-priority">Auto-Draft</SubMenuItem>)}
               <SubMenuItem to="/subs">Substitutes</SubMenuItem>
+            </SubMenu>
+          </NavItem>
+
+          <NavItem>
+            Year <FaChevronDown size={12} />
+            <SubMenu>
+              <SubMenuAction
+                onClick={() => {
+                  const path = window.location.hash.replace(/^#\/2025/, '').replace(/^#/, '');
+                  window.location.hash = `#/2025`;
+                }}
+              >
+                Grumble 2025
+              </SubMenuAction>
+              <SubMenuAction
+                onClick={() => {
+                  window.location.hash = `#/2026`;
+                }}
+              >
+                Grumble 2026
+              </SubMenuAction>
             </SubMenu>
           </NavItem>
         </Nav>
@@ -106,6 +132,31 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft</MobileSubMenuItem>
             {user && (<MobileSubMenuItem to="/pick-priority" onClick={closeAllMenus}>Auto-Draft</MobileSubMenuItem>)}
             <MobileSubMenuItem to="/subs" onClick={closeAllMenus}>Substitutes</MobileSubMenuItem>
+          </MobileSubMenu>
+        </MobileNavItem>
+
+        <MobileNavItem>
+          <MobileMainLink onClick={() => toggleMobileSubMenu('year')}>
+            Year <FaChevronDown size={16} />
+          </MobileMainLink>
+          <MobileSubMenu isOpen={openMobileSubMenu === 'year'}>
+            <MobileSubMenuAction
+              onClick={() => {
+                const path = window.location.hash.replace(/^#\/2025/, '').replace(/^#/, '');
+                window.location.hash = `#/2025${path}`;
+                closeAllMenus();
+              }}
+            >
+              Grumble 2025
+            </MobileSubMenuAction>
+            <MobileSubMenuAction
+              onClick={() => {
+                window.location.hash = `#/2026`;
+                closeAllMenus();
+              }}
+            >
+              Grumble 2026
+            </MobileSubMenuAction>
           </MobileSubMenu>
         </MobileNavItem>
       </MobileMenu>
