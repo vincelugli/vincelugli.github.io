@@ -165,6 +165,18 @@ export const SubMenuItem = styled(RouterNavLink)`
   }
 `;
 
+export const SubMenuAction = styled.div`
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.body};
+  }
+`;
+
 export const MobileNavItem = styled.div`
   width: 100%;
 `;
@@ -200,6 +212,18 @@ export const MobileSubMenuItem = styled(RouterNavLink)`
   &.active {
     background-color: ${({ theme }) => theme.primary};
     color: ${({ theme }) => theme.text};
+  }
+`;
+
+export const MobileSubMenuAction = styled.div`
+  font-size: 1.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.text};
+
+  &:hover {
+    background-color: ${({ theme }) => theme.body};
   }
 `;
 

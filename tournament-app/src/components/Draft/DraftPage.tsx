@@ -10,7 +10,7 @@ import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, Team
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
-import { compareRanks, createOpGgUrl, rankTierToShortName } from '../../utils';
+import { compareRanks, createOpGgUrl, rankTierToShortName, getFirebasePrefix } from '../../utils';
 import { ceil } from 'lodash';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
@@ -107,7 +107,8 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
     currentPickIndex++;
   }
 
-  return { teams, pickOrder, availablePlayers, completedPicks: {}, currentPickIndex, draftId: `grumble2025_${division ?? "master"}` };
+  const prefix = getFirebasePrefix();
+  return { teams, pickOrder, availablePlayers, completedPicks: {}, currentPickIndex, draftId: `${prefix}_${division ?? "master"}` };
 };
 
 const emptyDraftState = (): DraftState => {
@@ -130,10 +131,17 @@ const DraftPage: React.FC = () => {
   const initialDraftState = initializeDraft(allPlayers, division);
   const { teams, pickOrder } = initialDraftState;
 
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const prefix = getFirebasePrefix();
   const [draftState, setDraftState] = useState<DraftState>(emptyDraftState);
-  const [draftDocRef, setDraftDocRef] = useState(doc(db, 'drafts', `grumble2025_${division}`));
+  const [draftDocRef, setDraftDocRef] = useState(doc(db, 'drafts', `${prefix}_${division}`));
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const [prevDivision, setPrevDivision] = useState('');
   const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -153,11 +161,10 @@ const DraftPage: React.FC = () => {
   //// END AUTH ////
 
   useEffect(() => {
-    if (division !== prevDivision) {
-      setDraftDocRef(doc(db, 'drafts', `grumble2025_${division}`));
-      setPrevDivision(division);
-    }
+    setDraftDocRef(doc(db, 'drafts', `${prefix}_${division}`));
+  }, [division, prefix]);
 
+  useEffect(() => {
     async function maybeInitData() {
       // Draft hasn't been initialized yet, update with initialize draft state
       const currentData = await getDoc(draftDocRef);
@@ -188,7 +195,7 @@ const DraftPage: React.FC = () => {
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
-  }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, prevDivision, setDraftDocRef, setPrevDivision]);
+  }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, setDraftDocRef]);
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;

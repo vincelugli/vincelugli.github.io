@@ -13,7 +13,7 @@ const Tournament: React.FC = () => {
     const checkStreamTime = () => {
       // 1. Get the current time's timestamp
       const now = Date.now();
-      
+
       // 2. Create a Date object from our specific timezone string
       // This will be correctly interpreted by all modern browsers.
       const startTime = new Date(STREAM_START_ISO_WITH_OFFSET);
@@ -23,7 +23,7 @@ const Tournament: React.FC = () => {
 
       // 4. Compare the timestamps
       const isLive = now >= startTimeMillis;
-      
+
       setIsStreamLive(isLive);
       console.log(`Time check: Stream is currently ${isLive ? 'LIVE' : 'OFFLINE'}.`);
     };
@@ -40,13 +40,6 @@ const Tournament: React.FC = () => {
 
   return (
     <TournamentContainer>
-      <div>
-        <SectionTitle>Master Finals - October 26th 3pm PT / 6pm ET</SectionTitle>
-        {isStreamLive ? (
-          <TwitchEmbed channel="grumbleofficial" />
-        ) : <></>}
-
-      </div>
       <div>
         <SectionTitle>Swiss Stage</SectionTitle>
         <SwissStage />

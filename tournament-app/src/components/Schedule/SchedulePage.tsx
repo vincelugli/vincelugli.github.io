@@ -2,6 +2,7 @@ import React from 'react';
 import { FaCalendarAlt } from 'react-icons/fa';
 import { SchedulePageContainer, ScheduleTitle, TimelineContainer, StageCard, StageIcon, StageContent, StageTitle, StageDescription, StageLink, StageDate } from '../../styles';
 import { useDivision } from '../../context/DivisionContext';
+import { getYearFromHash } from '../../utils';
 
 const tournamentStagesMaster = [
   {
@@ -90,13 +91,17 @@ const tournamentStagesGold = [
 
 const SchedulePage: React.FC = () => {
   const { division } = useDivision();
+  const year = getYearFromHash(window.location.hash) || '2026';
+  const is2026 = year === '2026';
 
   const getIconContent = (startDate: Date, endDate: Date, number: number) => {
+    if (is2026) return number;
     if (getStatusFromDate(startDate, endDate) === 'completed') return '✓';
     return number;
   }
 
   const getStatusFromDate = (startDate: Date, endDate: Date) => {
+    if (is2026) return "upcoming";
     const now = Date.now()
     if (now >= endDate.getTime()) return "completed";
     if (now >= startDate.getTime() && now <= endDate.getTime()) {
@@ -120,7 +125,7 @@ const SchedulePage: React.FC = () => {
               <StageTitle>{stage.title}</StageTitle>
               <StageDate>
                 <FaCalendarAlt />
-                <span>{stage.date?.toDateString()}</span>
+                <span>{is2026 ? "TBD" : stage.date?.toDateString()}</span>
               </StageDate>
               <StageDescription>{stage.description}</StageDescription>
               {stage.link && (

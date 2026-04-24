@@ -87,3 +87,19 @@ export function compareRanks(player1: Player, player2: Player): number {
 
     return p1Max - p2Max;
 }
+
+export function getYearFromHash(hash: string): string | undefined {
+  const match = hash.match(/#\/(\d{4})/);
+  return match ? match[1] : undefined;
+}
+
+export function getYearDisplayString(hash: string): string {
+  const year = getYearFromHash(hash);
+  return year ? `GRumble ${year}` : "GRumble 2026";
+}
+
+export function getFirebasePrefix(): string {
+  const hash = window.location.hash;
+  const year = getYearFromHash(hash) || '2026';
+  return `grumble${year}`;
+}

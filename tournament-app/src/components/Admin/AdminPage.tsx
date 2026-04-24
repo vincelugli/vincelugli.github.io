@@ -9,6 +9,7 @@ import { AdminPageContainer, AdminTitle, Form, TextArea, SelectionContainer, For
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
+import { getFirebasePrefix } from '../../utils';
 
 const StatusMessage = styled.p<{ status: 'success' | 'error' }>` /* ... same as other pages ... */ `;
 const JsonOutput = styled.pre`
@@ -212,7 +213,8 @@ const AdminPage: React.FC = () => {
         setCopied(false);
 
         try {
-            const docRef = doc(db, 'drafts', 'grumble2025_master');
+            const prefix = getFirebasePrefix();
+            const docRef = doc(db, 'drafts', `${prefix}_master`);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
@@ -226,7 +228,8 @@ const AdminPage: React.FC = () => {
                     throw new Error("'teams' field is missing or not an array in the document.");
                 }
             } else {
-                throw new Error("Document 'drafts/grumble2025_master' not found.");
+                const prefix = getFirebasePrefix();
+                throw new Error(`Document 'drafts/${prefix}_master' not found.`);
             }
         } catch (error) {
             console.error("Error fetching teams data:", error);
@@ -311,7 +314,8 @@ const AdminPage: React.FC = () => {
 
                 await batch.commit();
             } else {
-                const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `grumble2025_${division}`);
+                const prefix = getFirebasePrefix();
+                const docRef = doc(db, selectedType === 'subs' ? 'players' : selectedType, `${prefix}_${division}`);
                 await updateDoc(docRef, {
                     [selectedType]: arrayUnion(...data)
                 });
@@ -391,7 +395,7 @@ const AdminPage: React.FC = () => {
                 return (
                 <div>
                     <h3>Export Team Rosters from Draft</h3>
-                    <p>Click the button below to fetch the `teams` field from the `drafts/grumble2025_test` document and display it as JSON.</p>
+                    <p>Click the button below to fetch the `teams` field from the `drafts/${getFirebasePrefix()}_test` document and display it as JSON.</p>
                     <ActionContainer>
                     <Button onClick={handleFetchTeams} disabled={exportStatus === 'loading'}>
                         {exportStatus === 'loading' ? 'Fetching...' : 'Fetch and Print Teams'}

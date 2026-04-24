@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Player } from '../types';
 import { useDivision } from './DivisionContext';
+import { getFirebasePrefix } from '../utils';
 
 // Define the shape of the data the context will provide
 interface PlayerContextType {
@@ -17,6 +18,13 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 // Create the Provider component
 export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const handleHashChange = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [draftablePlayers, setDraftablePlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +36,14 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const fetchPlayers = async () => {
       setLoading(true);
       try {
-        const playersRef = doc(db, 'players', `grumble2025_${division}`);
+        const prefix = getFirebasePrefix();
+        const playersRef = doc(db, 'players', `${prefix}_${division}`);
         const snapshot = await getDoc(playersRef);
 
         if (snapshot.exists()) {
             setPlayers(snapshot.data().players);
+        } else {
+            setPlayers([]);
         }
       } catch (error) {
         console.error("Failed to fetch player data:", error);
@@ -45,11 +56,14 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setLoading(true);
 
       try {
-        const draftRef = doc(db, 'drafts', `grumble2025_${division}`);
+        const prefix = getFirebasePrefix();
+        const draftRef = doc(db, 'drafts', `${prefix}_${division}`);
         const snapshot = await getDoc(draftRef);
 
         if (snapshot.exists()) {
           setDraftablePlayers(snapshot.data().availablePlayers);
+        } else {
+          setDraftablePlayers([]);
         }
       } catch (error) {
         console.error("Failed to fetch draft data:", error);
@@ -60,7 +74,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     fetchPlayers();
     fetchRemainingDraftablePlayers();
-  }, [division]);
+  }, [division, hash]);
 
   // Helper function to find a player by ID, memoized for performance
   const getPlayerById = (id: number) => players.find(p => p.id === id);
