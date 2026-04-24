@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { collection, getDocs, doc, getDoc, query } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 // --- CONTEXT HOOKS ---
@@ -10,7 +10,7 @@ import { usePlayers } from '../../context/PlayerContext';
 import { useTournament } from '../../context/TournamentContext';
 
 // --- TYPES & UTILS ---
-import { Player, Team, Match, MatchResultData, BracketSeed, BracketRound } from '../../types';
+import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
 import { createOpGgUrl, getFirebasePrefix } from '../../utils';
 import { MatchInfo, MatchResult, ResultIndicator, Score } from '../../styles';
 
@@ -207,7 +207,7 @@ const PlayerProfilePage: React.FC = () => {
               const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
               stats.games++;
               let gameWinner = false;
-              if (resultData.winner == 100) {
+              if (resultData.winner === 100) {
                 stats.wins++;
                 gameWinner = true;
               }
@@ -219,7 +219,7 @@ const PlayerProfilePage: React.FC = () => {
               const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
               stats.games++;
               let gameWinner = false;
-              if (resultData.winner == 200) {
+              if (resultData.winner === 200) {
                 stats.wins++;
                 gameWinner = true;
               }
@@ -275,7 +275,7 @@ const PlayerProfilePage: React.FC = () => {
         {matchHistory.map(match => {
           const opponentId = match.team1Id === playerTeam?.id ? match.team2Id : match.team1Id;
           const opponent = teams.find(t => t.id === opponentId);
-          const didWinSeries = match.playerMatchPerf.map((perf: any) => perf.gameWinner).filter((_: any)=>_).length == 2
+          const didWinSeries = match.playerMatchPerf.map((perf: any) => perf.gameWinner).filter((_: any)=>_).length === 2
 
           return (
             opponent?.name ? <MatchItem key={match.id} onClick={() => navigate(`/match/${match.id}`)}>

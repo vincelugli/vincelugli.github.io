@@ -40,7 +40,6 @@ const AppContent: React.FC = () => {
 
   const year = getYearFromHash(hash) || '2026';
   const basename = getYearFromHash(hash) ? `/${getYearFromHash(hash)}` : undefined;
-  const is2026 = year === '2026';
 
   return (
     <Router basename={basename}>
