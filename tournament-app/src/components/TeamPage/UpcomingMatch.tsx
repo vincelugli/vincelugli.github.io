@@ -2,8 +2,6 @@ import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { Match, Team } from '../../types';
 import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchNavLink } from '../../styles';
-import { useAuth } from '../Common/AuthContext';
-import { useDivision } from '../../context/DivisionContext';
 
 // NEW: A styled component for the game selection dropdown
 const GameSelect = styled.select`
@@ -31,8 +29,6 @@ interface UpcomingMatchProps {
 const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeamId }) => {
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const [copiedCode, setCopiedCode] = useState('');
-  const { division } = useDivision();
-  const { captainTeamId, authDivision, isAdmin } = useAuth();
 
   const opponentId = match.team1Id === currentTeamId ? match.team2Id : match.team1Id;
   const opponent = teams.find(t => t.id === opponentId);

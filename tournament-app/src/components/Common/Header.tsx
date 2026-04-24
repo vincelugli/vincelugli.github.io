@@ -28,6 +28,12 @@ const Header: React.FC = () => {
   }
 
   // Listen to auth state to show/hide the captain link
+  // Listen to auth state to show/hide the captain link
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe();
+  }, [auth]);
+
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
     const handleHashChange = () => setHash(window.location.hash);
@@ -79,7 +85,6 @@ const Header: React.FC = () => {
             <SubMenu>
               <SubMenuAction
                 onClick={() => {
-                  const path = window.location.hash.replace(/^#\/2025/, '').replace(/^#/, '');
                   window.location.hash = `#/2025`;
                 }}
               >
@@ -142,8 +147,7 @@ const Header: React.FC = () => {
           <MobileSubMenu isOpen={openMobileSubMenu === 'year'}>
             <MobileSubMenuAction
               onClick={() => {
-                const path = window.location.hash.replace(/^#\/2025/, '').replace(/^#/, '');
-                window.location.hash = `#/2025${path}`;
+                window.location.hash = `#/2025`;
                 closeAllMenus();
               }}
             >

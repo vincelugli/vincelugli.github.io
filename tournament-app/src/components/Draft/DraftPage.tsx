@@ -131,7 +131,7 @@ const DraftPage: React.FC = () => {
   const initialDraftState = initializeDraft(allPlayers, division);
   const { teams, pickOrder } = initialDraftState;
 
-  const [hash, setHash] = useState(window.location.hash);
+  const [, setHash] = useState(window.location.hash);
   useEffect(() => {
     const handleHashChange = () => setHash(window.location.hash);
     window.addEventListener('hashchange', handleHashChange);
