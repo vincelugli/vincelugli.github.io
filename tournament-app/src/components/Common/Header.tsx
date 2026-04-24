@@ -65,7 +65,7 @@ const Header: React.FC = () => {
             Stages <FaChevronDown size={12} />
             <SubMenu>
               <SubMenuItem to="/draft-access">Draft</SubMenuItem>
-              <SubMenuItem to="/swiss">Round Robin</SubMenuItem>
+              <SubMenuItem to="/swiss">{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</SubMenuItem>
               <SubMenuItem to="/knockout">Knockout Stage</SubMenuItem>
               <SubMenuItem to="/teams">Teams</SubMenuItem>
             </SubMenu>
@@ -123,7 +123,7 @@ const Header: React.FC = () => {
           </MobileMainLink>
           <MobileSubMenu isOpen={openMobileSubMenu === 'stages'}>
             <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft Lobby</MobileSubMenuItem>
-            <MobileSubMenuItem to="/swiss" onClick={closeAllMenus}>Round Robin</MobileSubMenuItem>
+            <MobileSubMenuItem to="/swiss" onClick={closeAllMenus}>{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</MobileSubMenuItem>
             <MobileSubMenuItem to="/knockout" onClick={closeAllMenus}>Knockout Stage</MobileSubMenuItem>
             <MobileSubMenuItem to="/teams" onClick={closeAllMenus}>Teams</MobileSubMenuItem>
           </MobileSubMenu>

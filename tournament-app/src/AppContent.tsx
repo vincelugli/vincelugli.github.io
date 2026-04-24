@@ -4,6 +4,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Tournament from './components/Tournament';
 import SwissStage from './components/Swiss/SwissStage';
+import SwissSystemPage from './components/Swiss/SwissSystemPage';
 import DoubleEliminationBracket from './components/Brackets/DoubleEliminationBracket';
 import AllTeamsPage from './components/Team/AllTeamsPage';
 import TeamPage from './components/TeamPage/TeamPage'; 
@@ -55,7 +56,7 @@ const AppContent: React.FC = () => {
                 <Route path="/schedule" element={<SchedulePage />} />
                 <Route 
                 path="/swiss" 
-                element={<SwissStage />}
+                element={year === '2026' ? <SwissSystemPage /> : <SwissStage />}
                 />
                 <Route 
                 path="/knockout" 
