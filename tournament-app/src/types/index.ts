@@ -155,3 +155,11 @@ export interface MatchResultData {
   gameDuration: number;
   winner: number;
 }
+
+export interface TeamAvailability {
+  teamId: number;
+  // Key is "Day-Time", e.g., "Monday-18:00"
+  // Value is an array of player IDs available in that slot
+  slots: { [key: string]: number[] };
+}
+

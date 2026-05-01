@@ -15,6 +15,7 @@ import DraftPage from './components/Draft/DraftPage';
 import PriorityListPage from './components/PriorityList/PriorityListPage';
 import { AppContainer, MainContent } from './styles';
 import SchedulePage from './components/Schedule/SchedulePage';
+import AvailabilityPage from './components/Schedule/AvailabilityPage';
 import SubstitutesPage from './components/Players/SubstitutePlayersPage';
 import AdminPage from './components/Admin/AdminPage';
 import AdminAuthGate from './components/Admin/AdminAuthGate';
@@ -54,6 +55,7 @@ const AppContent: React.FC = () => {
                   element={<Tournament />} 
                   />
                 <Route path="/schedule" element={<SchedulePage />} />
+                <Route path="/availability" element={<AvailabilityPage />} />
                 <Route 
                 path="/swiss" 
                 element={year === '2026' ? <SwissSystemPage /> : <SwissStage />}

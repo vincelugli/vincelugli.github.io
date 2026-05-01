@@ -57,6 +57,7 @@ const Header: React.FC = () => {
             Info <FaChevronDown size={12} />
             <SubMenu>
               <SubMenuItem to="/schedule">Schedule</SubMenuItem>
+              <SubMenuItem to="/availability">Availability</SubMenuItem>
               <SubMenuItem to="/players">Players</SubMenuItem>
             </SubMenu>
           </NavItem>
@@ -114,6 +115,7 @@ const Header: React.FC = () => {
           </MobileMainLink>
           <MobileSubMenu isOpen={openMobileSubMenu === 'schedule'}>
             <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Overall Timeline</MobileSubMenuItem>
+            <MobileSubMenuItem to="/availability" onClick={closeAllMenus}>Availability</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
         

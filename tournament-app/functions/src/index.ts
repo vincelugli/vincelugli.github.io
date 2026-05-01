@@ -118,10 +118,12 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
 
     const masterRef = db.collection("teamAccessCodes").doc(`${prefix}_master`);
     const goldRef = db.collection("teamAccessCodes").doc(`${prefix}_gold`);
+    const testRef = db.collection("teamAccessCodes").doc(`${prefix}_test`);
 
-    const [masterSnap, goldSnap] = await Promise.all([
+    const [masterSnap, goldSnap, testSnap] = await Promise.all([
       masterRef.get(),
       goldRef.get(),
+      testRef.get(),
     ]);
 
     let matchedData: any = null;
@@ -140,6 +142,17 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
 
     if (!matchedData && goldSnap.exists) {
       const data = goldSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          break;
+        }
+      }
+    }
+
+    if (!matchedData && testSnap.exists) {
+      const data = testSnap.data();
       for (const [id, entry] of Object.entries(data || {})) {
         if ((entry as any).accessCode === accessCode) {
           matchedData = entry;
@@ -170,7 +183,7 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
     // Create a custom auth token with the teamId as a custom claim
     const customToken = await admin
       .auth()
-      .createCustomToken(uid, {teamId, division});
+      .createCustomToken(uid, {teamId, division, isTeamMember: true});
 
     return {token: customToken};
   });
