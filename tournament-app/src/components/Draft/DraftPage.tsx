@@ -10,7 +10,7 @@ import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, Team
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
-import { compareRanks, createOpGgUrl, rankTierToShortName, getFirebasePrefix } from '../../utils';
+import { compareRanks, createOpGgUrl, rankTierToShortName, getFirebasePrefix, convertRankToElo } from '../../utils';
 import { ceil } from 'lodash';
 
 const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
@@ -211,9 +211,82 @@ const DraftPage: React.FC = () => {
     );
     const newAvailablePlayers = availablePlayers.filter(p => p.id !== player.id);
     const newCompletedPicks = { ...completedPicks, [currentPickIndex]: player.id };
+
+    const numTeams = teams.length;
+    let newPickOrder = [...pickOrder];
+
+    if ((currentPickIndex + 1) % numTeams === 0) {
+      const currentRound = Math.floor(currentPickIndex / numTeams) + 1;
+
+      if (currentRound < 5) {
+        const teamElos = newTeams.map(team => {
+          const totalElo = team.players!.reduce((sum, p) => {
+            const maxElo = Math.max(
+              convertRankToElo(p.peakRankTier, p.peakRankDivision),
+              convertRankToElo(p.soloRankTier, p.soloRankDivision),
+              convertRankToElo(p.flexRankTier, p.flexRankDivision)
+            );
+            return sum + maxElo;
+          }, 0);
+          return { id: team.id, elo: totalElo };
+        });
+
+        teamElos.sort((a, b) => a.elo - b.elo);
+
+        const sortedTeamIds = teamElos.map(t => t.id);
+
+        for (let r = currentRound + 1; r <= 5; r++) {
+          const startIdx = (r - 1) * numTeams;
+          let roundOrder = [...sortedTeamIds];
+
+          // Snake prediction: alternate order for future rounds
+          if ((r - currentRound) % 2 === 0) {
+            roundOrder.reverse();
+          }
+
+          for (let j = 0; j < numTeams; j++) {
+            newPickOrder[startIdx + j] = roundOrder[j];
+          }
+        }
+
+        const captains = allPlayers.filter(p => p.isCaptain).sort((a, b) => compareRanks(b, a));
+        const captainsReversed = [...captains].reverse();
+        const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
+
+        let playerSkipSlot: { [playerId: number]: number } = {};
+        allPlayersSorted.forEach((player, index) => {
+          if (player.isCaptain) {
+            playerSkipSlot[player.id] = index / allPlayers.length;
+          }
+        });
+
+        captainsReversed.forEach((captain) => {
+          const captainPercent = playerSkipSlot[captain.id];
+          if (captainPercent !== undefined) {
+            let forcedRound = 0;
+            if (captainPercent <= 0.2) forcedRound = 5;
+            else if (captainPercent <= 0.4) forcedRound = 4;
+            else if (captainPercent <= 0.6) forcedRound = 3;
+            else if (captainPercent <= 0.8) forcedRound = 2;
+            else if (captainPercent <= 1.0) forcedRound = 1;
+
+            if (forcedRound > currentRound) {
+              const startIdx = (forcedRound - 1) * numTeams;
+              for (let j = 0; j < numTeams; j++) {
+                if (newPickOrder[startIdx + j] === captain.teamId) {
+                  newPickOrder[startIdx + j] = captain.name;
+                  break;
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
     let nextPickIndex = currentPickIndex + 1;
     // Update skipped picks
-    while (typeof(pickOrder[nextPickIndex]) === "string" && nextPickIndex < pickOrder.length) {
+    while (typeof (newPickOrder[nextPickIndex]) === "string" && nextPickIndex < newPickOrder.length) {
       nextPickIndex++;
     }
 
@@ -224,6 +297,7 @@ const DraftPage: React.FC = () => {
         availablePlayers: newAvailablePlayers,
         completedPicks: newCompletedPicks,
         currentPickIndex: nextPickIndex,
+      pickOrder: newPickOrder,
         pickEndsAt: Date.now() + DRAFT_PICK_TIME_LIMIT_IN_MS,
     };
 
