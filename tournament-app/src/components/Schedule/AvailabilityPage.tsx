@@ -130,9 +130,10 @@ const StatusMessage = styled.div`
 `;
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const times = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+const fullTimes = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
 
 const AvailabilityPage: React.FC = () => {
+  const [visibleTimes, setVisibleTimes] = useState(['17:00', '18:00', '19:00', '20:00', '21:00', '22:00']);
   const { teams } = useTournament();
   const { currentUser, captainTeamId, isTeamMember, isAdmin } = useAuth();
   const { division } = useDivision();
@@ -174,7 +175,9 @@ const AvailabilityPage: React.FC = () => {
   // Set initial selected team if captain
   useEffect(() => {
     if (captainTeamId) {
-      setSelectedTeamId(parseInt(captainTeamId, 10));
+      const teamId = parseInt(captainTeamId, 10);
+      setSelectedTeamId(teamId);
+      setCompareTeamAId(teamId);
     }
   }, [captainTeamId]);
 
@@ -229,7 +232,7 @@ const AvailabilityPage: React.FC = () => {
     const allSlots: { day: string; time: string; score: number; teamACount: number; teamBCount: number }[] = [];
     
     days.forEach(day => {
-      times.forEach(time => {
+      fullTimes.forEach(time => {
         const key = `${day}-${time}`;
         const playersA = availA[key] || [];
         const playersB = availB[key] || [];
@@ -308,6 +311,22 @@ const AvailabilityPage: React.FC = () => {
     }
   };
 
+  const addHourAbove = () => {
+    const firstVisible = visibleTimes[0];
+    const firstIndex = fullTimes.indexOf(firstVisible);
+    if (firstIndex > 0) {
+      setVisibleTimes([fullTimes[firstIndex - 1], ...visibleTimes]);
+    }
+  };
+
+  const addHourBelow = () => {
+    const lastVisible = visibleTimes[visibleTimes.length - 1];
+    const lastIndex = fullTimes.indexOf(lastVisible);
+    if (lastIndex < fullTimes.length - 1) {
+      setVisibleTimes([...visibleTimes, fullTimes[lastIndex + 1]]);
+    }
+  };
+
   return (
     <PageContainer>
       <SectionTitle>Team Availability</SectionTitle>
@@ -337,6 +356,7 @@ const AvailabilityPage: React.FC = () => {
           <Select 
             value={selectedTeamId || ''} 
             onChange={(e) => setSelectedTeamId(parseInt(e.target.value, 10))}
+            disabled={!!isTeamMember}
           >
             <option value="">-- Select Team --</option>
             {teams.map(t => (
@@ -372,12 +392,18 @@ const AvailabilityPage: React.FC = () => {
       </ControlsContainer>
 
       {selectedTeamId && (
-        <GridContainer>
-          <Grid>
-            <GridHeader>Time</GridHeader>
-            {days.map(d => <GridHeader key={d}>{d}</GridHeader>)}
-            
-            {times.map(time => (
+        <>
+          {visibleTimes[0] !== fullTimes[0] && (
+            <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+              <Button onClick={addHourAbove} variant="secondary">↑ Add Hour Above</Button>
+            </div>
+          )}
+          <GridContainer>
+            <Grid>
+              <GridHeader>Time</GridHeader>
+              {days.map(d => <GridHeader key={d}>{d}</GridHeader>)}
+              
+              {visibleTimes.map(time => (
               <React.Fragment key={time}>
                 <TimeLabel>{time}</TimeLabel>
                 {days.map(day => {
@@ -400,35 +426,58 @@ const AvailabilityPage: React.FC = () => {
               </React.Fragment>
             ))}
           </Grid>
-        </GridContainer>
+          </GridContainer>
+          {visibleTimes[visibleTimes.length - 1] !== fullTimes[fullTimes.length - 1] && (
+            <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+              <Button onClick={addHourBelow} variant="secondary">↓ Add Hour Below</Button>
+            </div>
+          )}
+        </>
       )}
 
       <SectionTitle>Find Best Match Time</SectionTitle>
       <ControlsContainer>
-        <div>
-          <label>Team A: </label>
-          <Select 
-            value={compareTeamAId || ''} 
-            onChange={(e) => setCompareTeamAId(parseInt(e.target.value, 10))}
-          >
-            <option value="">-- Select Team A --</option>
-            {teams.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <label>Team B: </label>
-          <Select 
-            value={compareTeamBId || ''} 
-            onChange={(e) => setCompareTeamBId(parseInt(e.target.value, 10))}
-          >
-            <option value="">-- Select Team B --</option>
-            {teams.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </Select>
-        </div>
+        {isTeamMember ? (
+          <div>
+            <label>Opponent: </label>
+            <Select 
+              value={compareTeamBId || ''} 
+              onChange={(e) => setCompareTeamBId(parseInt(e.target.value, 10))}
+            >
+              <option value="">-- Select Opponent --</option>
+              {teams.filter(t => t.id !== parseInt(captainTeamId, 10)).map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </Select>
+          </div>
+        ) : (
+          <>
+            <div>
+              <label>Team A: </label>
+              <Select 
+                value={compareTeamAId || ''} 
+                onChange={(e) => setCompareTeamAId(parseInt(e.target.value, 10))}
+              >
+                <option value="">-- Select Team A --</option>
+                {teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label>Team B: </label>
+              <Select 
+                value={compareTeamBId || ''} 
+                onChange={(e) => setCompareTeamBId(parseInt(e.target.value, 10))}
+              >
+                <option value="">-- Select Team B --</option>
+                {teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </Select>
+            </div>
+          </>
+        )}
       </ControlsContainer>
 
       {compareTeamAId && compareTeamBId && (
