@@ -303,22 +303,11 @@ export const executeAutoPick = onTaskDispatched({
     return;
   }
 
-  const allRoles = ["top", "mid", "jungle", "adc", "support"];
-
   // --- Auto-pick Logic ---
   const teamIdPicking = draftState.pickOrder[draftState.currentPickIndex];
-  const pickingTeam = draftState.teams.find((t: any) => t.id === teamIdPicking);
   const availablePlayers = draftState.availablePlayers;
 
-  // 1. Determine the roles already filled on the team
-  const filledRoles = new Set(pickingTeam
-    .players
-    .map((p: any) => p.role)
-  );
-  const neededRoles = allRoles.filter((role) => !filledRoles.has(role));
-  logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
-
-  // Fetch the captain"s priority list
+  // Fetch the captain's priority list
   const draftBoardsDoc = await db
     .collection("draftBoards")
     .doc(teamIdPicking.toString())
@@ -328,34 +317,12 @@ export const executeAutoPick = onTaskDispatched({
 
   let playerToDraftId: number | undefined;
 
-  // 3. Primary Search: Find the highest priority player who fills a needed role
-  if (neededRoles.length > 0) {
-    for (const pId of priorityPlayerIds) {
-      const player = availablePlayers.find((p: any) => p.id === pId);
-      if (player && neededRoles.includes(player.role)) {
-        playerToDraftId = pId;
-        logger.log(
-          `Primary search found: 
-Player ${pId} (${player.role}) fills a needed role.`);
-        break;
-      }
-    }
-  }
-
-  // Fallback 1: If no role-fit found find the highest priority player available
-  if (!playerToDraftId) {
-    logger.log(
-      `Primary search failed. 
-Falling back to best available from priority list.`);
-    for (const pId of priorityPlayerIds) {
-      if (availablePlayers.some((p: any) => p.id === pId)) {
-        playerToDraftId = pId;
-        logger.log(
-          `Fallback 1 found: 
-Player ${pId} is the highest available priority pick.`
-        );
-        break;
-      }
+  // Find the highest priority player available from the captain's list
+  for (const pId of priorityPlayerIds) {
+    if (availablePlayers.some((p: any) => p.id === pId)) {
+      playerToDraftId = pId;
+      logger.log(`Auto-pick found player from priority list: ${pId}`);
+      break;
     }
   }
 
