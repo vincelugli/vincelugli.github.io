@@ -29,12 +29,24 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
 
   return (
     <PickOrderContainer>
+      <div style={{
+        padding: '10px',
+        color: '#aaa',
+        fontSize: '0.8rem',
+        textAlign: 'center',
+        fontStyle: 'italic',
+        position: 'sticky',
+        left: 0,
+        zIndex: 1
+      }}>
+        Note: Picks for future rounds are predicted based on current team Elo and will update dynamically.
+      </div>
       <PickList>
         {pickOrder.map((teamId, index) => {
           const isCurrent = index === currentPickIndex;
           const isCompleted = index < currentPickIndex;
-          const isSkipped = typeof(teamId) === "string";
-          
+          const isSkipped = typeof (teamId) === "string";
+
           const team = isSkipped ? null : getTeamById(teamId as number);
           const draftedPlayerId = completedPicks[index];
           const draftedPlayer = draftedPlayerId ? getPlayerById(draftedPlayerId) : null;
@@ -51,11 +63,11 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
               {isSkipped ? (
                 <>
                   <SkippedText>SKIPPED</SkippedText>
-                  <PickedPlayerName>{teamId}</PickedPlayerName>
+                  <PickedPlayerName>{teamId}{Math.floor(index / teams.length) > Math.floor(currentPickIndex / teams.length) ? ' (Predicted)' : ''}</PickedPlayerName>
                 </>
               ) : (
                 <>
-                  <PickedTeamName>{team?.name || 'N/A'}</PickedTeamName>
+                  <PickedTeamName>{team?.name || 'N/A'}{Math.floor(index / teams.length) > Math.floor(currentPickIndex / teams.length) ? ' (Predicted)' : ''}</PickedTeamName>
                   {draftedPlayer && (
                     <PickedPlayerName>{draftedPlayer.name}</PickedPlayerName>
                   )}

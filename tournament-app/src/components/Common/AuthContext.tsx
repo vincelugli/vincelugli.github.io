@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   captainTeamId: string;
   authDivision: string;
+  isTeamMember: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +17,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authDivision, setAuthDivision] = useState('test');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isTeamMember, setIsTeamMember] = useState(false);
   const [loading, setLoading] = useState(true);
   const [captainTeamId, setCaptainTeamId] = useState('');
   const auth = getAuth();
@@ -27,17 +29,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // When auth state changes, force a refresh of the ID token to get custom claims
         const idTokenResult = await user.getIdTokenResult(true);
         setIsAdmin(!!idTokenResult.claims.adminId);
+        setIsTeamMember(!!idTokenResult.claims.isTeamMember);
         setCaptainTeamId(idTokenResult.claims.teamId as string);
         setAuthDivision(idTokenResult.claims.division as string);
       } else {
         setIsAdmin(false);
+        setIsTeamMember(false);
       }
       setLoading(false);
     });
     return unsubscribe;
   }, [auth, setCurrentUser, setIsAdmin, setLoading]);
 
-  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision };
+  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision, isTeamMember };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

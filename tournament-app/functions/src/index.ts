@@ -118,10 +118,12 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
 
     const masterRef = db.collection("teamAccessCodes").doc(`${prefix}_master`);
     const goldRef = db.collection("teamAccessCodes").doc(`${prefix}_gold`);
+    const testRef = db.collection("teamAccessCodes").doc(`${prefix}_test`);
 
-    const [masterSnap, goldSnap] = await Promise.all([
+    const [masterSnap, goldSnap, testSnap] = await Promise.all([
       masterRef.get(),
       goldRef.get(),
+      testRef.get(),
     ]);
 
     let matchedData: any = null;
@@ -140,6 +142,17 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
 
     if (!matchedData && goldSnap.exists) {
       const data = goldSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          break;
+        }
+      }
+    }
+
+    if (!matchedData && testSnap.exists) {
+      const data = testSnap.data();
       for (const [id, entry] of Object.entries(data || {})) {
         if ((entry as any).accessCode === accessCode) {
           matchedData = entry;
@@ -170,7 +183,7 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
     // Create a custom auth token with the teamId as a custom claim
     const customToken = await admin
       .auth()
-      .createCustomToken(uid, {teamId, division});
+      .createCustomToken(uid, {teamId, division, isTeamMember: true});
 
     return {token: customToken};
   });
@@ -290,22 +303,11 @@ export const executeAutoPick = onTaskDispatched({
     return;
   }
 
-  const allRoles = ["top", "mid", "jungle", "adc", "support"];
-
   // --- Auto-pick Logic ---
   const teamIdPicking = draftState.pickOrder[draftState.currentPickIndex];
-  const pickingTeam = draftState.teams.find((t: any) => t.id === teamIdPicking);
   const availablePlayers = draftState.availablePlayers;
 
-  // 1. Determine the roles already filled on the team
-  const filledRoles = new Set(pickingTeam
-    .players
-    .map((p: any) => p.role)
-  );
-  const neededRoles = allRoles.filter((role) => !filledRoles.has(role));
-  logger.log(`Team ${teamIdPicking} needs roles:`, neededRoles);
-
-  // Fetch the captain"s priority list
+  // Fetch the captain's priority list
   const draftBoardsDoc = await db
     .collection("draftBoards")
     .doc(teamIdPicking.toString())
@@ -315,34 +317,12 @@ export const executeAutoPick = onTaskDispatched({
 
   let playerToDraftId: number | undefined;
 
-  // 3. Primary Search: Find the highest priority player who fills a needed role
-  if (neededRoles.length > 0) {
-    for (const pId of priorityPlayerIds) {
-      const player = availablePlayers.find((p: any) => p.id === pId);
-      if (player && neededRoles.includes(player.role)) {
-        playerToDraftId = pId;
-        logger.log(
-          `Primary search found: 
-Player ${pId} (${player.role}) fills a needed role.`);
-        break;
-      }
-    }
-  }
-
-  // Fallback 1: If no role-fit found find the highest priority player available
-  if (!playerToDraftId) {
-    logger.log(
-      `Primary search failed. 
-Falling back to best available from priority list.`);
-    for (const pId of priorityPlayerIds) {
-      if (availablePlayers.some((p: any) => p.id === pId)) {
-        playerToDraftId = pId;
-        logger.log(
-          `Fallback 1 found: 
-Player ${pId} is the highest available priority pick.`
-        );
-        break;
-      }
+  // Find the highest priority player available from the captain's list
+  for (const pId of priorityPlayerIds) {
+    if (availablePlayers.some((p: any) => p.id === pId)) {
+      playerToDraftId = pId;
+      logger.log(`Auto-pick found player from priority list: ${pId}`);
+      break;
     }
   }
 
