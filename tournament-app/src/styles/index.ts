@@ -274,6 +274,39 @@ export const HeaderLeft = styled.div`
   gap: 2rem;
 `;
 
+export const LogoutButton = styled.button`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.border};
+  color: ${({ theme }) => theme.textAlt};
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
+  }
+
+  /* Hide on smaller screens */
+  @media (max-width: 1000px) {
+    display: none;
+  }
+`;
+
+export const UserNameDisplay = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+  font-weight: 500;
+  margin-right: 0.5rem;
+
+  @media (max-width: 1000px) {
+    display: none;
+  }
+`;
+
 // DraftAuthGate
 export const GateContainer = styled.div`
   display: flex;
@@ -488,9 +521,10 @@ export const PickOrderContainer = styled.div`
 export const PickList = styled.div`
   display: inline-flex; /* Use inline-flex for horizontal layout inside the scroll container */
   gap: 1rem;
+  align-items: center;
 `;
 
-export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; isSkipped: boolean }>`
+export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; isSkipped: boolean; isPredicted?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -510,6 +544,54 @@ export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; i
   border-color: ${props => props.isCurrent ? props.theme.primary : props.theme.border};
   transform: ${props => props.isCurrent ? 'scale(1.05)' : 'scale(1)'};
   box-shadow: ${props => props.isCurrent ? '0 0 15px rgba(0, 123, 255, 0.5)' : 'none'};
+
+  ${props => props.isPredicted && css`
+    background-image: repeating-linear-gradient(
+      -45deg,
+      ${props.theme.backgroundTwo},
+      ${props.theme.backgroundTwo} 10px,
+      ${props.theme.backgroundThree || props.theme.body} 10px,
+      ${props.theme.backgroundThree || props.theme.body} 20px
+    );
+  `}
+`;
+
+export const RoundDivider = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 90px;
+  position: relative;
+  margin: 0 0.5rem;
+  flex-shrink: 0;
+`;
+
+export const DividerLine = styled.div`
+  width: 0;
+  height: 100%;
+  border-left: 2px dashed ${({ theme }) => theme.border};
+  opacity: 0.6;
+`;
+
+export const DividerLabel = styled.div`
+  position: absolute;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textAlt};
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid ${({ theme }) => theme.border};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px ${({ theme }) => theme.boxShadow};
+  
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  transform-origin: center;
 `;
 
 export const PickNumber = styled.div`

@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { getAuth, User } from 'firebase/auth';
-import { HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction } from '../../styles';
+import {getAuth} from 'firebase/auth';
+import {HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction, LogoutButton, UserNameDisplay} from '../../styles';
 import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
 import { getYearDisplayString } from '../../utils';
+import {useAuth} from './AuthContext';
+import {useTournament} from '../../context/TournamentContext';
+import {usePlayers} from '../../context/PlayerContext';
 
 const Header: React.FC = () => {
   const auth = getAuth();
-  const [user, setUser] = useState<User | null>(auth.currentUser);
+  const {currentUser: user, isAdmin, isSub, subName, captainTeamId} = useAuth();
+  const {teams} = useTournament();
+  const {players} = usePlayers();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openMobileSubMenu, setOpenMobileSubMenu] = useState<string | null>(null);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    setOpenMobileSubMenu(null); // Close sub-menus when main menu is toggled
+    setOpenMobileSubMenu(null);
   };
 
   const toggleMobileSubMenu = (menu: string) => {
@@ -25,14 +30,24 @@ const Header: React.FC = () => {
   const closeAllMenus = () => {
     setIsMobileMenuOpen(false);
     setOpenMobileSubMenu(null);
-  }
+  };
 
-  // Listen to auth state to show/hide the captain link
-  // Listen to auth state to show/hide the captain link
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe();
-  }, [auth]);
+  const getDisplayName = () => {
+    if (isAdmin) return "Admin";
+    if (isSub) return subName || "Sub";
+    if (captainTeamId) {
+      const team = teams?.find(t => t.id === Number(captainTeamId));
+      if (team) {
+        const captain = players?.find(p => p.id === team.captainId);
+        if (captain) {
+          return captain.name;
+        }
+        return `Team ${team.id}`;
+      }
+      return "Captain";
+    }
+    return "User";
+  };
 
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
@@ -102,6 +117,16 @@ const Header: React.FC = () => {
           </NavItem>
         </Nav>
 
+        {/* DELETE, DEBUG ONLY */}
+        {user && (
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <LogoutButton onClick={() => auth.signOut()}>
+              Logout
+            </LogoutButton>
+            <UserNameDisplay>  |  {getDisplayName()}</UserNameDisplay>
+          </div>
+        )}
+        {/* DELETE, DEBUG ONLY */}
         <ThemeToggleButton />
         <HamburgerIcon onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
@@ -165,6 +190,23 @@ const Header: React.FC = () => {
             </MobileSubMenuAction>
           </MobileSubMenu>
         </MobileNavItem>
+
+        {user && (
+          <MobileNavItem>
+            <div style={{padding: '0.75rem', fontSize: '1.2rem', opacity: 0.8}}>
+              Logged in as: <strong>{getDisplayName()}</strong>
+            </div>
+            <MobileSubMenuAction
+              onClick={() => {
+                auth.signOut();
+                closeAllMenus();
+              }}
+              style={{color: '#ff4d4f', fontWeight: 'bold'}}
+            >
+              Logout
+            </MobileSubMenuAction>
+          </MobileNavItem>
+        )}
       </MobileMenu>
 
 

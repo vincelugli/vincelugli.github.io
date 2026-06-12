@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { DraftTeam, Player } from '../../types';
-import { PickOrderContainer, PickList, PickItem, PickNumber, PickedTeamName, PickedPlayerName, SkippedText } from '../../styles';
+import { PickOrderContainer, PickList, PickItem, PickNumber, PickedTeamName, PickedPlayerName, SkippedText, RoundDivider, DividerLine, DividerLabel } from '../../styles';
 
 interface PickOrderDisplayProps {
   pickOrder: (number | string)[];
@@ -39,7 +39,7 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
         left: 0,
         zIndex: 1
       }}>
-        Note: Picks for future rounds are predicted based on current team Elo and will update dynamically.
+        Note: Picks for future rounds are predicted based on current team Elo and will update dynamically at the end of each round.
       </div>
       <PickList>
         {pickOrder.map((teamId, index) => {
@@ -51,29 +51,42 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
           const draftedPlayerId = completedPicks[index];
           const draftedPlayer = draftedPlayerId ? getPlayerById(draftedPlayerId) : null;
 
+          const numTeams = teams?.length || 0;
+          const isPredicted = numTeams > 0 && Math.floor(index / numTeams) > Math.floor(currentPickIndex / numTeams);
+          const showDelimiter = numTeams > 0 && index > 0 && index % numTeams === 0;
+          const roundNumber = numTeams > 0 ? Math.floor(index / numTeams) + 1 : 1;
+
           return (
-            <PickItem
-              key={index}
-              isCurrent={isCurrent}
-              isCompleted={isCompleted}
-              isSkipped={isSkipped}
-              ref={isCurrent ? currentPickRef : null}
-            >
-              <PickNumber>PICK {index + 1}</PickNumber>
-              {isSkipped ? (
-                <>
-                  <SkippedText>SKIPPED</SkippedText>
-                  <PickedPlayerName>{teamId}{Math.floor(index / teams.length) > Math.floor(currentPickIndex / teams.length) ? ' (Predicted)' : ''}</PickedPlayerName>
-                </>
-              ) : (
-                <>
-                  <PickedTeamName>{team?.name || 'N/A'}{Math.floor(index / teams.length) > Math.floor(currentPickIndex / teams.length) ? ' (Predicted)' : ''}</PickedTeamName>
-                  {draftedPlayer && (
-                    <PickedPlayerName>{draftedPlayer.name}</PickedPlayerName>
-                  )}
-                </>
+            <React.Fragment key={index}>
+              {showDelimiter && (
+                <RoundDivider>
+                  <DividerLine />
+                  <DividerLabel>Round {roundNumber}</DividerLabel>
+                </RoundDivider>
               )}
-            </PickItem>
+              <PickItem
+                isCurrent={isCurrent}
+                isCompleted={isCompleted}
+                isSkipped={isSkipped}
+                isPredicted={isPredicted}
+                ref={isCurrent ? currentPickRef : null}
+              >
+                <PickNumber>PICK {index + 1}</PickNumber>
+                {isSkipped ? (
+                  <>
+                    <SkippedText>SKIPPED</SkippedText>
+                    <PickedPlayerName>{teamId}{isPredicted ? ' (Predicted)' : ''}</PickedPlayerName>
+                  </>
+                ) : (
+                  <>
+                    <PickedTeamName>{team?.name || 'N/A'}{isPredicted ? ' (Predicted)' : ''}</PickedTeamName>
+                    {draftedPlayer && (
+                      <PickedPlayerName>{draftedPlayer.name}</PickedPlayerName>
+                    )}
+                  </>
+                )}
+              </PickItem>
+            </React.Fragment>
           );
         })}
       </PickList>
