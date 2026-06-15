@@ -82,6 +82,9 @@ export function compareRanks(player1: Player, player2: Player): number {
             p1Sum += convertRankToElo(player1.flexRankTier, player1.flexRankDivision);
             p2Sum += convertRankToElo(player2.flexRankTier, player2.flexRankDivision);
         }
+        if (p1Sum === p2Sum) {
+            return player1.id - player2.id;
+        }
         return p1Sum - p2Sum;
     }
 

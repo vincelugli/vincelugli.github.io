@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 
 const DivisionSelector: React.FC = () => {
   const { division, setDivision } = useDivision();
-  const { isAdmin } = useAuth();
+  const { isAdmin, authDivision } = useAuth();
   
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDivision(e.target.value as Division);
@@ -15,9 +15,9 @@ const DivisionSelector: React.FC = () => {
     <SelectWrapper>
       <Label htmlFor="division-select">Division:</Label>
       <Select id="division-select" value={division} onChange={handleChange}>
-        <option value="master">Master</option>
-        <option value="gold">Gold</option>
-        {isAdmin ? <option value="test">Test</option> : <></>}
+        <option value="master">Elder</option>
+        <option value="gold">Elemental</option>
+        {(isAdmin || authDivision === 'test' || division === 'test') ? <option value="test">Test</option> : <></>}
       </Select>
     </SelectWrapper>
   );

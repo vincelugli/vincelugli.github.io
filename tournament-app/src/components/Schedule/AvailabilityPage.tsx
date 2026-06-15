@@ -33,6 +33,7 @@ const ControlsContainer = styled.div`
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  align-items: center;
 `;
 
 const Select = styled.select`
@@ -131,11 +132,69 @@ const StatusMessage = styled.div`
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const fullTimes = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+const fullTimes30 = Array.from({ length: 48 }, (_, i) => {
+  const hour = Math.floor(i / 2).toString().padStart(2, '0');
+  const min = (i % 2 === 0) ? '00' : '30';
+  return `${hour}:${min}`;
+});
+
+const combineConsecutiveTimes = (activeSlots: string[], timeList: string[]) => {
+  const grouped: { [day: string]: number[] } = {};
+  
+  const getNextSlotTime = (list: string[], idx: number) => {
+    if (idx + 1 < list.length) {
+      return list[idx + 1];
+    }
+    const lastTime = list[idx];
+    const [h, m] = lastTime.split(':').map(Number);
+    const is30m = list.length === 48;
+    if (is30m) {
+      const newM = m + 30;
+      const newH = h + Math.floor(newM / 60);
+      return `${newH.toString().padStart(2, '0')}:${(newM % 60).toString().padStart(2, '0')}`;
+    } else {
+      return `${(h + 1).toString().padStart(2, '0')}:00`;
+    }
+  };
+
+  activeSlots.forEach(slot => {
+    const [day, time] = slot.split('-');
+    const index = timeList.indexOf(time);
+    if (index !== -1) {
+      if (!grouped[day]) grouped[day] = [];
+      grouped[day].push(index);
+    }
+  });
+
+  const result: string[] = [];
+
+  days.forEach(day => {
+    if (!grouped[day]) return;
+    
+    const indices = grouped[day].sort((a, b) => a - b);
+    let startIdx = indices[0];
+    let prevIdx = indices[0];
+
+    for (let i = 1; i < indices.length; i++) {
+      if (indices[i] === prevIdx + 1) {
+        prevIdx = indices[i];
+      } else {
+        result.push(`${day} ${timeList[startIdx]} - ${getNextSlotTime(timeList, prevIdx)}`);
+        startIdx = indices[i];
+        prevIdx = indices[i];
+      }
+    }
+    result.push(`${day} ${timeList[startIdx]} - ${getNextSlotTime(timeList, prevIdx)}`);
+  });
+
+  return result;
+};
 
 const AvailabilityPage: React.FC = () => {
   const [visibleTimes, setVisibleTimes] = useState(['17:00', '18:00', '19:00', '20:00', '21:00', '22:00']);
+  const [use30MinIncrements, setUse30MinIncrements] = useState(false);
   const { teams } = useTournament();
-  const { currentUser, captainTeamId, isTeamMember, isAdmin } = useAuth();
+  const { currentUser, captainTeamId, isTeamMember, isAdmin, isSub, subName } = useAuth();
   const { division } = useDivision();
   const { getPlayerById } = usePlayers();
   
@@ -144,11 +203,28 @@ const AvailabilityPage: React.FC = () => {
   const [compareTeamBId, setCompareTeamBId] = useState<number | null>(null);
   
   const [availabilityData, setAvailabilityData] = useState<{ [teamId: number]: { slots: { [key: string]: number[] } } }>({});
+  const [subAvailabilityData, setSubAvailabilityData] = useState<{ [subName: string]: { slots: { [key: string]: boolean } } }>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [accessCode, setAccessCode] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  useEffect(() => {
+    if (use30MinIncrements) {
+      const newVisible: string[] = [];
+      visibleTimes.forEach(t => {
+        if (t.endsWith(':00')) {
+          newVisible.push(t);
+          const hour = t.split(':')[0];
+          newVisible.push(`${hour}:30`);
+        }
+      });
+      setVisibleTimes(newVisible);
+    } else {
+      setVisibleTimes(visibleTimes.filter(t => t.endsWith(':00')));
+    }
+  }, [use30MinIncrements]);
 
   const prefix = getFirebasePrefix();
   const docId = `${prefix}_${division}`;
@@ -161,6 +237,7 @@ const AvailabilityPage: React.FC = () => {
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
           setAvailabilityData(snapshot.data().teams || {});
+          setSubAvailabilityData(snapshot.data().subs || {});
         }
       } catch (error) {
         console.error("Failed to fetch availability:", error);
@@ -185,7 +262,11 @@ const AvailabilityPage: React.FC = () => {
     setSaving(true);
     try {
       const docRef = doc(db, 'availability', docId);
-      await setDoc(docRef, { teams: availabilityData }, { merge: true });
+      if (isSub) {
+        await setDoc(docRef, { subs: { [subName]: subAvailabilityData[subName] || { slots: {} } } }, { merge: true });
+      } else {
+        await setDoc(docRef, { teams: availabilityData }, { merge: true });
+      }
       alert("Availability saved successfully!");
     } catch (error) {
       console.error("Failed to save availability:", error);
@@ -219,6 +300,27 @@ const AvailabilityPage: React.FC = () => {
           slots: {
             ...teamAvail.slots,
             [key]: newSlots
+          }
+        }
+      };
+    });
+  };
+
+  const toggleSubSlot = (day: string, time: string) => {
+    if (!currentUser || !isSub) return;
+    const key = `${day}-${time}`;
+    setSubAvailabilityData(prev => {
+      const myAvail = prev[subName] || { slots: {} };
+      const currentSlots = myAvail.slots || {};
+      const isSelected = currentSlots[key];
+      
+      return {
+        ...prev,
+        [subName]: {
+          ...myAvail,
+          slots: {
+            ...currentSlots,
+            [key]: !isSelected
           }
         }
       };
@@ -284,6 +386,7 @@ const AvailabilityPage: React.FC = () => {
   const getStatusMessage = () => {
     if (!currentUser) return "Not logged in. View mode only.";
     if (isAdmin) return "Logged in as Admin.";
+    if (isSub) return `Logged in as Substitute: ${subName}`;
     if (isTeamMember) {
       const myTeam = teams.find(t => t.id === parseInt(captainTeamId, 10));
       return `Logged in as member of Team: ${myTeam ? myTeam.name : captainTeamId}`;
@@ -313,17 +416,65 @@ const AvailabilityPage: React.FC = () => {
 
   const addHourAbove = () => {
     const firstVisible = visibleTimes[0];
-    const firstIndex = fullTimes.indexOf(firstVisible);
+    const activeTimesList = use30MinIncrements ? fullTimes30 : fullTimes;
+    const firstIndex = activeTimesList.indexOf(firstVisible);
     if (firstIndex > 0) {
-      setVisibleTimes([fullTimes[firstIndex - 1], ...visibleTimes]);
+      setVisibleTimes([activeTimesList[firstIndex - 1], ...visibleTimes]);
     }
   };
 
   const addHourBelow = () => {
     const lastVisible = visibleTimes[visibleTimes.length - 1];
-    const lastIndex = fullTimes.indexOf(lastVisible);
-    if (lastIndex < fullTimes.length - 1) {
-      setVisibleTimes([...visibleTimes, fullTimes[lastIndex + 1]]);
+    const activeTimesList = use30MinIncrements ? fullTimes30 : fullTimes;
+    const lastIndex = activeTimesList.indexOf(lastVisible);
+    if (lastIndex < activeTimesList.length - 1) {
+      setVisibleTimes([...visibleTimes, activeTimesList[lastIndex + 1]]);
+    }
+  };
+
+  const isSubSlotSelected = (subName: string, day: string, time: string) => {
+    const slots = subAvailabilityData[subName]?.slots || {};
+    const key = `${day}-${time}`;
+    
+    if (use30MinIncrements) {
+      return slots[key] || false;
+    } else {
+      const key00 = `${day}-${time}`;
+      const key30 = `${day}-${time.split(':')[0]}:30`;
+      
+      const has00 = slots[key00] || false;
+      const has30 = slots[key30] || false;
+      
+      const isNewFormat = Object.keys(slots).some(k => k.endsWith(':30'));
+      
+      if (isNewFormat) {
+        return has00 && has30;
+      } else {
+        return has00;
+      }
+    }
+  };
+
+  const isPlayerSelected = (teamId: number, playerId: number, day: string, time: string) => {
+    const slots = availabilityData[teamId]?.slots || {};
+    const key = `${day}-${time}`;
+    const avail = slots[key] || [];
+    
+    if (use30MinIncrements) {
+      return avail.includes(playerId);
+    } else {
+      const key00 = `${day}-${time}`;
+      const key30 = `${day}-${time.split(':')[0]}:30`;
+      const avail00 = slots[key00] || [];
+      const avail30 = slots[key30] || [];
+      
+      const isNewFormat = Object.keys(slots).some(k => k.endsWith(':30'));
+      
+      if (isNewFormat) {
+        return avail00.includes(playerId) && avail30.includes(playerId);
+      } else {
+        return avail00.includes(playerId);
+      }
     }
   };
 
@@ -352,11 +503,21 @@ const AvailabilityPage: React.FC = () => {
       
       <ControlsContainer>
         <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input 
+              type="checkbox" 
+              checked={use30MinIncrements} 
+              onChange={(e) => setUse30MinIncrements(e.target.checked)} 
+            />
+            Use 30-minute increments
+          </label>
+        </div>
+        <div>
           <label>Select Team: </label>
           <Select 
             value={selectedTeamId || ''} 
             onChange={(e) => setSelectedTeamId(parseInt(e.target.value, 10))}
-            disabled={!!isTeamMember}
+            disabled={!!isTeamMember || isSub}
           >
             <option value="">-- Select Team --</option>
             {teams.map(t => (
@@ -384,14 +545,14 @@ const AvailabilityPage: React.FC = () => {
           </div>
         )}
 
-        {isAuthorized && (
+        {(isAuthorized || isSub) && (
           <Button onClick={handleSave} disabled={saving} variant="primary">
             {saving ? 'Saving...' : 'Save Availability'}
           </Button>
         )}
       </ControlsContainer>
 
-      {selectedTeamId && (
+      {(selectedTeamId || isSub) && (
         <>
           {visibleTimes[0] !== fullTimes[0] && (
             <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
@@ -408,18 +569,26 @@ const AvailabilityPage: React.FC = () => {
                 <TimeLabel>{time}</TimeLabel>
                 {days.map(day => {
                   const key = `${day}-${time}`;
-                  const avail = availabilityData[selectedTeamId]?.slots?.[key] || [];
-                  const isSelected = activePlayerId ? avail.includes(activePlayerId) : false;
+                  const avail = isSub ? [] : (selectedTeamId ? (availabilityData[selectedTeamId]?.slots?.[key] || []) : []);
+                  const isSelected = isSub ? 
+                    isSubSlotSelected(subName, day, time) :
+                    (activePlayerId && selectedTeamId ? isPlayerSelected(selectedTeamId, activePlayerId, day, time) : false);
                   
                   return (
                     <Slot 
                       key={key} 
                       isSelected={isSelected}
                       count={avail.length}
-                      isEditable={!!isAuthorized && !!activePlayerId}
-                      onClick={() => isAuthorized && activePlayerId && toggleSlot(selectedTeamId, day, time, activePlayerId)}
+                      isEditable={isSub || (!!isAuthorized && !!activePlayerId)}
+                      onClick={() => {
+                        if (isSub) {
+                          toggleSubSlot(day, time);
+                        } else if (isAuthorized && activePlayerId && selectedTeamId) {
+                          toggleSlot(selectedTeamId, day, time, activePlayerId);
+                        }
+                      }}
                     >
-                      <SlotCount>{avail.length} Available</SlotCount>
+                      <SlotCount>{isSub ? (isSelected ? 'Yes' : 'No') : `${avail.length} Available`}</SlotCount>
                     </Slot>
                   );
                 })}
@@ -495,6 +664,27 @@ const AvailabilityPage: React.FC = () => {
           )}
         </BestSlotsContainer>
       )}
+      <SectionTitle>Available Substitutes</SectionTitle>
+      <BestSlotsContainer>
+        {Object.entries(subAvailabilityData).map(([name, data]) => {
+          const activeSlots = Object.entries(data.slots || {})
+            .filter(([_, isAvail]) => isAvail)
+            .map(([slot, _]) => slot);
+          
+          if (activeSlots.length === 0) return null;
+
+          const combinedTimes = combineConsecutiveTimes(activeSlots, use30MinIncrements ? fullTimes30 : fullTimes);
+
+          return (
+            <BestSlotCard key={name}>
+              <h3>{name}</h3>
+              <ul style={{ textAlign: 'left', paddingLeft: '1.5rem' }}>
+                {combinedTimes.map(slot => <li key={slot}>{slot}</li>)}
+              </ul>
+            </BestSlotCard>
+          );
+        })}
+      </BestSlotsContainer>
     </PageContainer>
   );
 };

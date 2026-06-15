@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode, Dispatch, SetStateAction } from 'react';
 
-export type Division = 'gold' | 'master';
+export type Division = 'gold' | 'master' | 'test';
 
 interface DivisionContextType {
   division: Division;

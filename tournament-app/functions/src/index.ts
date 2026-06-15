@@ -119,15 +119,18 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
     const masterRef = db.collection("teamAccessCodes").doc(`${prefix}_master`);
     const goldRef = db.collection("teamAccessCodes").doc(`${prefix}_gold`);
     const testRef = db.collection("teamAccessCodes").doc(`${prefix}_test`);
+    const subsRef = db.collection("teamAccessCodes").doc(`${prefix}_subs`);
 
-    const [masterSnap, goldSnap, testSnap] = await Promise.all([
+    const [masterSnap, goldSnap, testSnap, subsSnap] = await Promise.all([
       masterRef.get(),
       goldRef.get(),
       testRef.get(),
+      subsRef.get(),
     ]);
 
     let matchedData: any = null;
     let matchedId: string | null = null;
+    let isSub = false;
 
     if (masterSnap.exists) {
       const data = masterSnap.data();
@@ -162,6 +165,18 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
       }
     }
 
+    if (!matchedData && subsSnap.exists) {
+      const data = subsSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          isSub = true;
+          break;
+        }
+      }
+    }
+
     if (!matchedData) {
       throw new https.HttpsError(
         "not-found",
@@ -169,21 +184,31 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
       );
     }
 
-    logger.debug(`Access granted to ${matchedData.captainName}`);
+    let customToken;
+    if (isSub) {
+      logger.debug(`Access granted to Sub: ${matchedData.name}`);
+      const uid = `sub-${matchedId}`;
+      customToken = await admin.auth().createCustomToken(
+        uid,
+        {isSub: true, subName: matchedData.name}
+      );
+    } else {
+      logger.debug(`Access granted to ${matchedData.captainName}`);
 
-    // Get the teamId from the matched document"s ID
-    const isLegacyTeamId = !Number.isNaN(Number(matchedId));
-    const teamId = isLegacyTeamId ?
-      Number(matchedId) :
-      matchedData.teamId;
-    const division = matchedData.division ?? "";
-    logger.debug(`Team access for division ${division}`);
-    const uid = `captain-${teamId}`; // Create a unique ID for this user
+      // Get the teamId from the matched document"s ID
+      const isLegacyTeamId = !Number.isNaN(Number(matchedId));
+      const teamId = isLegacyTeamId ?
+        Number(matchedId) :
+        matchedData.teamId;
+      const division = matchedData.division ?? "";
+      logger.debug(`Team access for division ${division}`);
+      const uid = `captain-${teamId}`; // Create a unique ID for this user
 
-    // Create a custom auth token with the teamId as a custom claim
-    const customToken = await admin
-      .auth()
-      .createCustomToken(uid, {teamId, division, isTeamMember: true});
+      // Create a custom auth token with the teamId as a custom claim
+      customToken = await admin
+        .auth()
+        .createCustomToken(uid, {teamId, division, isTeamMember: true});
+    }
 
     return {token: customToken};
   });
@@ -329,9 +354,10 @@ export const executeAutoPick = onTaskDispatched({
 
   const convertRankToElo = (rankTier: string, rankDivision: number): number => {
     const rankTierToNumber: {[key: string]: number} = {
-      "Challenger": 100,
-      "Grandmasters": 90,
-      "Masters": 80,
+      "Challenger": 10000,
+      "Grandmasters": 1000,
+      "Masters": 400,
+      "Master": 400,
       "Diamond": 70,
       "Emerald": 60,
       "Platinum": 50,
@@ -342,10 +368,8 @@ export const executeAutoPick = onTaskDispatched({
       "Unranked": 0,
     };
 
-    if (rankTier === "Masters" ||
-        rankTier === "Grandmasters" ||
-        rankTier === "Challenger") {
-      return 100 + rankDivision;
+    if (rankTier === "Masters" || rankTier === "Master" || rankTier === "Grandmasters" || rankTier === "Challenger") {
+      return rankTierToNumber[rankTier] + rankDivision;
     }
 
     return rankTierToNumber[rankTier] + (10 - rankDivision) || 0;
@@ -368,14 +392,35 @@ export const executeAutoPick = onTaskDispatched({
   }
 
   const compareRanks = (player1: Player, player2: Player): number => {
-    return Math.max(
+    const p1Max = Math.max(
+      convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
+      convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
+      convertRankToElo(player1.flexRankTier, player1.flexRankDivision)
+    );
+    const p2Max = Math.max(
       convertRankToElo(player2.peakRankTier, player2.peakRankDivision),
       convertRankToElo(player2.soloRankTier, player2.soloRankDivision),
-      convertRankToElo(player2.flexRankTier, player2.flexRankDivision)) -
-        Math.max(
-          convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
-          convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
-          convertRankToElo(player1.flexRankTier, player1.flexRankDivision));
+      convertRankToElo(player2.flexRankTier, player2.flexRankDivision)
+    );
+
+    if (p1Max === p2Max) {
+      let p1Sum = convertRankToElo(player1.peakRankTier, player1.peakRankDivision);
+      let p2Sum = convertRankToElo(player2.peakRankTier, player2.peakRankDivision);
+      if (player1.soloRankDivision !== -1 && player2.soloRankDivision !== -1) {
+        p1Sum += convertRankToElo(player1.soloRankTier, player1.soloRankDivision);
+        p2Sum += convertRankToElo(player2.soloRankTier, player2.soloRankDivision);
+      }
+      if (player1.flexRankDivision !== -1 && player2.flexRankDivision !== -1) {
+        p1Sum += convertRankToElo(player1.flexRankTier, player1.flexRankDivision);
+        p2Sum += convertRankToElo(player2.flexRankTier, player2.flexRankDivision);
+      }
+      if (p1Sum === p2Sum) {
+        return player1.id - player2.id;
+      }
+      return p1Sum - p2Sum;
+    }
+
+    return p1Max - p2Max;
   };
 
 
@@ -385,7 +430,7 @@ export const executeAutoPick = onTaskDispatched({
       "Fallback 1 failed. Falling back to best available Elo.");
     // Create a mutable copy to sort
     const sortedAvailable = [...availablePlayers];
-    sortedAvailable.sort(compareRanks);
+    sortedAvailable.sort((a, b) => compareRanks(b, a));
     playerToDraftId = sortedAvailable[0]?.id;
     logger.log(
       `Fallback 2 found: Player ${playerToDraftId} has the highest Elo.`);
@@ -413,7 +458,97 @@ export const executeAutoPick = onTaskDispatched({
       ...draftState.completedPicks,
       [draftState.currentPickIndex]: playerToDraftId,
     };
-    const nextPickIndex = draftState.currentPickIndex + 1;
+
+    const numTeams = draftState.teams.length;
+    const newPickOrder = [...draftState.pickOrder];
+
+    if ((draftState.currentPickIndex + 1) % numTeams === 0) {
+      const currentRound = Math.floor(draftState.currentPickIndex / numTeams) + 1;
+
+      if (currentRound < 5) {
+        const teamElos = newTeams.map((team: any) => {
+          const totalElo = team.players.reduce((sum: number, p: any) => {
+            const maxElo = Math.max(
+              convertRankToElo(p.peakRankTier, p.peakRankDivision),
+              convertRankToElo(p.soloRankTier, p.soloRankDivision),
+              convertRankToElo(p.flexRankTier, p.flexRankDivision)
+            );
+            return sum + maxElo;
+          }, 0);
+          return { id: team.id, elo: totalElo };
+        });
+
+        teamElos.sort((a: any, b: any) => {
+          if (a.elo === b.elo) {
+            return a.id - b.id;
+          }
+          return a.elo - b.elo;
+        });
+
+        const sortedTeamIds = teamElos.map((t: any) => t.id);
+
+        for (let r = currentRound + 1; r <= 5; r++) {
+          const startIdx = (r - 1) * numTeams;
+          const roundOrder = [...sortedTeamIds];
+
+          // Snake prediction: alternate order for future rounds
+          if ((r - currentRound) % 2 === 0) {
+            roundOrder.reverse();
+          }
+
+          for (let j = 0; j < numTeams; j++) {
+            newPickOrder[startIdx + j] = roundOrder[j];
+          }
+        }
+
+        const allPlayers: Player[] = [...newAvailablePlayers];
+        for (const team of newTeams) {
+          if (team.players) {
+            allPlayers.push(...team.players);
+          }
+        }
+
+        const captains = allPlayers.filter((p: Player) => p.isCaptain).sort((a: Player, b: Player) => compareRanks(b, a));
+        const captainsReversed = [...captains].reverse();
+        const allPlayersSorted = [...allPlayers].sort((a: Player, b: Player) => compareRanks(b, a)).reverse();
+
+        const playerSkipSlot: { [playerId: number]: number } = {};
+        allPlayersSorted.forEach((player: Player, index: number) => {
+          if (player.isCaptain) {
+            playerSkipSlot[player.id] = index / allPlayers.length;
+          }
+        });
+
+        captainsReversed.forEach((captain: Player) => {
+          const captainPercent = playerSkipSlot[captain.id];
+          if (captainPercent !== undefined) {
+            let forcedRound = 0;
+            if (captainPercent <= 0.2) forcedRound = 5;
+            else if (captainPercent <= 0.4) forcedRound = 4;
+            else if (captainPercent <= 0.6) forcedRound = 3;
+            else if (captainPercent <= 0.8) forcedRound = 2;
+            else if (captainPercent <= 1.0) forcedRound = 1;
+
+            if (forcedRound > currentRound) {
+              const startIdx = (forcedRound - 1) * numTeams;
+              for (let j = 0; j < numTeams; j++) {
+                if (newPickOrder[startIdx + j] === captain.teamId) {
+                  newPickOrder[startIdx + j] = captain.name;
+                  break;
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    let nextPickIndex = draftState.currentPickIndex + 1;
+    // Update skipped picks
+    while (typeof (newPickOrder[nextPickIndex]) === "string" && nextPickIndex < newPickOrder.length) {
+      nextPickIndex++;
+    }
+
     const nextDeadline = Date.now() + DRAFT_PICK_TIME_LIMIT_IN_SECONDS * 1000;
 
     const updatedDraftState = {
@@ -422,6 +557,7 @@ export const executeAutoPick = onTaskDispatched({
       availablePlayers: newAvailablePlayers,
       completedPicks: newCompletedPicks,
       currentPickIndex: nextPickIndex,
+      pickOrder: newPickOrder,
       pickEndsAt: nextDeadline,
     };
     await draftRef.update(updatedDraftState);

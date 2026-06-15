@@ -64,14 +64,14 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
     pickOrder.push(...roundOrder);
   }
 
-  let playerSkipSlot: { [playerId: number]: number } = {};
-  let nextTeamId = 1;
+  let playerSkipSlot: {[playerId: number]: number} = {};
   
   allPlayersSorted.forEach((player, index) => {
     const overallRank = index; // The pick number to be forfeited
     if (player.isCaptain && pickOrder[overallRank] !== undefined) {
         playerSkipSlot[player.id] = index / allPlayers.length;
-        player.teamId = nextTeamId++;
+      const matchedTeam = teams.find(t => t.captainId === player.id);
+      player.teamId = matchedTeam ? matchedTeam.id : null;
     }
   });
   
@@ -197,9 +197,22 @@ const DraftPage: React.FC = () => {
     return () => unsubscribe();
   }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, setDraftDocRef]);
 
+  const canDraftNow = (
+    !isSpectator &&
+    (!!captainTeamId && division === authDivision) &&
+    Object.keys(draftState).length > 0 &&
+    (draftState?.pickOrder ?
+      Number(draftState?.pickOrder[draftState.currentPickIndex]) === Number(captainTeamId) : false)
+  ) || isAdmin;
+
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
     
+    if (!canDraftNow) {
+      console.error("Draft failed: You do not have permission to draft now.");
+      return;
+    }
+
     const { currentPickIndex, teams, completedPicks, availablePlayers, pickOrder } = draftState;
     const currentTeamIdPicking = pickOrder[currentPickIndex];
 
@@ -231,7 +244,12 @@ const DraftPage: React.FC = () => {
           return { id: team.id, elo: totalElo };
         });
 
-        teamElos.sort((a, b) => a.elo - b.elo);
+        teamElos.sort((a, b) => {
+          if (a.elo === b.elo) {
+            return a.id - b.id;
+          }
+          return a.elo - b.elo;
+        });
 
         const sortedTeamIds = teamElos.map(t => t.id);
 
@@ -301,25 +319,17 @@ const DraftPage: React.FC = () => {
         pickEndsAt: Date.now() + DRAFT_PICK_TIME_LIMIT_IN_MS,
     };
 
+    const token = await currentUser?.getIdTokenResult(true);
+    console.log(token?.claims);
+
     // --- Atomically write the entire update back to Firestore ---
     await updateDoc(draftDocRef, updatedDraft);
 
-  }, [draftState, draftDocRef]); // Dependency is now just draftState
+  }, [draftState, draftDocRef, canDraftNow]);
 
   const currentTeamPicking = useMemo(() => {
     return draftState.teams?.find(t => t.id === currentTeamIdPicking);
   }, [draftState.teams, currentTeamIdPicking]);
-
-  if (isLoading || !draftState) {
-    return <div>Connecting to Live Draft...</div>;
-  }
-
-  const canDraftNow = (
-    !isSpectator &&
-    (captainTeamId !== null && division === authDivision) &&
-    Object.keys(draftState).length > 0 && 
-    (draftState?.pickOrder ? 
-      draftState?.pickOrder[draftState.currentPickIndex] === Number(captainTeamId) : false)) || isAdmin;
 
   if (loadingAuth) {
     return <div>Verifying Access...</div>;

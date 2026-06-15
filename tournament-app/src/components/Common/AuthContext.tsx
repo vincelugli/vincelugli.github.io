@@ -9,6 +9,8 @@ interface AuthContextType {
   captainTeamId: string;
   authDivision: string;
   isTeamMember: boolean;
+  isSub: boolean;
+  subName: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +20,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [authDivision, setAuthDivision] = useState('test');
   const [isAdmin, setIsAdmin] = useState(false);
   const [isTeamMember, setIsTeamMember] = useState(false);
+  const [isSub, setIsSub] = useState(false);
+  const [subName, setSubName] = useState('');
   const [loading, setLoading] = useState(true);
   const [captainTeamId, setCaptainTeamId] = useState('');
   const auth = getAuth();
@@ -30,18 +34,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const idTokenResult = await user.getIdTokenResult(true);
         setIsAdmin(!!idTokenResult.claims.adminId);
         setIsTeamMember(!!idTokenResult.claims.isTeamMember);
+        setIsSub(!!idTokenResult.claims.isSub);
         setCaptainTeamId(idTokenResult.claims.teamId as string);
         setAuthDivision(idTokenResult.claims.division as string);
+        setSubName(idTokenResult.claims.subName as string);
       } else {
         setIsAdmin(false);
         setIsTeamMember(false);
+        setIsSub(false);
+        setSubName('');
       }
       setLoading(false);
     });
     return unsubscribe;
   }, [auth, setCurrentUser, setIsAdmin, setLoading]);
 
-  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision, isTeamMember };
+  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision, isTeamMember, isSub, subName };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
