@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { mockSwissTeams, mockSwissMatches } from '../../data/mockSwissData';
 import { Match } from '../../types';
+import { useTournament } from '../../context/TournamentContext';
+import { useGameMatches } from '../../context/MatchesContext';
+import { compareTeams } from '../../utils';
 
 const PageContainer = styled.div`
   padding: 2rem;
@@ -122,16 +124,40 @@ const ScoreText = styled.span`
 `;
 
 const SwissSystemPage: React.FC = () => {
+  const { teams, loading: teamsLoading } = useTournament();
+  const { matches, loading: matchesLoading } = useGameMatches();
   const [activeRound, setActiveRound] = useState('Round 1');
 
-  const advancedTeams = mockSwissTeams.filter(t => t.wins === 3);
-  const eliminatedTeams = mockSwissTeams.filter(t => t.losses === 3);
-  const activeTeams = mockSwissTeams.filter(t => t.wins < 3 && t.losses < 3);
+  if (teamsLoading || matchesLoading) {
+    return (
+      <PageContainer>
+        <p>Loading Swiss stage data...</p>
+      </PageContainer>
+    );
+  }
 
-  const rounds = ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5'];
+  if (!teams || teams.length === 0) {
+    return (
+      <PageContainer>
+        <p>Teams not yet finalized.</p>
+      </PageContainer>
+    );
+  }
+
+  const advancedTeams = [...teams].filter(t => t.wins === 3).sort(compareTeams);
+  const eliminatedTeams = [...teams].filter(t => t.losses === 3).sort(compareTeams);
+  const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(compareTeams);
+
+  // Filter out any knockout matches
+  const swissMatches = matches.filter(m => !m.isKnockout);
+
+  // Dynamically calculate the maximum round or default to 5
+  const maxRound = Math.max(5, ...swissMatches.map(m => m.weekPlayed || 0));
+  const rounds = Array.from({ length: maxRound }, (_, i) => `Round ${i + 1}`);
 
   const getRoundMatches = (round: string) => {
-    return mockSwissMatches.filter(m => m.stage === round);
+    const roundNum = parseInt(round.replace('Round ', ''), 10);
+    return swissMatches.filter(m => m.stage === round || (!m.stage && m.weekPlayed === roundNum));
   };
 
   return (
@@ -144,7 +170,7 @@ const SwissSystemPage: React.FC = () => {
             {advancedTeams.map(t => (
               <TeamItem key={t.id}>
                 <span>{t.name}</span>
-                <span>{t.record}</span>
+                <span>{t.record || `${t.wins}-${t.losses}`}</span>
               </TeamItem>
             ))}
           </TeamList>
@@ -156,7 +182,7 @@ const SwissSystemPage: React.FC = () => {
             {activeTeams.map(t => (
               <TeamItem key={t.id}>
                 <span>{t.name}</span>
-                <span>{t.record}</span>
+                <span>{t.record || `${t.wins}-${t.losses}`}</span>
               </TeamItem>
             ))}
           </TeamList>
@@ -168,7 +194,7 @@ const SwissSystemPage: React.FC = () => {
             {eliminatedTeams.map(t => (
               <TeamItem key={t.id}>
                 <span>{t.name}</span>
-                <span>{t.record}</span>
+                <span>{t.record || `${t.wins}-${t.losses}`}</span>
               </TeamItem>
             ))}
           </TeamList>
@@ -191,14 +217,17 @@ const SwissSystemPage: React.FC = () => {
 
         <MatchGrid>
           {getRoundMatches(activeRound).map((match: Match) => {
-            const team1 = mockSwissTeams.find(t => t.id === match.team1Id);
-            const team2 = mockSwissTeams.find(t => t.id === match.team2Id);
+            const team1 = teams.find(t => t.id === match.team1Id);
+            const team2 = teams.find(t => t.id === match.team2Id);
+            const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : 'Unknown Team');
+            const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
+
             return (
               <MatchCard key={match.id}>
                 <div>
-                  <TeamName winner={match.winnerId === team1?.id}>{team1?.name}</TeamName>
+                  <TeamName winner={match.winnerId === team1?.id}>{team1Name}</TeamName>
                   <Versus> vs </Versus>
-                  <TeamName winner={match.winnerId === team2?.id}>{team2?.name}</TeamName>
+                  <TeamName winner={match.winnerId === team2?.id}>{team2Name}</TeamName>
                 </div>
                 {match.status === 'completed' ? (
                   <ScoreText>{match.score}</ScoreText>
