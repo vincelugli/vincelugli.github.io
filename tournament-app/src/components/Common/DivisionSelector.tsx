@@ -17,7 +17,7 @@ const DivisionSelector: React.FC = () => {
       <Select id="division-select" value={division} onChange={handleChange}>
         <option value="master">Elder</option>
         <option value="gold">Elemental</option>
-        {(isAdmin || authDivision === 'test' || division === 'test') ? <option value="test">Test</option> : <></>}
+        {/* {(isAdmin || authDivision === 'test' || division === 'test') ? <option value="test">Test</option> : <></>} */}
       </Select>
     </SelectWrapper>
   );
