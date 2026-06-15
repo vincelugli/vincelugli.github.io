@@ -15,8 +15,8 @@ const DivisionSelector: React.FC = () => {
     <SelectWrapper>
       <Label htmlFor="division-select">Division:</Label>
       <Select id="division-select" value={division} onChange={handleChange}>
-        <option value="master">Master</option>
-        <option value="gold">Gold</option>
+        <option value="master">Elder</option>
+        <option value="gold">Elemental</option>
         {(isAdmin || authDivision === 'test' || division === 'test') ? <option value="test">Test</option> : <></>}
       </Select>
     </SelectWrapper>
