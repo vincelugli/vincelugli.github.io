@@ -117,16 +117,6 @@ const Header: React.FC = () => {
           </NavItem>
         </Nav>
 
-        {/* DELETE, DEBUG ONLY */}
-        {user && (
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            <LogoutButton onClick={() => auth.signOut()}>
-              Logout
-            </LogoutButton>
-            <UserNameDisplay>  |  {getDisplayName()}</UserNameDisplay>
-          </div>
-        )}
-        {/* DELETE, DEBUG ONLY */}
         <ThemeToggleButton />
         <HamburgerIcon onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
