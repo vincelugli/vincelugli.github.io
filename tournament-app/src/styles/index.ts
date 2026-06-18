@@ -2116,3 +2116,8 @@ export const ProfileKDA = styled.span`
   }
 `;
 
+export const ProfileRankValue = styled.span<{ tier: string }>`
+  font-weight: 700;
+  color: ${({ tier }) => getTierColor(tier).text};
+`;
+

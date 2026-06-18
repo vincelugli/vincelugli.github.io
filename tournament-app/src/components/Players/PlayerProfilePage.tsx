@@ -53,7 +53,8 @@ import {
   MatchInfo,
   MatchResult,
   ResultIndicator,
-  Score
+  Score,
+  ProfileRankValue
 } from '../../styles';
 import {FaExternalLinkAlt} from 'react-icons/fa';
 
@@ -255,15 +256,21 @@ const PlayerProfilePage: React.FC = () => {
           <ProfileStatsList>
             <ProfileStatRow>
               <ProfileStatLabel>Peak Rank</ProfileStatLabel>
-              <ProfileStatValue>{getFormatRank(player.peakRankTier, player.peakRankDivision)}</ProfileStatValue>
+              <ProfileRankValue tier={player.peakRankTier}>
+                {getFormatRank(player.peakRankTier, player.peakRankDivision)}
+              </ProfileRankValue>
             </ProfileStatRow>
             <ProfileStatRow>
               <ProfileStatLabel>Solo Q Rank</ProfileStatLabel>
-              <ProfileStatValue>{getFormatRank(player.soloRankTier, player.soloRankDivision)}</ProfileStatValue>
+              <ProfileRankValue tier={player.soloRankTier}>
+                {getFormatRank(player.soloRankTier, player.soloRankDivision)}
+              </ProfileRankValue>
             </ProfileStatRow>
             <ProfileStatRow>
               <ProfileStatLabel>Flex Q Rank</ProfileStatLabel>
-              <ProfileStatValue>{getFormatRank(player.flexRankTier, player.flexRankDivision)}</ProfileStatValue>
+              <ProfileRankValue tier={player.flexRankTier}>
+                {getFormatRank(player.flexRankTier, player.flexRankDivision)}
+              </ProfileRankValue>
             </ProfileStatRow>
             <ProfileStatRow>
               <ProfileStatLabel>Ranked Winrate</ProfileStatLabel>
@@ -318,7 +325,9 @@ const PlayerProfilePage: React.FC = () => {
               {player.previousSeasons.map((prev, index) => (
                 <ProfileStatRow key={index}>
                   <ProfileStatLabel>{prev.season}</ProfileStatLabel>
-                  <ProfileStatValue>{getFormatRank(prev.tier, prev.division)}</ProfileStatValue>
+                  <ProfileRankValue tier={prev.tier}>
+                    {getFormatRank(prev.tier, prev.division)}
+                  </ProfileRankValue>
                 </ProfileStatRow>
               ))}
             </ProfileStatsList>
