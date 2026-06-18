@@ -348,7 +348,8 @@ export const Select = styled.select`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 5px;
   font-size: 1rem;
-  background-color: white;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   cursor: pointer;
   transition: border-color 0.2s;
   &:focus {
