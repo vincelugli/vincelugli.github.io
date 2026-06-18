@@ -85,6 +85,21 @@ export interface Player {
   role: string;
   secondaryRoles: string[];
   teamId?: number | null;
+  mostPlayedChampions?: string[];
+  rankedWinrate?: string;
+  rolePreferences?: {
+    top: number;
+    jungle: number;
+    mid: number;
+    adc: number;
+    support: number;
+  };
+  additionalStats?: { [key: string]: string | number };
+  previousSeasons?: {
+    season: string;
+    tier: string;
+    division: number;
+  }[];
 }
 
 export interface DraftState {
