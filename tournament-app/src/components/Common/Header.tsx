@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {getAuth} from 'firebase/auth';
-import {HamburgerIcon, MobileMenu, HeaderLeft, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction, LogoutButton, UserNameDisplay} from '../../styles';
+import {HamburgerIcon, MobileMenu, HeaderLeft, HeaderRight, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction, LogoutButton, UserNameDisplay} from '../../styles';
 import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
@@ -65,7 +65,7 @@ const Header: React.FC = () => {
         <DivisionSelector />
       </HeaderLeft>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <HeaderRight>
         {/* --- DESKTOP NAV --- */}
         <Nav>
           <NavItem>
@@ -121,16 +121,17 @@ const Header: React.FC = () => {
         <HamburgerIcon onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
         </HamburgerIcon>
-      </div>
+      </HeaderRight>
       
       <MobileMenu isOpen={isMobileMenuOpen}>
         <MobileNavItem>
-          <MobileMainLink onClick={() => toggleMobileSubMenu('schedule')}>
-            Schedule <FaChevronDown size={16} />
+          <MobileMainLink onClick={() => toggleMobileSubMenu('info')}>
+            Info <FaChevronDown size={16} />
           </MobileMainLink>
-          <MobileSubMenu isOpen={openMobileSubMenu === 'schedule'}>
-            <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Overall Timeline</MobileSubMenuItem>
+          <MobileSubMenu isOpen={openMobileSubMenu === 'info'}>
+            <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Schedule</MobileSubMenuItem>
             <MobileSubMenuItem to="/availability" onClick={closeAllMenus}>Availability</MobileSubMenuItem>
+            <MobileSubMenuItem to="/players" onClick={closeAllMenus}>Players</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
         

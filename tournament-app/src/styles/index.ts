@@ -40,6 +40,12 @@ export const FooterContainer = styled.footer`
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid ${({ theme }) => theme.borderColor};
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+  }
 `;
 
 export const CopyrightText = styled.p`
@@ -74,6 +80,10 @@ export const HeaderContainer = styled.header`
   justify-content: space-between;
   align-items: center;
   position: relative; /* Needed for positioning the mobile menu */
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
 export const Logo = styled(Link)`
@@ -82,6 +92,10 @@ export const Logo = styled(Link)`
   color: ${({ theme }) => theme.text};
   text-decoration: none;
   z-index: 10; /* Ensure logo is above the mobile menu if it overlaps */
+
+  @media (max-width: 480px) {
+    font-size: 1.25rem;
+  }
 `;
 
 export const Nav = styled.nav`
@@ -272,6 +286,24 @@ export const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 2rem;
+
+  @media (max-width: 600px) {
+    gap: 1rem;
+  }
+
+  @media (max-width: 400px) {
+    gap: 0.5rem;
+  }
+`;
+
+export const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  @media (max-width: 400px) {
+    gap: 0.5rem;
+  }
 `;
 
 export const LogoutButton = styled.button`
@@ -341,6 +373,14 @@ export const Label = styled.label`
   color: ${({ theme }) => theme.secondaryText};
   font-size: 1rem;
   padding: 0.8rem 1.5rem;
+
+  @media (max-width: 600px) {
+    padding: 0.8rem 0.5rem 0.8rem 0;
+  }
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 export const Select = styled.select`
@@ -356,6 +396,11 @@ export const Select = styled.select`
     border-color: ${({ theme }) => theme.primary};
     outline: none;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  }
+
+  @media (max-width: 600px) {
+    padding: 0.6rem 1.5rem 0.6rem 1rem;
+    font-size: 0.95rem;
   }
 `;
 
@@ -391,12 +436,20 @@ export const DraftContent = styled.div`
   grid-template-columns: 3fr 1fr;
   gap: 2rem;
   align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const TeamsSection = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+
+  @media (max-width: 750px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const TeamCardContainer = styled.div<{ isPicking: boolean }>`
@@ -906,6 +959,13 @@ export const Title = styled.h1`
   padding-bottom: 1rem;
 `;
 
+export const TableScrollWrapper = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+`;
+
 // Styled table for a clean layout
 export const TeamsTable = styled.table`
   width: 100%;
@@ -974,8 +1034,11 @@ export const UpcomingMatchCard = styled.div`
   padding: 2rem;
   border-radius: 8px;
   margin-top: 2rem;
-  margin-top: 2rem;
   box-shadow: 0 8px 16px ${({ theme }) => theme.matchCard};
+
+  @media (max-width: 600px) {
+    padding: 1.25rem;
+  }
 `;
 
 export const OpponentInfo = styled.div`
@@ -983,6 +1046,10 @@ export const OpponentInfo = styled.div`
   span {
     font-weight: 700;
     font-size: 2rem;
+
+    @media (max-width: 600px) {
+      font-size: 1.5rem;
+    }
   }
 `;
 
@@ -1000,6 +1067,12 @@ export const CodeBox = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
 `;
 
 export const Code = styled.code`
@@ -1009,6 +1082,12 @@ export const Code = styled.code`
   font-size: 1.5rem;
   font-family: 'Courier New', Courier, monospace;
   font-weight: 700;
+  word-break: break-all;
+
+  @media (max-width: 600px) {
+    font-size: 1.1rem;
+    text-align: center;
+  }
 `;
 
 export const CopyButton = styled.button`
@@ -1062,6 +1141,10 @@ export const TournamentContainer = styled.div`
 
 // App
 export const GlobalStyle = createGlobalStyle`
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -1070,7 +1153,6 @@ export const GlobalStyle = createGlobalStyle`
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
     background: ${({ theme }) => theme.body};
     color: ${({ theme }) => theme.text};
     transition: all 0.25s linear;
@@ -1089,6 +1171,10 @@ export const MainContent = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
 // SchedulePage
@@ -1830,12 +1916,23 @@ export const ProfileHeader = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: 1.5rem;
+
+  @media (max-width: 550px) {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem;
+  }
 `;
 
 export const ProfileHeaderLeft = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+
+  @media (max-width: 550px) {
+    align-items: center;
+  }
 `;
 
 export const ProfilePlayerName = styled.h1`
@@ -1843,6 +1940,10 @@ export const ProfilePlayerName = styled.h1`
   font-weight: 800;
   color: ${({ theme }) => theme.text};
   margin: 0;
+
+  @media (max-width: 550px) {
+    font-size: 2rem;
+  }
 `;
 
 export const ProfileTeamLink = styled(Link)`
@@ -1864,6 +1965,10 @@ export const ProfileRoleBadgesList = styled.div`
   gap: 0.5rem;
   align-items: center;
   margin-top: 0.5rem;
+
+  @media (max-width: 550px) {
+    justify-content: center;
+  }
 `;
 
 export const ProfilePrimaryBadge = styled.span`
@@ -1908,7 +2013,7 @@ export const ProfileExternalLinkButton = styled.a`
 
 export const ProfileStatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2.5rem;
 `;
@@ -2016,6 +2121,11 @@ export const ProfilePreferenceRoleLabel = styled.span`
   text-transform: capitalize;
   color: ${({ theme }) => theme.text};
   font-size: 0.95rem;
+
+  @media (max-width: 400px) {
+    width: 70px;
+    font-size: 0.85rem;
+  }
 `;
 
 export const ProfilePreferenceBarContainer = styled.div`
@@ -2045,6 +2155,11 @@ export const ProfilePreferenceValue = styled.span`
   color: ${({ theme }) => theme.textAlt};
   width: 80px;
   text-align: right;
+
+  @media (max-width: 400px) {
+    width: 65px;
+    font-size: 0.75rem;
+  }
 `;
 
 export const ProfileMatchHeader = styled.div<{ win: boolean }>`

@@ -19,6 +19,20 @@ const TeamNameLink = styled.div`
   }
 `;
 
+const ScrollHint = styled.div`
+  display: none;
+  text-align: center;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.textAlt};
+  margin-bottom: 1rem;
+  font-style: italic;
+  font-weight: 500;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+`;
+
 const DoubleEliminationBracket: React.FC = () => {
   const { bracket } = useTournament();
   const navigate = useNavigate();
@@ -34,6 +48,7 @@ const DoubleEliminationBracket: React.FC = () => {
 
   return (
     <BracketContainer>
+      <ScrollHint>← Swipe horizontally to view full bracket →</ScrollHint>
       <Bracket
         rounds={bracket}
         renderSeedComponent={(props: IRenderSeedProps) => {
