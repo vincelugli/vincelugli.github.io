@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
@@ -13,325 +12,51 @@ import { useTournament } from '../../context/TournamentContext';
 import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
 import { createOpGgUrl, getFirebasePrefix } from '../../utils';
 import {enrichPlayerDetails} from '../../utils/playerHelper';
-import { MatchInfo, MatchResult, ResultIndicator, Score } from '../../styles';
+import {
+  ProfilePageContainer,
+  ProfileLoadingText,
+  ProfileHeader,
+  ProfileHeaderLeft,
+  ProfilePlayerName,
+  ProfileTeamLink,
+  ProfileFreeAgentText,
+  ProfileRoleBadgesList,
+  ProfilePrimaryBadge,
+  ProfileSecondaryBadge,
+  ProfileExternalLinkButton,
+  ProfileStatsGrid,
+  ProfileStatCard,
+  ProfileSectionTitle,
+  ProfileStatsList,
+  ProfileStatRow,
+  ProfileStatLabel,
+  ProfileStatValue,
+  ProfileChampRow,
+  ProfileChampIcon,
+  ProfileChampInfo,
+  ProfileChampName,
+  ProfileChampStats,
+  ProfileChampWinrate,
+  ProfilePreferenceRow,
+  ProfilePreferenceRoleLabel,
+  ProfilePreferenceBarContainer,
+  ProfilePreferenceBarFill,
+  ProfilePreferenceValue,
+  ProfileMatchHeader,
+  ProfileMatchHistoryList,
+  ProfileMatchItem,
+  ProfileGamesContainer,
+  ProfileGameRow,
+  ProfileGameResultIndicator,
+  ProfileChampionIcon,
+  ProfileKDA,
+  MatchInfo,
+  MatchResult,
+  ResultIndicator,
+  Score,
+  ProfileRankValue
+} from '../../styles';
 import {FaExternalLinkAlt} from 'react-icons/fa';
-
-// --- STYLED COMPONENTS ---
-const PageContainer = styled.div`
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 0 1.5rem;
-`;
-
-const LoadingText = styled.p`
-  text-align: center;
-  font-size: 1.2rem;
-  color: ${({theme}) => theme.textAlt};
-  margin-top: 5rem;
-`;
-
-const ProfileHeader = styled.div`
-  padding: 2.5rem;
-  background-color: ${({ theme }) => theme.background};
-  border-radius: 12px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  margin-bottom: 2rem;
-  border: 1px solid ${({theme}) => theme.border};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-`;
-
-const HeaderLeft = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const PlayerName = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: ${({ theme }) => theme.text};
-  margin: 0;
-`;
-
-const TeamLink = styled(Link)`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.primary};
-  text-decoration: none;
-  &:hover { text-decoration: underline; }
-`;
-
-const FreeAgentText = styled.span`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: ${({theme}) => theme.textAlt};
-`;
-
-const RoleBadgesList = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-top: 0.5rem;
-`;
-
-const PrimaryBadge = styled.span`
-  background-color: rgba(0, 123, 255, 0.15);
-  color: ${({theme}) => theme.primary};
-  border: 1px solid ${({theme}) => theme.primary};
-  padding: 0.25rem 0.75rem;
-  border-radius: 50px;
-  font-weight: 700;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-`;
-
-const SecondaryBadge = styled.span`
-  background-color: rgba(108, 117, 125, 0.15);
-  color: ${({theme}) => theme.textAlt};
-  padding: 0.25rem 0.75rem;
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-`;
-
-const ExternalLinkButton = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: #5383e8; /* OP.GG Blue */
-  color: white;
-  text-decoration: none;
-  font-weight: 700;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: background-color 0.2s;
-  box-shadow: 0 4px 6px rgba(83, 131, 232, 0.2);
-
-  &:hover {
-    background-color: #3b6bd4;
-  }
-`;
-
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-`;
-
-const StatCard = styled.div`
-  background-color: ${({ theme }) => theme.background};
-  border-radius: 12px;
-  padding: 1.75rem;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  border: 1px solid ${({theme}) => theme.border};
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: ${({theme}) => theme.text};
-  margin-top: 0;
-  margin-bottom: 1.25rem;
-  border-bottom: 2px solid ${({theme}) => theme.border};
-  padding-bottom: 0.5rem;
-`;
-
-// Extensible Stats List
-const StatsList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const StatRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px dashed ${({theme}) => theme.border};
-  
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-`;
-
-const StatLabel = styled.span`
-  color: ${({theme}) => theme.textAlt};
-  font-weight: 500;
-`;
-
-const StatValue = styled.span`
-  color: ${({theme}) => theme.text};
-  font-weight: 700;
-`;
-
-// Champion Stats List
-const ChampRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const ChampIcon = styled.img`
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  border: 1px solid ${({theme}) => theme.border};
-`;
-
-const ChampInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-`;
-
-const ChampName = styled.span`
-  font-weight: 700;
-  color: ${({theme}) => theme.text};
-`;
-
-const ChampStats = styled.span`
-  font-size: 0.85rem;
-  color: ${({theme}) => theme.textAlt};
-`;
-
-const ChampWinrate = styled.span<{winrate?: number}>`
-  font-weight: 700;
-  color: ${props => props.winrate && props.winrate >= 55 ? props.theme.success : props.winrate && props.winrate < 47 ? props.theme.danger : props.theme.text};
-  font-size: 1rem;
-`;
-
-// Preferences styling
-const PreferenceRow = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.85rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const PreferenceRoleLabel = styled.span`
-  width: 90px;
-  font-weight: 600;
-  text-transform: capitalize;
-  color: ${({theme}) => theme.text};
-  font-size: 0.95rem;
-`;
-
-const PreferenceBarContainer = styled.div`
-  flex: 1;
-  height: 8px;
-  background-color: ${({theme}) => theme.body};
-  border-radius: 4px;
-  overflow: hidden;
-  margin-right: 1rem;
-`;
-
-const PreferenceBarFill = styled.div<{value: number}>`
-  height: 100%;
-  width: ${props => (props.value / 5) * 100}%;
-  background-color: ${props => {
-    if (props.value === 5) return props.theme.primary;
-    if (props.value === 4) return '#10b981'; // Green Comfort
-    if (props.value === 3) return '#f59e0b'; // Amber Can Play
-    return '#6c757d'; // Gray Avoid / Off
-  }};
-  border-radius: 4px;
-`;
-
-const PreferenceValue = styled.span`
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: ${({theme}) => theme.textAlt};
-  width: 80px;
-  text-align: right;
-`;
-
-// Match history styles
-const MatchHeader = styled.div<{ win: boolean }>`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  border-left: 5px solid ${({ theme, win }) => (win ? theme.success : theme.danger)};
-  border-radius: 8px 8px 0 0;
-`;
-
-const MatchHistoryList = styled.ul`
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const MatchItem = styled.li`
-  background-color: ${({ theme }) => theme.background};
-  border-radius: 8px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  cursor: pointer;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  border: 1px solid ${({theme}) => theme.border};
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
-  }
-`;
-
-const GamesContainer = styled.div`
-  padding: 0.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`;
-
-const GameRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const GameResultIndicator = styled.span<{ win: boolean }>`
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: ${({ theme, win }) => (win ? theme.success : theme.danger)};
-  width: 30px;
-`;
-
-const ChampionIcon = styled.img`
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-`;
-
-const KDA = styled.span`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.textAlt};
-  margin-top: 2px;
-  font-weight: 500;
-
-  span {
-    color: ${({ theme }) => theme.text};
-    font-weight: 700;
-  }
-`;
 
 interface ChampionStat {
   name: string;
@@ -358,24 +83,13 @@ const PlayerProfilePage: React.FC = () => {
   const { teams } = useTournament();
   const navigate = useNavigate();
 
-  const [player, setPlayer] = useState<Player | null>(null);
+  const [player, setPlayer] = useState<Required<Player> | null>(null);
   const [playerTeam, setPlayerTeam] = useState<Team | null>(null);
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
   const [tournamentChampStats, setTournamentChampStats] = useState<ChampionStat[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Map preferences to strings
-  const getPreferenceText = (score: number): string => {
-    switch (score) {
-      case 5: return 'Primary';
-      case 4: return 'Secondary';
-      case 3: return 'Comfort';
-      case 2: return 'Can Play';
-      case 1: return 'Avoid';
-      default: return 'Comfort';
-    }
-  };
-
+  // Format rank display
   const getFormatRank = (tier: string, divisionVal: number) => {
     if (!tier || tier === 'N/A') return 'Unranked';
     if (divisionVal === -1 || ['master', 'masters', 'grandmaster', 'grandmasters', 'challenger'].includes(tier.toLowerCase())) {
@@ -384,79 +98,95 @@ const PlayerProfilePage: React.FC = () => {
     return `${tier} ${divisionVal}`;
   };
 
+  const getPreferenceText = (pref: number): string => {
+    switch (pref) {
+      case 5: return 'Primary';
+      case 4: return 'Secondary';
+      case 3: return 'Comfortable';
+      case 2: return 'Can Play';
+      case 1: return 'Avoid';
+      default: return 'Can Play';
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!playerId) return;
       setLoading(true);
 
-      // 1. Fetch player data
-      const playerData = await getPlayerById(Number(playerId));
-      if (!playerData) {
-        setLoading(false);
-        return;
-      }
-
-      // Enrich player with detail stats (winrates, champion list, preferences)
-      const enrichedPlayer = enrichPlayerDetails(playerData);
-      setPlayer(enrichedPlayer);
-
-      // 2. Find the player's team from the global context
-      const team = teams.find(t => t.players.includes(Number(playerId))) || null;
-      setPlayerTeam(team);
-
-      // 3. Fetch all matches (Swiss and Knockout)
       try {
-        const prefix = getFirebasePrefix();
-        const swissMatchesDocRef = doc(db, 'matches', `${prefix}_${division}`);
-        const knockoutMatchesColRef = doc(db, 'bracket', `${prefix}_${division}`);
+        // 1. Get player raw info
+        const rawPlayer = getPlayerById(parseInt(playerId, 10));
+        if (!rawPlayer) {
+          setPlayer(null);
+          setLoading(false);
+          return;
+        }
 
-        const [swissSnap, knockoutSnap] = await Promise.all([
-          getDoc(swissMatchesDocRef),
-          getDoc(knockoutMatchesColRef)
-        ]);
+        // 2. Enrich player details
+        const enriched = enrichPlayerDetails(rawPlayer);
+        setPlayer(enriched);
 
-        const swissMatches = swissSnap.exists() ? swissSnap.data().matches as Match[] : [];
-        const knockoutRounds = knockoutSnap.exists() ? knockoutSnap.data().bracket as BracketRound[] : [];
-        const knockoutMatches = knockoutRounds.map((round) => round.seeds).flat() as Match[];
-        const allMatches = [...swissMatches, ...knockoutMatches];
+        // 3. Find Team
+        const team = teams.find((t) => t.id === enriched.teamId);
+        setPlayerTeam(team || null);
 
-        // 4. Filter for this player's team matches (if they are on a team)
+        // 4. Fetch Matches & calculate tournament stats if team exists
         if (team) {
-          const playerMatches = allMatches.filter(m => m.team1Id === team.id || m.team2Id === team.id);
-          const completedPlayerMatches = playerMatches.filter(m => m.status === 'completed');
+          const dbPrefix = getFirebasePrefix(division);
+          const docRef = doc(db, `${dbPrefix}_matches`, 'matchesData');
+          const docSnap = await getDoc(docRef);
 
-          // 5. Fetch detailed results for each completed match
-          const champStatsMap = new Map<string, {games: number, wins: number}>();
-          const enrichedHistory = await Promise.all(completedPlayerMatches.map(async match => {
-            const resultsDocRefs = match.tournamentCodes.map((code) => doc(db, 'match_results', code));
-            const resultSnaps = await Promise.all(resultsDocRefs.map(ref => getDoc(ref)));
+          const matches: Match[] = [];
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.rounds) {
+              data.rounds.forEach((round: any) => {
+                const seedsList = round.seeds || round.matches || [];
+                seedsList.forEach((match: any) => {
+                  // Match has either team1Id or team2Id equal to player's team id
+                  if (match.team1Id === team.id || match.team2Id === team.id) {
+                    matches.push(match);
+                  }
+                });
+              });
+            }
+          }
 
-            const processResult = (resultSnap: any) => {
-              if (!resultSnap.exists()) return undefined;
+          // 5. Gather Match Performance Details from firebase results
+          const champStatsMap = new Map<string, { games: number; wins: number }>();
 
-              const resultData = resultSnap.data() as MatchResultData;
-              const playerPerfBlue = resultData['blueTeam'].players.find(p => p.playerName.toLowerCase() === playerData.name.toLowerCase());
-              const playerPerfRed = resultData['redTeam'].players.find(p => p.playerName.toLowerCase() === playerData.name.toLowerCase());
+          const enrichedHistory = await Promise.all(matches.map(async (match) => {
+            const resultRef = doc(db, `${dbPrefix}_match_results`, String(match.id));
+            const resultSnap = await getDoc(resultRef);
+            
+            const resultsData = resultSnap.exists() 
+              ? resultSnap.data() as any
+              : { matchId: String(match.id), games: [] };
 
-              // Update champion stats
+            const resultSnaps = resultsData.games || [];
+
+            function processResult(gameResult: any) {
+              const playerPerfBlue = gameResult.blueTeamPlayers?.find((p: any) => p.playerId === enriched.id);
+              const playerPerfRed = gameResult.redTeamPlayers?.find((p: any) => p.playerId === enriched.id);
+
               if (playerPerfBlue) {
                 const champName = playerPerfBlue.championName;
-                const stats = champStatsMap.get(champName) || {games: 0, wins: 0};
+                const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
                 stats.games++;
                 let gameWinner = false;
-                if (resultData.winner === 100) {
+                if (gameResult.winner === 'blue') {
                   stats.wins++;
                   gameWinner = true;
                 }
                 champStatsMap.set(champName, stats);
                 return {...playerPerfBlue, gameWinner};
-              }
-              if (playerPerfRed) {
+              } else if (playerPerfRed) {
                 const champName = playerPerfRed.championName;
-                const stats = champStatsMap.get(champName) || {games: 0, wins: 0};
+                const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
                 stats.games++;
                 let gameWinner = false;
-                if (resultData.winner === 200) {
+                if (gameResult.winner === 'red') {
                   stats.wins++;
                   gameWinner = true;
                 }
@@ -465,7 +195,7 @@ const PlayerProfilePage: React.FC = () => {
               }
             }
 
-            const playerMatchPerf = resultSnaps.map(processResult).filter(p => p);
+            const playerMatchPerf = resultSnaps.map(processResult).filter((p: any) => p);
             return {...match, playerMatchPerf};
           }));
 
@@ -482,185 +212,193 @@ const PlayerProfilePage: React.FC = () => {
     fetchData();
   }, [playerId, division, getPlayerById, teams]);
 
-  if (loading) return <LoadingText>Loading player profile...</LoadingText>;
-  if (!player) return <PageContainer><h1>Player Not Found</h1></PageContainer>;
+  if (loading) return <ProfileLoadingText>Loading player profile...</ProfileLoadingText>;
+  if (!player) return <ProfilePageContainer><h1>Player Not Found</h1></ProfilePageContainer>;
 
   return (
-    <PageContainer>
+    <ProfilePageContainer>
       <ProfileHeader>
-        <HeaderLeft>
-          <PlayerName>{player.name}</PlayerName>
+        <ProfileHeaderLeft>
+          <ProfilePlayerName>{player.name}</ProfilePlayerName>
           <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem'}}>
             {playerTeam ? (
-              <TeamLink to={`/teams/${playerTeam.id}?division=${division}`}>
+              <ProfileTeamLink to={`/teams/${playerTeam.id}?division=${division}`}>
                 {playerTeam.name}
-              </TeamLink>
+              </ProfileTeamLink>
             ) : (
-              <FreeAgentText>Draft Pool Candidate</FreeAgentText>
+              <ProfileFreeAgentText>Draft Pool Candidate</ProfileFreeAgentText>
             )}
             <span style={{color: '#6c757d'}}>|</span>
             <span style={{color: '#6c757d', fontWeight: 500}}>Timezone: {player.timezone}</span>
           </div>
-          <RoleBadgesList>
-            <PrimaryBadge>{player.role}</PrimaryBadge>
+          <ProfileRoleBadgesList>
+            <ProfilePrimaryBadge>{player.role}</ProfilePrimaryBadge>
             {player.secondaryRoles && player.secondaryRoles.map(secRole => (
               secRole.toLowerCase() !== player.role.toLowerCase() && (
-                <SecondaryBadge key={secRole}>{secRole}</SecondaryBadge>
+                <ProfileSecondaryBadge key={secRole}>{secRole}</ProfileSecondaryBadge>
               )
             ))}
-          </RoleBadgesList>
-        </HeaderLeft>
+          </ProfileRoleBadgesList>
+        </ProfileHeaderLeft>
 
-        <ExternalLinkButton
+        <ProfileExternalLinkButton
           href={createOpGgUrl(player.name)}
           target="_blank"
           rel="noopener noreferrer"
         >
           <FaExternalLinkAlt size={14} /> OP.GG Profile
-        </ExternalLinkButton>
+        </ProfileExternalLinkButton>
       </ProfileHeader>
 
-      <StatsGrid>
-        <StatCard>
-          <SectionTitle>Scouting & Rankings</SectionTitle>
-          <StatsList>
-            <StatRow>
-              <StatLabel>Peak Rank</StatLabel>
-              <StatValue>{getFormatRank(player.peakRankTier, player.peakRankDivision)}</StatValue>
-            </StatRow>
-            <StatRow>
-              <StatLabel>Solo Q Rank</StatLabel>
-              <StatValue>{getFormatRank(player.soloRankTier, player.soloRankDivision)}</StatValue>
-            </StatRow>
-            <StatRow>
-              <StatLabel>Flex Q Rank</StatLabel>
-              <StatValue>{getFormatRank(player.flexRankTier, player.flexRankDivision)}</StatValue>
-            </StatRow>
-            <StatRow>
-              <StatLabel>Ranked Winrate</StatLabel>
-              <StatValue>{player.rankedWinrate}</StatValue>
-            </StatRow>
+      <ProfileStatsGrid>
+        <ProfileStatCard>
+          <ProfileSectionTitle>Scouting & Rankings</ProfileSectionTitle>
+          <ProfileStatsList>
+            <ProfileStatRow>
+              <ProfileStatLabel>Peak Rank</ProfileStatLabel>
+              <ProfileRankValue tier={player.peakRankTier}>
+                {getFormatRank(player.peakRankTier, player.peakRankDivision)}
+              </ProfileRankValue>
+            </ProfileStatRow>
+            <ProfileStatRow>
+              <ProfileStatLabel>Solo Q Rank</ProfileStatLabel>
+              <ProfileRankValue tier={player.soloRankTier}>
+                {getFormatRank(player.soloRankTier, player.soloRankDivision)}
+              </ProfileRankValue>
+            </ProfileStatRow>
+            <ProfileStatRow>
+              <ProfileStatLabel>Flex Q Rank</ProfileStatLabel>
+              <ProfileRankValue tier={player.flexRankTier}>
+                {getFormatRank(player.flexRankTier, player.flexRankDivision)}
+              </ProfileRankValue>
+            </ProfileStatRow>
+            <ProfileStatRow>
+              <ProfileStatLabel>Ranked Winrate</ProfileStatLabel>
+              <ProfileStatValue>{player.rankedWinrate}</ProfileStatValue>
+            </ProfileStatRow>
             {player.additionalStats && Object.entries(player.additionalStats).map(([key, val]) => (
-              <StatRow key={key}>
-                <StatLabel>{key}</StatLabel>
-                <StatValue>{val}</StatValue>
-              </StatRow>
+              <ProfileStatRow key={key}>
+                <ProfileStatLabel>{key}</ProfileStatLabel>
+                <ProfileStatValue>{val}</ProfileStatValue>
+              </ProfileStatRow>
             ))}
-          </StatsList>
-        </StatCard>
+          </ProfileStatsList>
+        </ProfileStatCard>
 
-        <StatCard>
-          <SectionTitle>Role Preference Ratings</SectionTitle>
+        <ProfileStatCard>
+          <ProfileSectionTitle>Role Preference Ratings</ProfileSectionTitle>
           {player.rolePreferences && Object.entries(player.rolePreferences).map(([role, preference]) => (
-            <PreferenceRow key={role}>
-              <PreferenceRoleLabel>{role}</PreferenceRoleLabel>
-              <PreferenceBarContainer>
-                <PreferenceBarFill value={preference} />
-              </PreferenceBarContainer>
-              <PreferenceValue>{getPreferenceText(preference)}</PreferenceValue>
-            </PreferenceRow>
+            <ProfilePreferenceRow key={role}>
+              <ProfilePreferenceRoleLabel>{role}</ProfilePreferenceRoleLabel>
+              <ProfilePreferenceBarContainer>
+                <ProfilePreferenceBarFill value={preference} />
+              </ProfilePreferenceBarContainer>
+              <ProfilePreferenceValue>{getPreferenceText(preference)}</ProfilePreferenceValue>
+            </ProfilePreferenceRow>
           ))}
-        </StatCard>
+        </ProfileStatCard>
 
-        <StatCard>
-          <SectionTitle>Top Champion Pool</SectionTitle>
+        <ProfileStatCard>
+          <ProfileSectionTitle>Top Champion Pool</ProfileSectionTitle>
           {player.mostPlayedChampions && player.mostPlayedChampions.map((champName) => (
-            <ChampRow key={champName}>
-              <ChampIcon
+            <ProfileChampRow key={champName}>
+              <ProfileChampIcon
                 src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(champName)}.png`}
                 alt={champName}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/Aatrox.png';
                 }}
               />
-              <ChampInfo>
-                <ChampName>{champName}</ChampName>
-                <ChampStats>Scouted Comfort Pool</ChampStats>
-              </ChampInfo>
-              <ChampWinrate>Comfort</ChampWinrate>
-            </ChampRow>
+              <ProfileChampInfo>
+                <ProfileChampName>{champName}</ProfileChampName>
+                <ProfileChampStats>Scouted Comfort Pool</ProfileChampStats>
+              </ProfileChampInfo>
+              <ProfileChampWinrate>Comfort</ProfileChampWinrate>
+            </ProfileChampRow>
           ))}
-        </StatCard>
+        </ProfileStatCard>
 
         {player.previousSeasons && player.previousSeasons.length > 0 && (
-          <StatCard>
-            <SectionTitle>Previous Season Rankings</SectionTitle>
-            <StatsList>
+          <ProfileStatCard>
+            <ProfileSectionTitle>Previous Season Rankings</ProfileSectionTitle>
+            <ProfileStatsList>
               {player.previousSeasons.map((prev, index) => (
-                <StatRow key={index}>
-                  <StatLabel>{prev.season}</StatLabel>
-                  <StatValue>{getFormatRank(prev.tier, prev.division)}</StatValue>
-                </StatRow>
+                <ProfileStatRow key={index}>
+                  <ProfileStatLabel>{prev.season}</ProfileStatLabel>
+                  <ProfileRankValue tier={prev.tier}>
+                    {getFormatRank(prev.tier, prev.division)}
+                  </ProfileRankValue>
+                </ProfileStatRow>
               ))}
-            </StatsList>
-          </StatCard>
+            </ProfileStatsList>
+          </ProfileStatCard>
         )}
-      </StatsGrid>
+      </ProfileStatsGrid>
 
       {/* Tournament Stats & Match History */}
       {playerTeam && matchHistory.length > 0 && (
         <div style={{marginTop: '3rem'}}>
-          <SectionTitle>Live Tournament Champions Played</SectionTitle>
-          <StatsGrid style={{marginBottom: '2.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'}}>
+          <ProfileSectionTitle>Live Tournament Champions Played</ProfileSectionTitle>
+          <ProfileStatsGrid style={{marginBottom: '2.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'}}>
             {tournamentChampStats.length > 0 ? (
               tournamentChampStats.map(stat => (
-                <StatCard key={stat.name} style={{display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem'}}>
-                  <ChampIcon
+                <ProfileStatCard key={stat.name} style={{display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem'}}>
+                  <ProfileChampIcon
                     src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(stat.name)}.png`}
                     alt={stat.name}
                   />
-                  <ChampInfo>
-                    <ChampName>{stat.name}</ChampName>
-                    <ChampStats>{stat.wins}W - {stat.games - stat.wins}L</ChampStats>
-                  </ChampInfo>
-                  <ChampWinrate winrate={Math.round((stat.wins / stat.games) * 100)}>
+                  <ProfileChampInfo>
+                    <ProfileChampName>{stat.name}</ProfileChampName>
+                    <ProfileChampStats>{stat.wins}W - {stat.games - stat.wins}L</ProfileChampStats>
+                  </ProfileChampInfo>
+                  <ProfileChampWinrate winrate={Math.round((stat.wins / stat.games) * 100)}>
                     {Math.round((stat.wins / stat.games) * 100)}%
-                  </ChampWinrate>
-                </StatCard>
+                  </ProfileChampWinrate>
+                </ProfileStatCard>
               ))
             ) : (
               <p style={{color: '#6c757d', gridColumn: '1/-1'}}>No tournament champion statistics recorded yet.</p>
             )}
-          </StatsGrid>
+          </ProfileStatsGrid>
 
-          <SectionTitle>Tournament Match History</SectionTitle>
-          <MatchHistoryList>
+          <ProfileSectionTitle>Tournament Match History</ProfileSectionTitle>
+          <ProfileMatchHistoryList>
             {matchHistory.map(match => {
               const opponentId = match.team1Id === playerTeam.id ? match.team2Id : match.team1Id;
               const opponent = teams.find(t => t.id === opponentId);
               const didWinSeries = match.playerMatchPerf.map((perf: any) => perf.gameWinner).filter((_: any) => _).length === 2;
 
               return opponent?.name ? (
-                <MatchItem key={match.id} onClick={() => navigate(`/match/${match.id}`)}>
-                  <MatchHeader win={didWinSeries}>
+                <ProfileMatchItem key={match.id} onClick={() => navigate(`/match/${match.id}`)}>
+                  <ProfileMatchHeader win={didWinSeries}>
                     <MatchInfo>vs <span>{opponent.name}</span></MatchInfo>
                     <MatchResult>
                       <ResultIndicator win={didWinSeries}>{didWinSeries ? 'WIN' : 'LOSS'}</ResultIndicator>
                       <Score win={didWinSeries}>{match.score}</Score>
                     </MatchResult>
-                  </MatchHeader>
+                  </ProfileMatchHeader>
 
-                  <GamesContainer>
+                  <ProfileGamesContainer>
                     {match.playerMatchPerf.map((perf: any, index: number) => (
-                      <GameRow key={index}>
-                        <GameResultIndicator win={perf.gameWinner}>{perf.gameWinner ? 'W' : 'L'}</GameResultIndicator>
-                        <ChampionIcon 
+                      <ProfileGameRow key={index}>
+                        <ProfileGameResultIndicator win={perf.gameWinner}>{perf.gameWinner ? 'W' : 'L'}</ProfileGameResultIndicator>
+                        <ProfileChampionIcon 
                           src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(perf.championName)}.png`}
                           alt={perf.championName}
                         />
-                        <KDA>
+                        <ProfileKDA>
                           <span>{perf.kills}</span> / <span>{perf.deaths}</span> / <span>{perf.assists}</span>
-                        </KDA>
-                      </GameRow>
+                        </ProfileKDA>
+                      </ProfileGameRow>
                     ))}
-                  </GamesContainer>
-                </MatchItem>
+                  </ProfileGamesContainer>
+                </ProfileMatchItem>
               ) : null;
             })}
-          </MatchHistoryList>
+          </ProfileMatchHistoryList>
         </div>
       )}
-    </PageContainer> 
+    </ProfilePageContainer>
   );
 };
 
