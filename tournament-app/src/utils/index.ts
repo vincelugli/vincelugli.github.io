@@ -101,8 +101,8 @@ export function getYearDisplayString(hash: string): string {
   return year ? `GRumble ${year}` : "GRumble 2026";
 }
 
-export function getFirebasePrefix(): string {
+export function getFirebasePrefix(division?: string): string {
   const hash = window.location.hash;
   const year = getYearFromHash(hash) || '2026';
-  return `grumble${year}`;
+  return division ? `grumble${year}_${division}` : `grumble${year}`;
 }
