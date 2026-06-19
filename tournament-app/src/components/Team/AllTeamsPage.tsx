@@ -1,5 +1,5 @@
 import React from 'react';
-import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record } from '../../styles';
+import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record, TableScrollWrapper } from '../../styles';
 import { compareTeams } from '../../utils';
 import { useTournament } from '../../context/TournamentContext';
 
@@ -12,33 +12,35 @@ const AllTeamsPage: React.FC = () => {
   return (
     <TeamsContainer>
       <Title>All Teams</Title>
-      <TeamsTable>
-        <TableHead>
-          <tr>
-            <th>Team Name</th>
-            <th>Team Record (W-L)</th>
-            <th>Game Record (W-L)</th>
-          </tr>
-        </TableHead>
-        <TableBody>
-          {teams.map(team => (
-            <tr key={team.id}>
-              <td>
-                {/* Each team name links to their detailed match history */}
-                <TeamNameLink to={`/teams/${team.id}`}>
-                  {team.name}
-                </TeamNameLink>
-              </td>
-              <td>
-                <Record>{team.record}</Record>
-              </td>
-              <td>
-                <Record>{team.gameRecord}</Record>
-              </td>
+      <TableScrollWrapper>
+        <TeamsTable>
+          <TableHead>
+            <tr>
+              <th>Team Name</th>
+              <th>Team Record (W-L)</th>
+              <th>Game Record (W-L)</th>
             </tr>
-          ))}
-        </TableBody>
-      </TeamsTable>
+          </TableHead>
+          <TableBody>
+            {teams.map(team => (
+              <tr key={team.id}>
+                <td>
+                  {/* Each team name links to their detailed match history */}
+                  <TeamNameLink to={`/teams/${team.id}`}>
+                    {team.name}
+                  </TeamNameLink>
+                </td>
+                <td>
+                  <Record>{team.record}</Record>
+                </td>
+                <td>
+                  <Record>{team.gameRecord}</Record>
+                </td>
+              </tr>
+            ))}
+          </TableBody>
+        </TeamsTable>
+      </TableScrollWrapper>
     </TeamsContainer>
   );
 };

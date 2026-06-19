@@ -223,20 +223,15 @@ const AllPlayersPage: React.FC = () => {
       });
     }
 
-    // Primary role filter
-    if (selectedPrimaryRoles.length > 0) {
-      result = result.filter(player => 
-        player.role && selectedPrimaryRoles.includes(player.role.toLowerCase())
-      );
-    }
-
-    // Secondary role filter
-    if (selectedSecondaryRoles.length > 0) {
-      result = result.filter(player => 
-        player.secondaryRoles && player.secondaryRoles.some(secRole => 
+    // Role filters (OR logic between Primary and Secondary if both are selected)
+    if (selectedPrimaryRoles.length > 0 || selectedSecondaryRoles.length > 0) {
+      result = result.filter(player => {
+        const matchesPrimary = selectedPrimaryRoles.length > 0 && player.role && selectedPrimaryRoles.includes(player.role.toLowerCase());
+        const matchesSecondary = selectedSecondaryRoles.length > 0 && player.secondaryRoles && player.secondaryRoles.some(secRole => 
           selectedSecondaryRoles.includes(secRole.toLowerCase())
-        )
-      );
+        );
+        return matchesPrimary || matchesSecondary;
+      });
     }
 
     return result;
