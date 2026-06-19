@@ -37,7 +37,8 @@ const PickOrderDisplay: React.FC<PickOrderDisplayProps> = ({ pickOrder, teams, p
         fontStyle: 'italic',
         position: 'sticky',
         left: 0,
-        zIndex: 1
+        zIndex: 1,
+        whiteSpace: 'normal'
       }}>
         Note: Picks for future rounds are predicted based on current team Elo and will update dynamically at the end of each round.
       </div>

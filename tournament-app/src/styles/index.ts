@@ -43,13 +43,17 @@ export const FooterContainer = styled.footer`
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 1rem;
-    padding: 1.5rem 1rem;
+    gap: 0.75rem;
+    padding: 1rem;
   }
 `;
 
 export const CopyrightText = styled.p`
   margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+  }
 `;
 
 export const BugReportButton = styled.button`
@@ -67,6 +71,11 @@ export const BugReportButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.body};
     color: ${({ theme }) => theme.text};
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
   }
 `;
 
@@ -608,6 +617,13 @@ export const PickItem = styled.div<{ isCurrent: boolean; isCompleted: boolean; i
       ${props.theme.backgroundThree || props.theme.body} 20px
     );
   `}
+
+@media(max - width: 600px) {
+  width: 110px;
+  height: 70px;
+  padding: 0.25rem;
+  border - radius: 4px;
+}
 `;
 
 export const RoundDivider = styled.div`
@@ -619,6 +635,12 @@ export const RoundDivider = styled.div`
   position: relative;
   margin: 0 0.5rem;
   flex-shrink: 0;
+
+@media(max - width: 600px) {
+  height: 70px;
+  width: 30px;
+  margin: 0 0.25rem;
+}
 `;
 
 export const DividerLine = styled.div`
@@ -652,6 +674,10 @@ export const PickNumber = styled.div`
   font-size: 0.75rem;
   font-weight: 700;
   color: ${({ theme }) => theme.textAlt};
+
+@media(max - width: 600px) {
+  font - size: 0.65rem;
+}
 `;
 
 export const PickedTeamName = styled.p`
@@ -665,6 +691,11 @@ export const PickedTeamName = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
+
+@media(max - width: 600px) {
+  font - size: 0.7rem;
+  margin: 2px 0;
+}
 `;
 
 export const PickedPlayerName = styled.div`
@@ -677,6 +708,10 @@ export const PickedPlayerName = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
+
+@media(max - width: 600px) {
+  font - size: 0.75rem;
+}
 `;
 
 export const SkippedText = styled.div`
@@ -684,6 +719,10 @@ export const SkippedText = styled.div`
   font-weight: 600;
   color: ${({ theme }) => theme.danger};
   text-decoration: line-through;
+
+@media(max - width: 600px) {
+  font - size: 0.75rem;
+}
 `;
 
 // PlayerPool

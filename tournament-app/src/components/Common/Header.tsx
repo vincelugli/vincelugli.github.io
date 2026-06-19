@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {getAuth} from 'firebase/auth';
 import {HamburgerIcon, MobileMenu, HeaderLeft, HeaderRight, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction, LogoutButton, UserNameDisplay} from '../../styles';
-import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
+import {FaBars, FaChevronDown, FaTimes} from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
-import { getYearDisplayString } from '../../utils';
+import {getYearDisplayString} from '../../utils';
 import {useAuth} from './AuthContext';
 import {useTournament} from '../../context/TournamentContext';
 import {usePlayers} from '../../context/PlayerContext';
@@ -64,7 +64,7 @@ const Header: React.FC = () => {
         <Logo to="/" onClick={closeAllMenus}>{logoText}</Logo>
         <DivisionSelector />
       </HeaderLeft>
-      
+
       <HeaderRight>
         {/* --- DESKTOP NAV --- */}
         <Nav>
@@ -117,12 +117,22 @@ const Header: React.FC = () => {
           </NavItem>
         </Nav>
 
+        {/* DELETE, DEBUG ONLY */}
+        {user && (
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            <LogoutButton onClick={() => auth.signOut()}>
+              Logout
+            </LogoutButton>
+            <UserNameDisplay>  |  {getDisplayName()}</UserNameDisplay>
+          </div>
+        )}
+        {/* DELETE, DEBUG ONLY */}
         <ThemeToggleButton />
         <HamburgerIcon onClick={toggleMobileMenu}>
           {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
         </HamburgerIcon>
       </HeaderRight>
-      
+
       <MobileMenu isOpen={isMobileMenuOpen}>
         <MobileNavItem>
           <MobileMainLink onClick={() => toggleMobileSubMenu('info')}>
@@ -134,7 +144,7 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/players" onClick={closeAllMenus}>Players</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
-        
+
         <MobileNavItem>
           <MobileMainLink onClick={() => toggleMobileSubMenu('stages')}>
             Stages <FaChevronDown size={16} />
