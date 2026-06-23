@@ -71,6 +71,17 @@ export interface BracketRound {
   seeds: BracketSeed[];
 }
 
+export interface ChampionStat {
+  name: string;
+  games: number;
+  winrate: string;
+  kills: string;
+  deaths: string;
+  assists: string;
+  kda: string;
+  csPerMin: string;
+}
+
 export interface Player {
   id: number;
   name: string;
@@ -85,7 +96,7 @@ export interface Player {
   role: string;
   secondaryRoles: string[];
   teamId?: number | null;
-  mostPlayedChampions?: string[];
+  mostPlayedChampions?: (string | ChampionStat)[];
   rankedWinrate?: string;
   rolePreferences?: {
     top: number;
