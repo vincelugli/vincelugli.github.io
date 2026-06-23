@@ -37,6 +37,7 @@ import {
   ProfileChampName,
   ProfileChampStats,
   ProfileChampWinrate,
+  ProfileChampRight,
   ProfilePreferenceRow,
   ProfilePreferenceRoleLabel,
   ProfilePreferenceBarContainer,
@@ -287,35 +288,65 @@ const PlayerProfilePage: React.FC = () => {
 
         <ProfileStatCard>
           <ProfileSectionTitle>Role Preference Ratings</ProfileSectionTitle>
-          {player.rolePreferences && Object.entries(player.rolePreferences).map(([role, preference]) => (
-            <ProfilePreferenceRow key={role}>
-              <ProfilePreferenceRoleLabel>{role}</ProfilePreferenceRoleLabel>
-              <ProfilePreferenceBarContainer>
-                <ProfilePreferenceBarFill value={preference} />
-              </ProfilePreferenceBarContainer>
-              <ProfilePreferenceValue>{getPreferenceText(preference)}</ProfilePreferenceValue>
-            </ProfilePreferenceRow>
-          ))}
+          {player.rolePreferences && ['top', 'jungle', 'mid', 'adc', 'support'].map((role) => {
+            const preference = player.rolePreferences[role as 'top' | 'jungle' | 'mid' | 'adc' | 'support'];
+            if (preference === undefined) return null;
+            const scaledPreference = preference <= 5 ? preference * 2 : preference;
+            return (
+              <ProfilePreferenceRow key={role}>
+                <ProfilePreferenceRoleLabel style={{ textTransform: 'capitalize' }}>
+                  {role === 'adc' ? 'ADC' : role}
+                </ProfilePreferenceRoleLabel>
+                <ProfilePreferenceBarContainer>
+                  <ProfilePreferenceBarFill value={scaledPreference} />
+                </ProfilePreferenceBarContainer>
+                <ProfilePreferenceValue>{scaledPreference}/10</ProfilePreferenceValue>
+              </ProfilePreferenceRow>
+            );
+          })}
         </ProfileStatCard>
 
         <ProfileStatCard>
           <ProfileSectionTitle>Top Champion Pool</ProfileSectionTitle>
-          {player.mostPlayedChampions && player.mostPlayedChampions.map((champName) => (
-            <ProfileChampRow key={champName}>
-              <ProfileChampIcon
-                src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(champName)}.png`}
-                alt={champName}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/Aatrox.png';
-                }}
-              />
-              <ProfileChampInfo>
-                <ProfileChampName>{champName}</ProfileChampName>
-                <ProfileChampStats>Scouted Comfort Pool</ProfileChampStats>
-              </ProfileChampInfo>
-              <ProfileChampWinrate>Comfort</ProfileChampWinrate>
-            </ProfileChampRow>
-          ))}
+          {player.mostPlayedChampions && player.mostPlayedChampions.map((champ, index) => {
+            const isObject = typeof champ === 'object' && champ !== null;
+            const champName = isObject ? champ.name : champ;
+            const games = isObject ? champ.games : null;
+            const winrate = isObject ? champ.winrate : 'Comfort';
+            const kda = isObject ? champ.kda : null;
+            const kills = isObject ? champ.kills : null;
+            const deaths = isObject ? champ.deaths : null;
+            const assists = isObject ? champ.assists : null;
+            const csPerMin = isObject ? champ.csPerMin : null;
+
+            return (
+              <ProfileChampRow key={champName || index}>
+                <ProfileChampIcon
+                  src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(champName)}.png`}
+                  alt={champName}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/Aatrox.png';
+                  }}
+                />
+                <ProfileChampInfo>
+                  <ProfileChampName>{champName}</ProfileChampName>
+                </ProfileChampInfo>
+                <ProfileChampRight>
+                  <ProfileChampWinrate>{winrate}</ProfileChampWinrate>
+                  <ProfileChampStats>
+                    {isObject ? (
+                      <>
+                        {games} games
+                        {csPerMin && csPerMin !== '-' && ` • ${csPerMin} CS/m`} • {kda} KDA ({kills}/{deaths}/{assists})
+                      </>
+                    ) : (
+                      'Scouted Comfort Pool'
+                    )}
+                  </ProfileChampStats>
+                </ProfileChampRight>
+              </ProfileChampRow>
+            );
+          })}
         </ProfileStatCard>
 
         {player.previousSeasons && player.previousSeasons.length > 0 && (

@@ -2144,6 +2144,14 @@ export const ProfileChampWinrate = styled.span<{ winrate?: number }>`
   font-size: 1rem;
 `;
 
+export const ProfileChampRight = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  text-align: right;
+`;
+
 export const ProfilePreferenceRow = styled.div`
   display: flex;
   align-items: center;
@@ -2178,11 +2186,11 @@ export const ProfilePreferenceBarContainer = styled.div`
 
 export const ProfilePreferenceBarFill = styled.div<{ value: number }>`
   height: 100%;
-  width: ${props => (props.value / 5) * 100}%;
+  width: ${props => (props.value / 10) * 100}%;
   background-color: ${props => {
-    if (props.value === 5) return props.theme.primary;
-    if (props.value === 4) return '#10b981';
-    if (props.value === 3) return '#f59e0b';
+    if (props.value >= 9) return props.theme.primary;
+    if (props.value >= 7) return '#10b981';
+    if (props.value >= 5) return '#f59e0b';
     return '#6c757d';
   }};
   border-radius: 4px;
