@@ -1752,6 +1752,59 @@ export const PlayersCaptainBadge = styled.span`
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
+export const PlayersAchievementBadgeList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: -0.5rem;
+  margin-bottom: 0.75rem;
+`;
+
+export const PlayersAchievementBadge = styled.span<{ type: 'winner' | 'runner_up'; division: 'gold' | 'master' }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  ${({ type, division }) => {
+    if (type === 'winner') {
+      if (division === 'master') {
+        return `
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        `;
+      } else {
+        return `
+          background-color: rgba(245, 158, 11, 0.15);
+          color: #d97706;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        `;
+      }
+    } else {
+      if (division === 'master') {
+        return `
+          background-color: rgba(139, 92, 246, 0.1);
+          color: #8b5cf6;
+          border: 1px solid rgba(139, 92, 246, 0.25);
+        `;
+      } else {
+        return `
+          background-color: rgba(100, 116, 139, 0.12);
+          color: #475569;
+          border: 1px solid rgba(100, 116, 139, 0.25);
+        `;
+      }
+    }
+  }}
+`;
+
+
 export const PlayersPlayerName = styled.h3`
   font-size: 1.25rem;
   font-weight: 700;
@@ -2030,6 +2083,51 @@ export const ProfileSecondaryBadge = styled.span`
   font-size: 0.8rem;
   text-transform: uppercase;
 `;
+
+export const ProfileAchievementBadge = styled.span<{ type: 'winner' | 'runner_up'; division: 'gold' | 'master' }>`
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  ${({ type, division }) => {
+    if (type === 'winner') {
+      if (division === 'master') {
+        return `
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        `;
+      } else {
+        return `
+          background-color: rgba(245, 158, 11, 0.15);
+          color: #d97706;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+        `;
+      }
+    } else {
+      if (division === 'master') {
+        return `
+          background-color: rgba(139, 92, 246, 0.1);
+          color: #8b5cf6;
+          border: 1px solid rgba(139, 92, 246, 0.25);
+        `;
+      } else {
+        return `
+          background-color: rgba(100, 116, 139, 0.12);
+          color: #475569;
+          border: 1px solid rgba(100, 116, 139, 0.25);
+        `;
+      }
+    }
+  }}
+`;
+
 
 export const ProfileExternalLinkButton = styled.a`
   display: inline-flex;

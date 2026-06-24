@@ -10,7 +10,7 @@ import { useTournament } from '../../context/TournamentContext';
 
 // --- TYPES & UTILS ---
 import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
-import { createOpGgUrl, getFirebasePrefix } from '../../utils';
+import { createOpGgUrl, getFirebasePrefix, getPlayerAchievements } from '../../utils';
 import {enrichPlayerDetails} from '../../utils/playerHelper';
 import {
   ProfilePageContainer,
@@ -23,6 +23,7 @@ import {
   ProfileRoleBadgesList,
   ProfilePrimaryBadge,
   ProfileSecondaryBadge,
+  ProfileAchievementBadge,
   ProfileExternalLinkButton,
   ProfileStatsGrid,
   ProfileStatCard,
@@ -221,6 +222,24 @@ const PlayerProfilePage: React.FC = () => {
       <ProfileHeader>
         <ProfileHeaderLeft>
           <ProfilePlayerName>{player.name}</ProfilePlayerName>
+          {(() => {
+            const achievements = getPlayerAchievements(player.name);
+            if (achievements.length === 0) return null;
+            return (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                {achievements.map((ach, idx) => (
+                  <ProfileAchievementBadge
+                    key={idx}
+                    type={ach.type}
+                    division={ach.division}
+                    title={ach.title}
+                  >
+                    🏆 {ach.title}
+                  </ProfileAchievementBadge>
+                ))}
+              </div>
+            );
+          })()}
           <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem'}}>
             {playerTeam ? (
               <ProfileTeamLink to={`/teams/${playerTeam.id}?division=${division}`}>
