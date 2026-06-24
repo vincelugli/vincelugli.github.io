@@ -108,33 +108,52 @@ export function getFirebasePrefix(division?: string): string {
 }
 
 const PREVIOUS_WINNERS: { [key: string]: PlayerAchievement } = {
-  // Gold Winners
-  'banbandd#na1': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
-  'cdj#6398': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
-  'chonkychip#cooki': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
-  'conanjoey#uoft': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
-  'sadistictwist#na1': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+    // Gold Winners
+    'banbandd#na1': {title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025},
+    'cdj#6398': {title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025},
+    'chonkychip#cooki': {title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025},
+    'conanjoey#uoft': {title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025},
+    'sadistictwist#na1': {title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025},
 
-  // Gold 2nd Place
-  'kiro705#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
-  'harucchan#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
-  'joetft#tactx': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
-  'mokazon#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
-  'vontease#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+    // Gold 2nd Place
+    'kiro705#na1': {title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025},
+    'harucchan#na1': {title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025},
+    'joetft#tactx': {title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025},
+    'mokazon#na1': {title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025},
+    'vontease#na1': {title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025},
 
-  // Master Winners
-  'john#noob': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
-  'alekos#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
-  'fnasty#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
-  'gyopo#krnyc': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
-  'lulalualala123#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+    // Master Winners
+    'john#noob': {title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025},
+    'alekos#na1': {title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025},
+    'fnasty#na1': {title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025},
+    'gyopo#krnyc': {title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025},
+    'lulalualala123#na1': {title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025},
 
-  // Master 2nd Place
-  'diceruler#tho': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
-  'baybuzz#na1': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
-  'exnihilo#없었었다': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
-  'grontad#na1': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
-  'intrinsically#heart': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+    // Master 2nd Place
+    'diceruler#tho': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+    'baybuzz#na1': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+    'exnihilo#없었었다': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+    'grontad#na1': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+    'intrinsically#heart': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+
+    // 2024 Winners
+    'sneakyLinkEater#TGDB': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'Avatar Luffy#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'tomytomm#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'Christmas13#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'Vaporéon Lover #NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'GivesFirstBlood#000': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'MegaZero#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+
+    // 2024 2nd Place
+    'dto10000#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'meepsonsale#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'MrAstroMan#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'Zenith#tofu': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'playerNeo#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'BK Lounge#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'Xemacs#LOR': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'icarus129#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
 };
 
 export function getPlayerAchievements(playerName: string): PlayerAchievement[] {
