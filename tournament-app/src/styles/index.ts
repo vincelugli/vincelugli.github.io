@@ -2084,6 +2084,20 @@ export const ProfileSecondaryBadge = styled.span`
   text-transform: uppercase;
 `;
 
+export const ProfileCaptainBadge = styled.span`
+  background-color: #f59e0b;
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
 export const ProfileAchievementBadge = styled.span<{ type: 'winner' | 'runner_up'; division: 'gold' | 'master' }>`
   padding: 0.25rem 0.75rem;
   border-radius: 50px;
