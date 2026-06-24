@@ -137,23 +137,23 @@ const PREVIOUS_WINNERS: { [key: string]: PlayerAchievement } = {
     'intrinsically#heart': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
 
     // 2024 Winners
-    'sneakyLinkEater#TGDB': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'Avatar Luffy#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'tomytomm#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'Christmas13#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'Vaporéon Lover #NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'GivesFirstBlood#000': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
-    'MegaZero#NA1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'sneakylinkeater#tgdb': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'avatarluffy#na1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'tomytomm#na1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'christmas13#na1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'vaporéonlover#na1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'givesfirstblood#000': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
+    'megazero#na1': {title: 'GRumble 2024 Winner', type: 'winner', division: 'master', year: 2024},
 
     // 2024 2nd Place
-    'dto10000#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'meepsonsale#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'MrAstroMan#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'Zenith#tofu': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'playerNeo#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'BK Lounge#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'Xemacs#LOR': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
-    'icarus129#NA1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'dto10000#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'meepsonsale#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'mrastroman#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'zenith#tofu': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'playerneo#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'bklounge#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'xemacs#lor': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
+    'icarus129#na1': {title: 'GRumble 2024 2nd Place', type: 'runner_up', division: 'master', year: 2024},
 };
 
 export function getPlayerAchievements(playerName: string): PlayerAchievement[] {
