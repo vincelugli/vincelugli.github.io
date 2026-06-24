@@ -81,6 +81,12 @@ export interface ChampionStat {
   kda: string;
   csPerMin: string;
 }
+export interface PlayerAchievement {
+  title: string;
+  type: 'winner' | 'runner_up';
+  division: 'gold' | 'master';
+  year: number;
+}
 
 export interface Player {
   id: number;

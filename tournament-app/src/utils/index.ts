@@ -1,4 +1,4 @@
-import { Player, Team } from "../types";
+import { Player, Team, PlayerAchievement } from "../types";
 
 export function compareTeams(t1: Team , t2: Team): number {
     let result = t2.wins - t1.wins;
@@ -106,3 +106,41 @@ export function getFirebasePrefix(division?: string): string {
   const year = getYearFromHash(hash) || '2026';
   return division ? `grumble${year}_${division}` : `grumble${year}`;
 }
+
+const PREVIOUS_WINNERS: { [key: string]: PlayerAchievement } = {
+  // Gold Winners
+  'banbandd#na1': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+  'cdj#6398': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+  'chonkychip#cooki': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+  'conanjoey#uoft': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+  'sadistictwist#na1': { title: 'GRumble 2025 Gold Winner', type: 'winner', division: 'gold', year: 2025 },
+
+  // Gold 2nd Place
+  'kiro705#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+  'harucchan#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+  'joetft#tactx': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+  'mokazon#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+  'vontease#na1': { title: 'GRumble 2025 Gold 2nd Place', type: 'runner_up', division: 'gold', year: 2025 },
+
+  // Master Winners
+  'john#noob': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+  'alekos#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+  'fnasty#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+  'gyopo#krnyc': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+  'lulalualala123#na1': { title: 'GRumble 2025 Master Winner', type: 'winner', division: 'master', year: 2025 },
+
+  // Master 2nd Place
+  'diceruler#tho': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+  'baybuzz#na1': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+  'exnihilo#없었었다': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+  'grontad#na1': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+  'intrinsically#heart': { title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025 },
+};
+
+export function getPlayerAchievements(playerName: string): PlayerAchievement[] {
+  if (!playerName) return [];
+  const normalized = playerName.toLowerCase().replace(/\s+/g, '');
+  const achievement = PREVIOUS_WINNERS[normalized];
+  return achievement ? [achievement] : [];
+}
+

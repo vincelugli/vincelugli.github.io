@@ -12,7 +12,7 @@ import {
   FaRandom,
   FaFilter
 } from 'react-icons/fa';
-import { compareRanks, convertRankToElo } from '../../utils';
+import { compareRanks, convertRankToElo, getPlayerAchievements } from '../../utils';
 import {
   PlayersPageContainer,
   PlayersHeaderSection,
@@ -33,6 +33,8 @@ import {
   PlayersTierBadge,
   PlayersPlayerCard,
   PlayersCaptainBadge,
+  PlayersAchievementBadgeList,
+  PlayersAchievementBadge,
   PlayersPlayerName,
   PlayersRanksContainer,
   PlayersRankInfo,
@@ -424,6 +426,25 @@ const AllPlayersPage: React.FC = () => {
                         >
                           {player.isCaptain && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
                           <PlayersPlayerName title={player.name}>{player.name}</PlayersPlayerName>
+
+                          {(() => {
+                            const achievements = getPlayerAchievements(player.name);
+                            if (achievements.length === 0) return null;
+                            return (
+                              <PlayersAchievementBadgeList>
+                                {achievements.map((ach, idx) => (
+                                  <PlayersAchievementBadge
+                                    key={idx}
+                                    type={ach.type}
+                                    division={ach.division}
+                                    title={ach.title}
+                                  >
+                                    🏆 {ach.title}
+                                  </PlayersAchievementBadge>
+                                ))}
+                              </PlayersAchievementBadgeList>
+                            );
+                          })()}
 
                           <PlayersRanksContainer>
                             <PlayersRankInfo>
