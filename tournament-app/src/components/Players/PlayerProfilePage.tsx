@@ -23,6 +23,7 @@ import {
   ProfileRoleBadgesList,
   ProfilePrimaryBadge,
   ProfileSecondaryBadge,
+  ProfileCaptainBadge,
   ProfileAchievementBadge,
   ProfileExternalLinkButton,
   ProfileStatsGrid,
@@ -252,6 +253,7 @@ const PlayerProfilePage: React.FC = () => {
             <span style={{color: '#6c757d', fontWeight: 500}}>Timezone: {player.timezone}</span>
           </div>
           <ProfileRoleBadgesList>
+            {player.isCaptain && <ProfileCaptainBadge>Captain</ProfileCaptainBadge>}
             <ProfilePrimaryBadge>{player.role}</ProfilePrimaryBadge>
             {player.secondaryRoles && player.secondaryRoles.map(secRole => (
               secRole.toLowerCase() !== player.role.toLowerCase() && (

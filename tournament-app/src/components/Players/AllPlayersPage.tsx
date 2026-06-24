@@ -1,7 +1,7 @@
 import React, {useState, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
-import { usePlayers } from '../../context/PlayerContext';
-import { Player } from '../../types';
+import {usePlayers} from '../../context/PlayerContext';
+import {Player} from '../../types';
 import {useDivision} from '../../context/DivisionContext';
 import {
   FaShieldAlt,
@@ -12,7 +12,7 @@ import {
   FaRandom,
   FaFilter
 } from 'react-icons/fa';
-import { compareRanks, convertRankToElo, getPlayerAchievements } from '../../utils';
+import {compareRanks, convertRankToElo, getPlayerAchievements} from '../../utils';
 import {
   PlayersPageContainer,
   PlayersHeaderSection,
@@ -116,9 +116,9 @@ const getPlayerRankTier = (player: Player, type: RankTypeOption): string => {
     const peakElo = convertRankToElo(player.peakRankTier, player.peakRankDivision);
     const soloElo = convertRankToElo(player.soloRankTier, player.soloRankDivision);
     const flexElo = convertRankToElo(player.flexRankTier, player.flexRankDivision);
-    
+
     const maxElo = Math.max(peakElo, soloElo, flexElo);
-    
+
     if (maxElo === peakElo && player.peakRankTier && player.peakRankTier !== 'N/A') tier = player.peakRankTier;
     else if (maxElo === soloElo && player.soloRankTier && player.soloRankTier !== 'N/A') tier = player.soloRankTier;
     else if (maxElo === flexElo && player.flexRankTier && player.flexRankTier !== 'N/A') tier = player.flexRankTier;
@@ -129,9 +129,9 @@ const getPlayerRankTier = (player: Player, type: RankTypeOption): string => {
   } else if (type === 'flex') {
     tier = player.flexRankTier;
   }
-  
+
   if (!tier || tier === 'N/A') return 'Unranked';
-  
+
   if (tier === 'Masters') return 'Master';
   if (tier === 'Grandmasters') return 'Grandmaster';
   return tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase();
@@ -141,7 +141,7 @@ const compareRanksByType = (a: Player, b: Player, type: RankTypeOption): number 
   if (type === 'highest') {
     return compareRanks(b, a);
   }
-  
+
   let eloA = 0;
   let eloB = 0;
   if (type === 'peak') {
@@ -154,7 +154,7 @@ const compareRanksByType = (a: Player, b: Player, type: RankTypeOption): number 
     eloA = convertRankToElo(a.flexRankTier, a.flexRankDivision);
     eloB = convertRankToElo(b.flexRankTier, b.flexRankDivision);
   }
-  
+
   if (eloA === eloB) {
     return a.name.localeCompare(b.name);
   }
@@ -190,6 +190,7 @@ const AllPlayersPage: React.FC = () => {
   const [minRank, setMinRank] = useState<string>('All');
   const [selectedPrimaryRoles, setSelectedPrimaryRoles] = useState<string[]>([]);
   const [selectedSecondaryRoles, setSelectedSecondaryRoles] = useState<string[]>([]);
+  const [selectedAchievements, setSelectedAchievements] = useState<('winner' | 'runner_up')[]>([]);
 
   // Format rank display
   const getFormatRank = (tier: string, divisionVal: number) => {
@@ -204,6 +205,7 @@ const AllPlayersPage: React.FC = () => {
     setMinRank('All');
     setSelectedPrimaryRoles([]);
     setSelectedSecondaryRoles([]);
+    setSelectedAchievements([]);
   };
 
   // Filter players based on search query, min rank, primary roles, and secondary roles
@@ -229,19 +231,27 @@ const AllPlayersPage: React.FC = () => {
     if (selectedPrimaryRoles.length > 0 || selectedSecondaryRoles.length > 0) {
       result = result.filter(player => {
         const matchesPrimary = selectedPrimaryRoles.length > 0 && player.role && selectedPrimaryRoles.includes(player.role.toLowerCase());
-        const matchesSecondary = selectedSecondaryRoles.length > 0 && player.secondaryRoles && player.secondaryRoles.some(secRole => 
+        const matchesSecondary = selectedSecondaryRoles.length > 0 && player.secondaryRoles && player.secondaryRoles.some(secRole =>
           selectedSecondaryRoles.includes(secRole.toLowerCase())
         );
         return matchesPrimary || matchesSecondary;
       });
     }
 
+    // Achievements filter
+    if (selectedAchievements.length > 0) {
+      result = result.filter(player => {
+        const achievements = getPlayerAchievements(player.name);
+        return achievements.some(ach => selectedAchievements.includes(ach.type));
+      });
+    }
+
     return result;
-  }, [allPlayers, searchQuery, minRank, rankType, selectedPrimaryRoles, selectedSecondaryRoles]);
+  }, [allPlayers, searchQuery, minRank, rankType, selectedPrimaryRoles, selectedSecondaryRoles, selectedAchievements]);
 
   // Group players by primary role and then rank tier
   const playersByRoleAndTier = useMemo(() => {
-    const groups: { [role: string]: { [tier: string]: Player[] } } = {};
+    const groups: {[role: string]: {[tier: string]: Player[]}} = {};
 
     ROLE_ORDER.forEach(role => {
       groups[role] = {};
@@ -308,7 +318,7 @@ const AllPlayersPage: React.FC = () => {
         </PlayersDropdownContainer>
 
         <PlayersFilterToggleBtn isOpen={isFilterPanelOpen} onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}>
-          <FaFilter size={14} /> Filters {(selectedPrimaryRoles.length + selectedSecondaryRoles.length + (minRank !== 'All' ? 1 : 0)) > 0 && `(${selectedPrimaryRoles.length + selectedSecondaryRoles.length + (minRank !== 'All' ? 1 : 0)})`}
+          <FaFilter size={14} /> Filters {(selectedPrimaryRoles.length + selectedSecondaryRoles.length + selectedAchievements.length + (minRank !== 'All' ? 1 : 0)) > 0 && `(${selectedPrimaryRoles.length + selectedSecondaryRoles.length + selectedAchievements.length + (minRank !== 'All' ? 1 : 0)})`}
         </PlayersFilterToggleBtn>
       </PlayersControlsRow>
 
@@ -319,7 +329,7 @@ const AllPlayersPage: React.FC = () => {
             <PlayersDropdownSelect
               value={minRank}
               onChange={(e) => setMinRank(e.target.value)}
-              style={{ width: '100%', borderRadius: '8px', padding: '0.6rem 1rem' }}
+              style={{width: '100%', borderRadius: '8px', padding: '0.6rem 1rem'}}
             >
               <option value="All">All Ranks</option>
               {TIER_ORDER.filter(t => t !== 'Unranked').map(tier => (
@@ -375,9 +385,35 @@ const AllPlayersPage: React.FC = () => {
               })}
             </PlayersFilterPillContainer>
           </PlayersFilterGroup>
+          <PlayersFilterGroup>
+            <PlayersFilterLabel>Previous Achievement</PlayersFilterLabel>
+            <PlayersFilterPillContainer>
+              {[
+                {value: 'winner', label: 'Winner'},
+                {value: 'runner_up', label: '2nd Place'}
+              ].map(opt => {
+                const isSelected = selectedAchievements.includes(opt.value as 'winner' | 'runner_up');
+                return (
+                  <PlayersFilterPill
+                    key={opt.value}
+                    selected={isSelected}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedAchievements(selectedAchievements.filter(a => a !== opt.value));
+                      } else {
+                        setSelectedAchievements([...selectedAchievements, opt.value as 'winner' | 'runner_up']);
+                      }
+                    }}
+                  >
+                    {opt.label}
+                  </PlayersFilterPill>
+                );
+              })}
+            </PlayersFilterPillContainer>
+          </PlayersFilterGroup>
         </PlayersFilterGrid>
 
-        {(selectedPrimaryRoles.length > 0 || selectedSecondaryRoles.length > 0 || minRank !== 'All') && (
+        {(selectedPrimaryRoles.length > 0 || selectedSecondaryRoles.length > 0 || selectedAchievements.length > 0 || minRank !== 'All') && (
           <PlayersClearFiltersBtn onClick={handleClearFilters}>
             Clear All Filters
           </PlayersClearFiltersBtn>
@@ -413,7 +449,7 @@ const AllPlayersPage: React.FC = () => {
                   <PlayersTierSection key={tier}>
                     <PlayersTierHeader>
                       <PlayersTierBadge tier={tier}>{tier}</PlayersTierBadge>
-                      <span style={{ fontSize: '0.9rem', color: '#6b7280', fontWeight: 500 }}>
+                      <span style={{fontSize: '0.9rem', color: '#6b7280', fontWeight: 500}}>
                         ({playersInTier.length})
                       </span>
                     </PlayersTierHeader>
