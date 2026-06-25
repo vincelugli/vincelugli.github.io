@@ -1,8 +1,11 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {usePlayers} from '../../context/PlayerContext';
 import {Player} from '../../types';
 import {useDivision} from '../../context/DivisionContext';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { useAuth } from '../Common/AuthContext';
 import {
   FaShieldAlt,
   FaTree,
@@ -191,6 +194,42 @@ const AllPlayersPage: React.FC = () => {
   const [selectedPrimaryRoles, setSelectedPrimaryRoles] = useState<string[]>([]);
   const [selectedSecondaryRoles, setSelectedSecondaryRoles] = useState<string[]>([]);
   const [selectedAchievements, setSelectedAchievements] = useState<('winner' | 'runner_up')[]>([]);
+
+  const {captainTeamId} = useAuth();
+  const [priorityPlayerIds, setPriorityPlayerIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!captainTeamId) return;
+
+    const docRef = doc(db, 'draftBoards', String(captainTeamId));
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPriorityPlayerIds(snapshot.data().playerIds || []);
+      } else {
+        setPriorityPlayerIds([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [captainTeamId]);
+
+  const toggleAutoDraft = async (playerId: number) => {
+    if (!captainTeamId) return;
+
+    let newPlayerIds: number[];
+    if (priorityPlayerIds.includes(playerId)) {
+      newPlayerIds = priorityPlayerIds.filter(id => id !== playerId);
+    } else {
+      newPlayerIds = [...priorityPlayerIds, playerId];
+    }
+
+    const docRef = doc(db, 'draftBoards', String(captainTeamId));
+    try {
+      await setDoc(docRef, { playerIds: newPlayerIds });
+    } catch (err) {
+      console.error("Failed to update auto-draft list:", err);
+    }
+  };
 
   // Format rank display
   const getFormatRank = (tier: string, divisionVal: number) => {
@@ -455,54 +494,100 @@ const AllPlayersPage: React.FC = () => {
                     </PlayersTierHeader>
 
                     <PlayersGrid>
-                      {playersInTier.map(player => (
-                        <PlayersPlayerCard
-                          key={player.id}
-                          onClick={() => navigate(`/players/${player.id}?division=${division}`)}
-                        >
-                          {player.isCaptain && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
-                          <PlayersPlayerName title={player.name}>{player.name}</PlayersPlayerName>
+                      {playersInTier.map(player => {
+                        const isDraftable = !player.isCaptain;
+                        const isInAutoDraft = priorityPlayerIds.includes(player.id);
+                        const isCaptainLoggedIn = !!captainTeamId;
 
-                          {(() => {
-                            const achievements = getPlayerAchievements(player.name);
-                            if (achievements.length === 0) return null;
-                            return (
-                              <PlayersAchievementBadgeList>
-                                {achievements.map((ach, idx) => (
-                                  <PlayersAchievementBadge
-                                    key={idx}
-                                    type={ach.type}
-                                    division={ach.division}
-                                    title={ach.title}
-                                  >
-                                    🏆 {ach.title}
-                                  </PlayersAchievementBadge>
-                                ))}
-                              </PlayersAchievementBadgeList>
-                            );
-                          })()}
+                        return (
+                          <PlayersPlayerCard
+                            key={player.id}
+                            onClick={() => navigate(`/players/${player.id}?division=${division}`)}
+                            style={isCaptainLoggedIn && isDraftable ? {
+                              border: isInAutoDraft ? '2px solid #f59e0b' : undefined,
+                              backgroundColor: isInAutoDraft ? 'rgba(245, 158, 11, 0.05)' : undefined
+                            } : undefined}
+                          >
+                            {player.isCaptain && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
+                            {isCaptainLoggedIn && isDraftable && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleAutoDraft(player.id);
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  top: '1rem',
+                                  right: '1rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  backgroundColor: isInAutoDraft ? '#f59e0b' : 'rgba(107, 114, 128, 0.1)',
+                                  color: isInAutoDraft ? '#fff' : '#6b7280',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  padding: '0.25rem 0.6rem',
+                                  borderRadius: '50px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  transition: 'all 0.2s ease',
+                                  zIndex: 10
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.backgroundColor = isInAutoDraft ? '#d97706' : 'rgba(107, 114, 128, 0.2)';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.backgroundColor = isInAutoDraft ? '#f59e0b' : 'rgba(107, 114, 128, 0.1)';
+                                }}
+                              >
+                                {isInAutoDraft ? '★ Auto-Draft' : '+ Auto-Draft'}
+                              </button>
+                            )}
+                            <PlayersPlayerName title={player.name}>{player.name}</PlayersPlayerName>
 
-                          <PlayersRanksContainer>
-                            <PlayersRankInfo>
-                              <PlayersRankLabel>Solo Q</PlayersRankLabel>
-                              <PlayersRankValue>{getFormatRank(player.soloRankTier, player.soloRankDivision)}</PlayersRankValue>
-                            </PlayersRankInfo>
-                            <PlayersRankInfo>
-                              <PlayersRankLabel>Flex Q</PlayersRankLabel>
-                              <PlayersRankValue>{getFormatRank(player.flexRankTier, player.flexRankDivision)}</PlayersRankValue>
-                            </PlayersRankInfo>
-                          </PlayersRanksContainer>
+                            {(() => {
+                              const achievements = getPlayerAchievements(player.name);
+                              if (achievements.length === 0) return null;
+                              return (
+                                <PlayersAchievementBadgeList>
+                                  {achievements.map((ach, idx) => (
+                                    <PlayersAchievementBadge
+                                      key={idx}
+                                      type={ach.type}
+                                      division={ach.division}
+                                      title={ach.title}
+                                    >
+                                      🏆 {ach.title}
+                                    </PlayersAchievementBadge>
+                                  ))}
+                                </PlayersAchievementBadgeList>
+                              );
+                            })()}
 
-                          <PlayersRolesContainer>
-                            <PlayersRoleBadge isPrimary={true}>{player.role}</PlayersRoleBadge>
-                            {player.secondaryRoles && player.secondaryRoles.map(secRole => (
-                              secRole.toLowerCase() !== player.role.toLowerCase() && (
-                                <PlayersRoleBadge key={secRole} isPrimary={false}>{secRole}</PlayersRoleBadge>
-                              )
-                            ))}
-                          </PlayersRolesContainer>
-                        </PlayersPlayerCard>
-                      ))}
+                            <PlayersRanksContainer>
+                              <PlayersRankInfo>
+                                <PlayersRankLabel>Solo Q</PlayersRankLabel>
+                                <PlayersRankValue>{getFormatRank(player.soloRankTier, player.soloRankDivision)}</PlayersRankValue>
+                              </PlayersRankInfo>
+                              <PlayersRankInfo>
+                                <PlayersRankLabel>Flex Q</PlayersRankLabel>
+                                <PlayersRankValue>{getFormatRank(player.flexRankTier, player.flexRankDivision)}</PlayersRankValue>
+                              </PlayersRankInfo>
+                            </PlayersRanksContainer>
+
+                            <PlayersRolesContainer>
+                              <PlayersRoleBadge isPrimary={true}>{player.role}</PlayersRoleBadge>
+                              {player.secondaryRoles && player.secondaryRoles.map(secRole => (
+                                secRole.toLowerCase() !== player.role.toLowerCase() && (
+                                  <PlayersRoleBadge key={secRole} isPrimary={false}>{secRole}</PlayersRoleBadge>
+                                )
+                              ))}
+                            </PlayersRolesContainer>
+                          </PlayersPlayerCard>
+                        );
+                      })}
                     </PlayersGrid>
                   </PlayersTierSection>
                 );
