@@ -91,6 +91,8 @@ export interface PlayerAchievement {
 export interface Player {
   id: number;
   name: string;
+  elo?: number;
+  self_reported_elo?: number;
   peakRankTier: string;
   peakRankDivision: number;
   soloRankTier: string;

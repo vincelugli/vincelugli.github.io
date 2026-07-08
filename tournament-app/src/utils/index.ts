@@ -18,10 +18,11 @@ export function compareTeams(t1: Team , t2: Team): number {
 
 export function convertRankToElo(rankTier: string, rankDivision: number): number {
     const rankTierToNumber: {[key: string]: number} = {
-        "Challenger": 10000,
-        "Grandmasters": 1000,
-        "Masters": 400,
-        "Master": 400,
+        "Challenger": 100,
+        "Grandmasters": 100,
+        "Grandmaster": 100,
+        "Masters": 100,
+        "Master": 100,
         "Diamond": 70,
         "Emerald": 60,
         "Platinum": 50,
@@ -62,18 +63,18 @@ export function rankTierToShortName(rankTier: string): string {
 }
 
 export function compareRanks(player1: Player, player2: Player): number {
-    const p1Max = Math.max(
+    const p1Max = player1.elo !== undefined ? player1.elo : Math.max(
             convertRankToElo(player1.peakRankTier, player1.peakRankDivision),
             convertRankToElo(player1.soloRankTier, player1.soloRankDivision),
             convertRankToElo(player1.flexRankTier, player1.flexRankDivision));
-    const p2Max = Math.max(
+    const p2Max = player2.elo !== undefined ? player2.elo : Math.max(
             convertRankToElo(player2.peakRankTier, player2.peakRankDivision),
             convertRankToElo(player2.soloRankTier, player2.soloRankDivision),
             convertRankToElo(player2.flexRankTier, player2.flexRankDivision));
 
     if (p1Max === p2Max) {
-        let p1Sum = convertRankToElo(player1.peakRankTier, player1.peakRankDivision);
-        let p2Sum = convertRankToElo(player2.peakRankTier, player2.peakRankDivision);
+        let p1Sum = player1.elo !== undefined ? player1.elo : convertRankToElo(player1.peakRankTier, player1.peakRankDivision);
+        let p2Sum = player2.elo !== undefined ? player2.elo : convertRankToElo(player2.peakRankTier, player2.peakRankDivision);
         if (player1.soloRankDivision !== -1 && player2.soloRankDivision !== -1) {
             p1Sum += convertRankToElo(player1.soloRankTier, player1.soloRankDivision);
             p2Sum += convertRankToElo(player2.soloRankTier, player2.soloRankDivision);
@@ -131,6 +132,7 @@ const PREVIOUS_WINNERS: { [key: string]: PlayerAchievement } = {
 
     // Master 2nd Place
     'diceruler#tho': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
+    'show#hello': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
     'baybuzz#na1': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
     'exnihilo#없었었다': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},
     'grontad#na1': {title: 'GRumble 2025 Master 2nd Place', type: 'runner_up', division: 'master', year: 2025},

@@ -1,4 +1,5 @@
 import {Player} from '../types';
+import {convertRankToElo} from './index';
 
 const CHAMPIONS_BY_ROLE: {[key: string]: string[]} = {
   top: ['Aatrox', 'Jax', 'Riven', 'Camille', 'Fiora', 'Ornn', 'Renekton', 'Gnar', 'Darius', 'Garen'],
@@ -95,6 +96,18 @@ export function enrichPlayerDetails(player: Player): Required<Player> {
 
   return {
     ...player,
+    elo: player.elo !== undefined ? player.elo : Math.max(
+      convertRankToElo(player.peakRankTier, player.peakRankDivision),
+      convertRankToElo(player.soloRankTier, player.soloRankDivision),
+      convertRankToElo(player.flexRankTier, player.flexRankDivision)
+    ),
+    self_reported_elo: player.self_reported_elo !== undefined ? player.self_reported_elo : (
+      player.elo !== undefined ? player.elo : Math.max(
+        convertRankToElo(player.peakRankTier, player.peakRankDivision),
+        convertRankToElo(player.soloRankTier, player.soloRankDivision),
+        convertRankToElo(player.flexRankTier, player.flexRankDivision)
+      )
+    ),
     mostPlayedChampions: player.mostPlayedChampions || selectedChamps,
     rankedWinrate: player.rankedWinrate || winrateStr,
     rolePreferences: player.rolePreferences || preferences,
