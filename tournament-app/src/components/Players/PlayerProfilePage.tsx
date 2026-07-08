@@ -11,7 +11,7 @@ import { useAuth } from '../Common/AuthContext';
 
 // --- TYPES & UTILS ---
 import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
-import { createOpGgUrl, getFirebasePrefix, getPlayerAchievements } from '../../utils';
+import { createOpGgUrl, getFirebasePrefix, getPlayerAchievements, isPlayerCaptain } from '../../utils';
 import {enrichPlayerDetails} from '../../utils/playerHelper';
 import {
   ProfilePageContainer,
@@ -290,7 +290,7 @@ const PlayerProfilePage: React.FC = () => {
             <span style={{color: '#6c757d', fontWeight: 500}}>Timezone: {player.timezone}</span>
           </div>
           <ProfileRoleBadgesList>
-            {player.isCaptain && <ProfileCaptainBadge>Captain</ProfileCaptainBadge>}
+            {isPlayerCaptain(player) && <ProfileCaptainBadge>Captain</ProfileCaptainBadge>}
             <ProfilePrimaryBadge>{player.role}</ProfilePrimaryBadge>
             {player.secondaryRoles && player.secondaryRoles.map(secRole => (
               secRole.toLowerCase() !== player.role.toLowerCase() && (
@@ -301,7 +301,7 @@ const PlayerProfilePage: React.FC = () => {
         </ProfileHeaderLeft>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {!!captainTeamId && !player.isCaptain && (
+          {!!captainTeamId && !isPlayerCaptain(player) && (
             <button
               onClick={handleToggleAutoDraft}
               style={{

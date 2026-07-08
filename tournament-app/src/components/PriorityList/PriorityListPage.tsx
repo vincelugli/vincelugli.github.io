@@ -8,7 +8,7 @@ import {DragDropContext, Droppable, Draggable, DropResult} from '@hello-pangea/d
 import {debounce} from 'lodash';
 import {PageContainer, AdminTitle, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles} from '../../styles';
 import {usePlayers} from '../../context/PlayerContext';
-import {createOpGgUrl} from '../../utils';
+import {createOpGgUrl, isPlayerCaptain} from '../../utils';
 
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -55,7 +55,7 @@ const PriorityListPage: React.FC = () => {
 
     const docRef = doc(db, 'draftBoards', String(authTeamId));
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      const allDraftablePlayers = allPlayers.filter(p => !p.isCaptain);
+      const allDraftablePlayers = allPlayers.filter(p => !isPlayerCaptain(p));
       const priorityIds = snapshot.exists() ? snapshot.data().playerIds as number[] : [];
 
       const priority = priorityIds.map(id => allDraftablePlayers.find(p => p.id === id)!).filter(Boolean);

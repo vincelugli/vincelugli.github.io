@@ -165,3 +165,22 @@ export function getPlayerAchievements(playerName: string): PlayerAchievement[] {
   return achievement ? [achievement] : [];
 }
 
+export function isPlayerCaptain(player: Player): boolean {
+  if (!player || !player.name) return false;
+  const captainNames = [
+    "beepimajeep#na1",
+    "marshallkm#na1",
+    "umm gg#mrshl",
+    "nuclear pop#na1",
+    "sadgesadgesadge#sadge",
+    "lulalualala123#na1",
+    "fiallo#na1",
+    "cherry avenue#55555",
+    "metalicapt #na1",
+    "asdfjklg#777",
+    "guyuy#na1",
+    "tomytomm#na1"
+  ];
+  return captainNames.includes(player.name.toLowerCase().trim());
+}
+
