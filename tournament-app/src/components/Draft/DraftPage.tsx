@@ -236,9 +236,12 @@ const DraftPage: React.FC = () => {
       const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
 
       const playerSkipSlot: { [playerId: number]: number } = {};
-      allPlayersSorted.forEach((player, index) => {
+
+      const firstHalfPlayers = allPlayersSorted.reverse().slice(0, allPlayers.length / 2);
+
+      firstHalfPlayers.reverse().forEach((player, index) => {
         if (isPlayerCaptain(player)) {
-          playerSkipSlot[player.id] = index / allPlayers.length;
+          playerSkipSlot[player.id] = index / (allPlayers.length / 2);
         }
       });
 
@@ -250,8 +253,8 @@ const DraftPage: React.FC = () => {
               let forcedRound = 1;
               if (captainPercent <= 0.2) forcedRound = 5;
               else if (captainPercent <= 0.4) forcedRound = 4;
-              else if (captainPercent <= 0.6) forcedRound = 3;
-              else if (captainPercent <= 0.8) forcedRound = 2;
+              else if (captainPercent <= 0.59) forcedRound = 3;
+              else if (captainPercent <= 0.7) forcedRound = 2;
               else if (captainPercent <= 1.0) forcedRound = 1;
 
               if (forcedRound > currentRound) {
@@ -298,8 +301,8 @@ const DraftPage: React.FC = () => {
           let forcedRound = 0;
           if (captainPercent <= 0.2) forcedRound = 5;
           else if (captainPercent <= 0.4) forcedRound = 4;
-          else if (captainPercent <= 0.6) forcedRound = 3;
-          else if (captainPercent <= 0.8) forcedRound = 2;
+          else if (captainPercent <= 0.59) forcedRound = 3;
+          else if (captainPercent <= 0.7) forcedRound = 2;
           else if (captainPercent <= 1.0) forcedRound = 1;
 
           if (forcedRound > currentRound) {
