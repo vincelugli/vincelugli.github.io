@@ -402,7 +402,7 @@ const DraftPage: React.FC = () => {
         <PlayerPool
           players={draftState.availablePlayers}
           onDraft={handleDraftPlayer}
-          disabled={isDraftComplete} 
+          disabled={isSpectator || !canDraftNow || isDraftComplete} 
         />
       </DraftContent>
 
