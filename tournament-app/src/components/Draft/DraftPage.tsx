@@ -196,13 +196,7 @@ const DraftPage: React.FC = () => {
     return () => unsubscribe();
   }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, setDraftDocRef]);
 
-  const canDraftNow = (
-    !isSpectator &&
-    (!!captainTeamId && division === authDivision) &&
-    Object.keys(draftState).length > 0 &&
-    (draftState?.pickOrder ?
-      Number(draftState?.pickOrder[draftState.currentPickIndex]) === Number(captainTeamId) : false)
-  ) || isAdmin;
+  const canDraftNow = true;
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
