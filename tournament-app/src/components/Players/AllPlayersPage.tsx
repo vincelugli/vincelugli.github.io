@@ -15,7 +15,7 @@ import {
   FaRandom,
   FaFilter
 } from 'react-icons/fa';
-import {compareRanks, convertRankToElo, getPlayerAchievements} from '../../utils';
+import {compareRanks, convertRankToElo, getPlayerAchievements, isPlayerCaptain} from '../../utils';
 import {
   PlayersPageContainer,
   PlayersHeaderSection,
@@ -495,7 +495,7 @@ const AllPlayersPage: React.FC = () => {
 
                     <PlayersGrid>
                       {playersInTier.map(player => {
-                        const isDraftable = !player.isCaptain;
+                        const isDraftable = !isPlayerCaptain(player);
                         const isInAutoDraft = priorityPlayerIds.includes(player.id);
                         const isCaptainLoggedIn = !!captainTeamId;
 
@@ -508,7 +508,7 @@ const AllPlayersPage: React.FC = () => {
                               backgroundColor: isInAutoDraft ? 'rgba(245, 158, 11, 0.05)' : undefined
                             } : undefined}
                           >
-                            {player.isCaptain && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
+                            {isPlayerCaptain(player) && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
                             {isCaptainLoggedIn && isDraftable && (
                               <button
                                 onClick={(e) => {

@@ -5,7 +5,7 @@ import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistory
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { FaStar } from 'react-icons/fa';
-import { createOpGgUrl } from '../../utils';
+import { createOpGgUrl, isPlayerCaptain } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
@@ -82,8 +82,8 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       .filter((player): player is Player => player !== undefined);
 
     return roster.sort((a, b) => {
-      if (a.isCaptain) return -1;
-      if (b.isCaptain) return 1;
+      if (isPlayerCaptain(a)) return -1;
+      if (isPlayerCaptain(b)) return 1;
       return a.name.localeCompare(b.name);
     });
   }, [getPlayerById, team]);
@@ -126,7 +126,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
         <PlayerList>
           {sortedPlayers.map(player => (
             <PlayerListItem key={player.id}>
-              {player.isCaptain && <CaptainIndicator title="Team Captain" />}
+              {isPlayerCaptain(player) && <CaptainIndicator title="Team Captain" />}
               <PlayerInfo>
                 <PlayerNameLink href={createOpGgUrl(player.name)} target="_blank" rel="noopener noreferrer">
                   {player.name}
