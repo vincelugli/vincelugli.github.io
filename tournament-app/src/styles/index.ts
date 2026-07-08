@@ -528,37 +528,6 @@ export const PlayerEloOnCard = styled.span`
   padding-left: 1rem; /* Ensure space between roles and Elo */
 `;
 
-// DraftTimer
-export const TimerWrapper = styled.div`
-  background-color: ${({ theme }) => theme.background};
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 220px;
-`;
-
-export const TimerLabel = styled.div`
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textAlt};
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
-`;
-
-export const TimerText = styled.div<{ color: string }>`export 
-  font-family: 'Roboto Mono', 'Courier New', Courier, monospace;
-  font-size: 2.75rem;
-  font-weight: 700;
-  color: ${(props) => props.color};
-  line-height: 1.1;
-  transition: color 0.5s ease-in-out;
-`;
-
 // PickOrderDisplay
 export const PickOrderContainer = styled.div`
   background: ${({ theme }) => theme.background};

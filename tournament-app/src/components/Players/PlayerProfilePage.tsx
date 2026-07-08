@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 // --- CONTEXT HOOKS ---
 import { useDivision } from '../../context/DivisionContext';
 import { usePlayers } from '../../context/PlayerContext';
 import { useTournament } from '../../context/TournamentContext';
+import { useAuth } from '../Common/AuthContext';
 
 // --- TYPES & UTILS ---
 import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
@@ -91,6 +92,42 @@ const PlayerProfilePage: React.FC = () => {
   const [matchHistory, setMatchHistory] = useState<any[]>([]);
   const [tournamentChampStats, setTournamentChampStats] = useState<ChampionStat[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const { captainTeamId } = useAuth();
+  const [priorityPlayerIds, setPriorityPlayerIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!captainTeamId) return;
+
+    const docRef = doc(db, 'draftBoards', String(captainTeamId));
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPriorityPlayerIds(snapshot.data().playerIds || []);
+      } else {
+        setPriorityPlayerIds([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [captainTeamId]);
+
+  const handleToggleAutoDraft = async () => {
+    if (!captainTeamId || !player) return;
+
+    let newPlayerIds: number[];
+    if (priorityPlayerIds.includes(player.id)) {
+      newPlayerIds = priorityPlayerIds.filter(id => id !== player.id);
+    } else {
+      newPlayerIds = [...priorityPlayerIds, player.id];
+    }
+
+    const docRef = doc(db, 'draftBoards', String(captainTeamId));
+    try {
+      await setDoc(docRef, { playerIds: newPlayerIds });
+    } catch (err) {
+      console.error("Failed to update auto-draft list:", err);
+    }
+  };
 
   // Format rank display
   const getFormatRank = (tier: string, divisionVal: number) => {
@@ -263,13 +300,51 @@ const PlayerProfilePage: React.FC = () => {
           </ProfileRoleBadgesList>
         </ProfileHeaderLeft>
 
-        <ProfileExternalLinkButton
-          href={createOpGgUrl(player.name)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <FaExternalLinkAlt size={14} /> OP.GG Profile
-        </ProfileExternalLinkButton>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {!!captainTeamId && !player.isCaptain && (
+            <button
+              onClick={handleToggleAutoDraft}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: priorityPlayerIds.includes(player.id) ? '#f59e0b' : 'transparent',
+                color: priorityPlayerIds.includes(player.id) ? '#fff' : '#f59e0b',
+                border: '2px solid #f59e0b',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                padding: '0.6rem 1.2rem',
+                borderRadius: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                const isSelected = priorityPlayerIds.includes(player.id);
+                e.currentTarget.style.backgroundColor = isSelected ? '#d97706' : 'rgba(245, 158, 11, 0.1)';
+                e.currentTarget.style.borderColor = '#d97706';
+                if (!isSelected) e.currentTarget.style.color = '#d97706';
+              }}
+              onMouseOut={(e) => {
+                const isSelected = priorityPlayerIds.includes(player.id);
+                e.currentTarget.style.backgroundColor = isSelected ? '#f59e0b' : 'transparent';
+                e.currentTarget.style.borderColor = '#f59e0b';
+                if (!isSelected) e.currentTarget.style.color = '#f59e0b';
+              }}
+            >
+              {priorityPlayerIds.includes(player.id) ? '★ In Auto-Draft' : '☆ Add to Auto-Draft'}
+            </button>
+          )}
+
+          <ProfileExternalLinkButton
+            href={createOpGgUrl(player.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FaExternalLinkAlt size={14} /> OP.GG Profile
+          </ProfileExternalLinkButton>
+        </div>
       </ProfileHeader>
 
       <ProfileStatsGrid>

@@ -354,10 +354,11 @@ export const executeAutoPick = onTaskDispatched({
 
   const convertRankToElo = (rankTier: string, rankDivision: number): number => {
     const rankTierToNumber: {[key: string]: number} = {
-      "Challenger": 10000,
-      "Grandmasters": 1000,
-      "Masters": 400,
-      "Master": 400,
+      "Challenger": 100,
+      "Grandmasters": 100,
+      "Grandmaster": 100,
+      "Masters": 100,
+      "Master": 100,
       "Diamond": 70,
       "Emerald": 60,
       "Platinum": 50,

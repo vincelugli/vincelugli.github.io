@@ -5,7 +5,6 @@ import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
 import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import DraftTimer from './DraftTimer';
 import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
@@ -234,7 +233,7 @@ const DraftPage: React.FC = () => {
       if (currentRound < 5) {
         const teamElos = newTeams.map(team => {
           const totalElo = team.players!.reduce((sum, p) => {
-            const maxElo = Math.max(
+            const maxElo = p.elo !== undefined ? p.elo : Math.max(
               convertRankToElo(p.peakRankTier, p.peakRankDivision),
               convertRankToElo(p.soloRankTier, p.soloRankDivision),
               convertRankToElo(p.flexRankTier, p.flexRankDivision)
@@ -346,7 +345,6 @@ const DraftPage: React.FC = () => {
             ? "Draft Complete!"
             : `Round ${Math.floor(draftState.currentPickIndex / teams.length) + 1}, Pick ${draftState.currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
         </DraftStatus>
-        {!isDraftComplete && <DraftTimer deadlineMs={draftState.pickEndsAt} />}
       </DraftHeader>
 
       <DraftContent>

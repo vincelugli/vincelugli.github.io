@@ -127,6 +127,8 @@ const AdminPage: React.FC = () => {
     const PlayerSchema = z.array(z.object({
         id: z.number(),
         name: z.string().min(1, { message: "Name cannot be empty" }),
+        elo: z.number().optional(),
+        self_reported_elo: z.number().optional(),
         peakRankTier: z.string(),
         peakRankDivision: z.number(),
         soloRankTier: z.string(),
