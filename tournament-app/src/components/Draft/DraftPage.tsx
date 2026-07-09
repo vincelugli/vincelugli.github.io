@@ -144,8 +144,9 @@ const DraftPage: React.FC = () => {
   const [isSpectator, setIsSpectator] = useState(sessionStorage.getItem('isSpectator') === 'true');
   const [isLoading, setIsLoading] = useState(true);
 
-  const isDraftComplete = draftState.currentPickIndex >= pickOrder.length;
-  const currentTeamIdPicking = !isDraftComplete ? pickOrder[draftState.currentPickIndex] : null;
+  const activePickOrder = draftState.pickOrder && draftState.pickOrder.length > 0 ? draftState.pickOrder : pickOrder;
+  const isDraftComplete = draftState.currentPickIndex >= activePickOrder.length;
+  const currentTeamIdPicking = !isDraftComplete ? activePickOrder[draftState.currentPickIndex] : null;
 
   //// BEGIN AUTH ////
   useEffect(() => {
@@ -384,7 +385,7 @@ const DraftPage: React.FC = () => {
     return <div>Verifying Access...</div>;
   }
 
-  const latestTeams = !!draftState.teams ? draftState.teams : teams;
+  const latestTeams = draftState.teams && draftState.teams.length > 0 ? draftState.teams : teams;
 
   return (
     <DraftPageContainer>
@@ -440,8 +441,8 @@ const DraftPage: React.FC = () => {
       </DraftContent>
 
       <PickOrderDisplay
-        pickOrder={draftState.pickOrder ?? []}
-        teams={draftState.teams}
+        pickOrder={activePickOrder}
+        teams={latestTeams}
         players={allPlayers}
         currentPickIndex={draftState.currentPickIndex}
         completedPicks={draftState.completedPicks}
