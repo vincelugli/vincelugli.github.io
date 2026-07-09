@@ -60,7 +60,7 @@ const UpdateStandingsSchema = z.object({
   shortCode: z.optional(z.string()),
 });
 
-const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 2 * 60 * 60;
+const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 40 * 60;
 const PROJECT = "grumble-5885f";
 const LOCATION = "us-central1"; // Or your function"s location
 const QUEUE = "executeautopick"; // The default queue created by Firebase
