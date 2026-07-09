@@ -1,4 +1,4 @@
-import styled, { createGlobalStyle, css } from 'styled-components';
+import styled, { createGlobalStyle, css, keyframes } from 'styled-components';
 import { Link, NavLink as RouterNavLink } from 'react-router-dom';
 
 // DoubleEliminationBracket
@@ -438,6 +438,50 @@ export const DraftStatus = styled.p`
   font-weight: 600;
   color: ${({ theme }) => theme.primary};
   margin: 0.5rem 0 0 0;
+`;
+
+const timerPulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+export const DraftTimerContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+`;
+
+export const DraftTimerLabel = styled.span`
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.secondaryText};
+  margin-bottom: 0.4rem;
+`;
+
+export const DraftTimerDisplay = styled.div<{ isLowTime?: boolean }>`
+  font-size: 3rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: ${({ theme, isLowTime }) => isLowTime ? theme.danger : theme.primary};
+  text-shadow: 0 2px 4px ${({ theme }) => theme.boxShadow};
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  background: ${({ theme }) => theme.backgroundTwo};
+  border: 2px solid ${({ theme, isLowTime }) => isLowTime ? theme.danger : theme.borderColor};
+  display: inline-block;
+  transition: all 0.3s ease;
+  animation: ${({ isLowTime }) => isLowTime ? timerPulse : 'none'} 1.5s infinite ease-in-out;
 `;
 
 export const DraftContent = styled.div`

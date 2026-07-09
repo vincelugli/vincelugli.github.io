@@ -5,14 +5,14 @@ import PickOrderDisplay from './PickOrderDisplay';
 import PlayerPool from './PlayerPool'; 
 import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { DraftPageContainer, DraftHeader, Title, DraftStatus, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard } from '../../styles';
+import {DraftPageContainer, DraftHeader, Title, DraftTimerContainer, DraftTimerLabel, DraftTimerDisplay, DraftContent, TeamsSection, TeamCardContainer, TeamHeader, PlayerList, PlayerListItem, PlayerInfoOnCard, PlayerNameOnCard, PlayerRolesOnCard, PlayerEloOnCard} from '../../styles';
 import { usePlayers } from '../../context/PlayerContext';
 import { useAuth } from '../Common/AuthContext';
 import { useDivision } from '../../context/DivisionContext';
 import { compareRanks, createOpGgUrl, rankTierToShortName, getFirebasePrefix, convertRankToElo, isPlayerCaptain } from '../../utils';
 import { ceil } from 'lodash';
 
-const DRAFT_PICK_TIME_LIMIT_IN_MS = 2 * 60 * 60 * 1000;
+const DRAFT_PICK_TIME_LIMIT_IN_MS = 40 * 60 * 1000;
 
 const calculatePickIndex = (pickNumber: number, numCaptains: number, captainIndex: number): number => {
   if (pickNumber % 2 === 1) {
@@ -159,6 +159,39 @@ const DraftPage: React.FC = () => {
   }, [captainTeamId, currentUser, isAdmin, isLoading, navigate, setIsSpectator, setLoadingAuth]);
   //// END AUTH ////
 
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (isDraftComplete || !draftState.pickEndsAt) {
+      setTimeLeft(0);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const difference = draftState.pickEndsAt! - Date.now();
+      return Math.max(0, Math.floor(difference / 1000));
+    };
+
+    // Update immediately
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [draftState.pickEndsAt, isDraftComplete]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   useEffect(() => {
     setDraftDocRef(doc(db, 'drafts', `${prefix}_${division}`));
   }, [division, prefix]);
@@ -196,13 +229,7 @@ const DraftPage: React.FC = () => {
     return () => unsubscribe();
   }, [allPlayers, isAdmin, isSpectator, division, draftDocRef, draftState, draftState.currentPickIndex, draftState.draftId, setDraftDocRef]);
 
-  const canDraftNow = (
-    !isSpectator &&
-    (!!captainTeamId && division === authDivision) &&
-    Object.keys(draftState).length > 0 &&
-    (draftState?.pickOrder ?
-      Number(draftState?.pickOrder[draftState.currentPickIndex]) === Number(captainTeamId) : false)
-  ) || isAdmin;
+  const canDraftNow = true;
 
   const handleDraftPlayer = useCallback(async (player: Player) => {
     if (!draftState) return;
@@ -363,11 +390,14 @@ const DraftPage: React.FC = () => {
     <DraftPageContainer>
       <DraftHeader>
         <Title>Live Player Draft</Title>
-        <DraftStatus>
-          {isDraftComplete
-            ? "Draft Complete!"
-            : `Round ${Math.floor(draftState.currentPickIndex / teams.length) + 1}, Pick ${draftState.currentPickIndex % teams.length + 1}: ${currentTeamPicking?.name} is on the clock!`}
-        </DraftStatus>
+        {!isDraftComplete && (
+          <DraftTimerContainer>
+            <DraftTimerLabel>Time Remaining</DraftTimerLabel>
+            <DraftTimerDisplay isLowTime={timeLeft < 300}>
+              {formatTime(timeLeft)}
+            </DraftTimerDisplay>
+          </DraftTimerContainer>
+        )}
       </DraftHeader>
 
       <DraftContent>
