@@ -9,6 +9,7 @@ import {debounce} from 'lodash';
 import {PageContainer, AdminTitle, BoardContainer, Column, ColumnTitle, PlayerCard, PlayerInfo, PlayerName, PlayerRole, SecondaryRoles} from '../../styles';
 import {usePlayers} from '../../context/PlayerContext';
 import {createOpGgUrl, isPlayerCaptain} from '../../utils';
+import {useDivision} from '../../context/DivisionContext';
 
 const PriorityListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const PriorityListPage: React.FC = () => {
   const [priorityPlayers, setPriorityPlayers] = useState<Player[]>([]);
 
   const {draftablePlayers: allPlayers} = usePlayers();
+  const {division} = useDivision();
 
   // Auth checking effect
   useEffect(() => {
@@ -55,7 +57,7 @@ const PriorityListPage: React.FC = () => {
 
     const docRef = doc(db, 'draftBoards', String(authTeamId));
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      const allDraftablePlayers = allPlayers.filter(p => !isPlayerCaptain(p));
+      const allDraftablePlayers = allPlayers.filter(p => !isPlayerCaptain(p, division));
       const priorityIds = snapshot.exists() ? snapshot.data().playerIds as number[] : [];
 
       const priority = priorityIds.map(id => allDraftablePlayers.find(p => p.id === id)!).filter(Boolean);

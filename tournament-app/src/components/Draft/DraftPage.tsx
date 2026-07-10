@@ -24,7 +24,7 @@ const calculatePickIndex = (pickNumber: number, numCaptains: number, captainInde
 
 const initializeDraft = (allPlayers: Player[], division: string): DraftState => {
   if (!allPlayers) return emptyDraftState();
-  let captains = allPlayers.filter(isPlayerCaptain).sort((a, b) => compareRanks(b, a));
+  let captains = allPlayers.filter(p => isPlayerCaptain(p, division)).sort((a, b) => compareRanks(b, a));
   const numCaptains = captains.length;
   if (numCaptains * 5 > allPlayers.length) {
     // there are more captains than players, cut the bottom X captains
@@ -38,7 +38,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
   // Reverse the order so lowest ranked player picks first.
   captains = captains.reverse();
 
-  const availablePlayers = allPlayers.filter(p => !isPlayerCaptain(p));
+  const availablePlayers = allPlayers.filter(p => !isPlayerCaptain(p, division));
   const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
 
   const teams: DraftTeam[] = captains.map((captain, index) => ({
@@ -67,7 +67,7 @@ const initializeDraft = (allPlayers: Player[], division: string): DraftState => 
   
   allPlayersSorted.forEach((player, index) => {
     const overallRank = index; // The pick number to be forfeited
-    if (isPlayerCaptain(player) && pickOrder[overallRank] !== undefined) {
+    if (isPlayerCaptain(player, division) && pickOrder[overallRank] !== undefined) {
         playerSkipSlot[player.id] = index / allPlayers.length;
       const matchedTeam = teams.find(t => t.captainId === player.id);
       player.teamId = matchedTeam ? matchedTeam.id : null;
@@ -271,7 +271,7 @@ const DraftPage: React.FC = () => {
     const nextRound = Math.floor(nextPickIndex / numTeams) + 1;
 
     if (nextRound > currentRound && nextRound <= 5) {
-      const captains = allPlayers.filter(isPlayerCaptain).sort((a, b) => compareRanks(b, a));
+      const captains = allPlayers.filter(p => isPlayerCaptain(p, division)).sort((a, b) => compareRanks(b, a));
       const captainsReversed = [...captains].reverse();
       const allPlayersSorted = [...allPlayers].sort((a, b) => compareRanks(b, a)).reverse();
 
@@ -280,21 +280,21 @@ const DraftPage: React.FC = () => {
       const firstHalfPlayers = allPlayersSorted.reverse().slice(0, allPlayers.length / 2);
 
       firstHalfPlayers.reverse().forEach((player, index) => {
-        if (isPlayerCaptain(player)) {
+        if (isPlayerCaptain(player, division)) {
           playerSkipSlot[player.id] = index / (allPlayers.length / 2);
         }
       });
 
       const teamElos = newTeams.map(team => {
         const totalElo = team.players!.reduce((sum, p) => {
-          if (isPlayerCaptain(p)) {
+          if (isPlayerCaptain(p, division)) {
             const captainPercent = playerSkipSlot[p.id];
             if (captainPercent !== undefined) {
               let forcedRound = 1;
               if (captainPercent <= 0.2) forcedRound = 5;
               else if (captainPercent <= 0.4) forcedRound = 4;
-              else if (captainPercent <= 0.59) forcedRound = 3;
-              else if (captainPercent <= 0.7) forcedRound = 2;
+              else if (captainPercent <= 0.6) forcedRound = 3;
+              else if (captainPercent <= 0.8) forcedRound = 2;
               else if (captainPercent <= 1.0) forcedRound = 1;
 
               if (forcedRound > currentRound) {
@@ -341,8 +341,8 @@ const DraftPage: React.FC = () => {
           let forcedRound = 0;
           if (captainPercent <= 0.2) forcedRound = 5;
           else if (captainPercent <= 0.4) forcedRound = 4;
-          else if (captainPercent <= 0.59) forcedRound = 3;
-          else if (captainPercent <= 0.7) forcedRound = 2;
+          else if (captainPercent <= 0.6) forcedRound = 3;
+          else if (captainPercent <= 0.8) forcedRound = 2;
           else if (captainPercent <= 1.0) forcedRound = 1;
 
           if (forcedRound > currentRound) {
@@ -414,7 +414,7 @@ const DraftPage: React.FC = () => {
               <TeamHeader>{team.name}</TeamHeader>
               <PlayerList>
                 {team.players!.map(p => (
-                  <PlayerListItem key={p.id} isCaptain={isPlayerCaptain(p)}>
+                  <PlayerListItem key={p.id} isCaptain={isPlayerCaptain(p, division)}>
                     <PlayerInfoOnCard>
                       <PlayerNameOnCard
                           href={createOpGgUrl(p.name)}
