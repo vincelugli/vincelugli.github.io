@@ -1351,17 +1351,19 @@ export const StageDate = styled.div`
 
 // AdminPage
 export const AdminPageContainer = styled.div`
-  max-width: 900px;
+  max-width: 1200px;
   margin: 2rem auto;
   padding: 2.5rem;
-  background-color: #ffffff;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  box-shadow: 0 4px 12px ${({ theme }) => theme.boxShadow};
 `;
 
 export const AdminTitle = styled.h1`
   font-size: 2.8rem;
-  color: #333;
+  color: ${({ theme }) => theme.text};
   text-align: center;
   margin-bottom: 2rem;
 `;
@@ -1374,21 +1376,23 @@ export const Form = styled.form`
 
 export const TextArea = styled.textarea`
   padding: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${({ theme }) => theme.borderColor};
   border-radius: 5px;
   font-size: 1rem;
   font-family: 'Courier New', Courier, monospace;
+  background-color: ${({ theme }) => theme.backgroundThree};
+  color: ${({ theme }) => theme.text};
   min-height: 400px;
   resize: vertical;
   &:focus {
-    border-color: #007bff;
+    border-color: ${({ theme }) => theme.primary};
     outline: none;
   }
 `;
 
 export const SelectionContainer = styled.div`
   margin-bottom: 2rem;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid ${({ theme }) => theme.borderColor};
   padding-bottom: 2rem;
 `;
 
@@ -1400,15 +1404,16 @@ export const FormGroup = styled.div`
 
 export const AdminLabel = styled.label`
   font-weight: 600;
-  color: #555;
+  color: ${({ theme }) => theme.textAlt};
 `;
 
 export const AdminSelect = styled.select`
   padding: 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${({ theme }) => theme.borderColor};
   border-radius: 5px;
   font-size: 1rem;
-  background-color: white;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
 `;
 
 // DivisionSelector
