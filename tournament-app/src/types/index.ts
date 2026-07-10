@@ -129,6 +129,7 @@ export interface DraftState {
   currentPickIndex: number; // Index of the current pick in the pickOrder
   pickEndsAt?: number | null; // End time in milliseconds
   draftId: string;
+  skippedOriginalTeams?: { [pickIndex: number]: number };
 }
 
 export interface SignUpData {

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
-import { compareTeams } from '../../utils';
+import SwissStandings from './SwissStandings';
 
 const PageContainer = styled.div`
   padding: 2rem;
@@ -18,46 +19,6 @@ const SectionTitle = styled.h2`
   border-bottom: 2px solid ${({ theme }) => theme.body};
   padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
-`;
-
-const StandingsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-`;
-
-const StandingCard = styled.div<{ type: 'advanced' | 'eliminated' | 'active' }>`
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  border-radius: 8px;
-  padding: 1.5rem;
-  border-left: 5px solid ${({ theme, type }) =>
-    type === 'advanced' ? theme.success :
-      type === 'eliminated' ? theme.danger :
-        theme.primary};
-  box-shadow: ${({ theme }) => theme.boxShadow};
-`;
-
-const CardTitle = styled.h3`
-  margin-top: 0;
-  font-size: 1.25rem;
-  color: ${({ theme }) => theme.secondaryText};
-`;
-
-const TeamList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-const TeamItem = styled.li`
-  padding: 0.5rem 0;
-  border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
-  display: flex;
-  justify-content: space-between;
-  &:last-child {
-    border-bottom: none;
-  }
 `;
 
 const RoundsContainer = styled.div`
@@ -105,9 +66,19 @@ const MatchCard = styled.div`
   gap: 1rem;
 `;
 
-const TeamName = styled.span<{ winner?: boolean }>`
+const MatchTeamSpan = styled.span<{ winner?: boolean }>`
   font-weight: ${({ winner }) => (winner ? '700' : '400')};
   color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
+`;
+
+const MatchTeamLink = styled(Link)<{ winner?: boolean }>`
+  font-weight: ${({ winner }) => (winner ? '700' : '400')};
+  color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const Versus = styled.span`
@@ -144,10 +115,6 @@ const SwissSystemPage: React.FC = () => {
     );
   }
 
-  const advancedTeams = [...teams].filter(t => t.wins === 3).sort(compareTeams);
-  const eliminatedTeams = [...teams].filter(t => t.losses === 3).sort(compareTeams);
-  const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(compareTeams);
-
   // Filter out any knockout matches
   const swissMatches = matches.filter(m => !m.isKnockout);
 
@@ -163,43 +130,7 @@ const SwissSystemPage: React.FC = () => {
   return (
     <PageContainer>
       <SectionTitle>Swiss Stage Standings</SectionTitle>
-      <StandingsContainer>
-        <StandingCard type="advanced">
-          <CardTitle>Advanced to Bracket (3 Wins)</CardTitle>
-          <TeamList>
-            {advancedTeams.map(t => (
-              <TeamItem key={t.id}>
-                <span>{t.name}</span>
-                <span>{t.record || `${t.wins}-${t.losses}`}</span>
-              </TeamItem>
-            ))}
-          </TeamList>
-        </StandingCard>
-
-        <StandingCard type="active">
-          <CardTitle>Active Teams</CardTitle>
-          <TeamList>
-            {activeTeams.map(t => (
-              <TeamItem key={t.id}>
-                <span>{t.name}</span>
-                <span>{t.record || `${t.wins}-${t.losses}`}</span>
-              </TeamItem>
-            ))}
-          </TeamList>
-        </StandingCard>
-
-        <StandingCard type="eliminated">
-          <CardTitle>Eliminated (3 Losses)</CardTitle>
-          <TeamList>
-            {eliminatedTeams.map(t => (
-              <TeamItem key={t.id}>
-                <span>{t.name}</span>
-                <span>{t.record || `${t.wins}-${t.losses}`}</span>
-              </TeamItem>
-            ))}
-          </TeamList>
-        </StandingCard>
-      </StandingsContainer>
+      <SwissStandings />
 
       <SectionTitle>Match History</SectionTitle>
       <RoundsContainer>
@@ -225,9 +156,21 @@ const SwissSystemPage: React.FC = () => {
             return (
               <MatchCard key={match.id}>
                 <div>
-                  <TeamName winner={match.winnerId === team1?.id}>{team1Name}</TeamName>
+                  {team1 ? (
+                    <MatchTeamLink to={`/teams/${team1.id}`} winner={match.winnerId === team1.id}>
+                      {team1Name}
+                    </MatchTeamLink>
+                  ) : (
+                    <MatchTeamSpan winner={false}>{team1Name}</MatchTeamSpan>
+                  )}
                   <Versus> vs </Versus>
-                  <TeamName winner={match.winnerId === team2?.id}>{team2Name}</TeamName>
+                  {team2 ? (
+                    <MatchTeamLink to={`/teams/${team2.id}`} winner={match.winnerId === team2.id}>
+                      {team2Name}
+                    </MatchTeamLink>
+                  ) : (
+                    <MatchTeamSpan winner={false}>{team2Name}</MatchTeamSpan>
+                  )}
                 </div>
                 {match.status === 'completed' ? (
                   <ScoreText>{match.score}</ScoreText>
