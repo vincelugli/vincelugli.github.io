@@ -290,7 +290,7 @@ const PlayerProfilePage: React.FC = () => {
             <span style={{color: '#6c757d', fontWeight: 500}}>Timezone: {player.timezone}</span>
           </div>
           <ProfileRoleBadgesList>
-            {isPlayerCaptain(player) && <ProfileCaptainBadge>Captain</ProfileCaptainBadge>}
+            {isPlayerCaptain(player, division) && <ProfileCaptainBadge>Captain</ProfileCaptainBadge>}
             <ProfilePrimaryBadge>{player.role}</ProfilePrimaryBadge>
             {player.secondaryRoles && player.secondaryRoles.map(secRole => (
               secRole.toLowerCase() !== player.role.toLowerCase() && (
@@ -301,7 +301,7 @@ const PlayerProfilePage: React.FC = () => {
         </ProfileHeaderLeft>
 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {!!captainTeamId && !isPlayerCaptain(player) && (
+          {!!captainTeamId && !isPlayerCaptain(player, division) && (
             <button
               onClick={handleToggleAutoDraft}
               style={{

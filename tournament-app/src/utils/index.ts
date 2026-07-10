@@ -165,9 +165,9 @@ export function getPlayerAchievements(playerName: string): PlayerAchievement[] {
   return achievement ? [achievement] : [];
 }
 
-export function isPlayerCaptain(player: Player): boolean {
+export function isPlayerCaptain(player: Player, division?: string): boolean {
   if (!player || !player.name) return false;
-  const captainNames = [
+    const captainNames = (division === 'master') ? [
     "beepimajeep#na1",
     "marshallkm#na1",
     "umm gg#mrshl",
@@ -180,7 +180,20 @@ export function isPlayerCaptain(player: Player): boolean {
     "asdfjklg#777",
     "guyuy#na1",
     "tomytomm#na1"
-  ];
+    ] : [
+        "K9Delta #Bork",
+        "rl1000#BOT",
+        "cartonnnn#crisp",
+        "Z0MBI3S#Nasty",
+        "BanBanDD#NA1",
+        "DA VINKl#NA1",
+        "reuben12358#na1",
+        "Red Rain Coward#succ",
+        "Legendbird",
+        "iwanttogetaname#NA1",
+        "Thiên#vn111",
+        "Talenelat#US24"
+    ];
   return captainNames.includes(player.name.toLowerCase().trim());
 }
 

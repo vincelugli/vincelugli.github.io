@@ -495,7 +495,7 @@ const AllPlayersPage: React.FC = () => {
 
                     <PlayersGrid>
                       {playersInTier.map(player => {
-                        const isDraftable = !isPlayerCaptain(player);
+                        const isDraftable = !isPlayerCaptain(player, division);
                         const isInAutoDraft = priorityPlayerIds.includes(player.id);
                         const isCaptainLoggedIn = !!captainTeamId;
 
@@ -508,7 +508,7 @@ const AllPlayersPage: React.FC = () => {
                               backgroundColor: isInAutoDraft ? 'rgba(245, 158, 11, 0.05)' : undefined
                             } : undefined}
                           >
-                            {isPlayerCaptain(player) && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
+                            {isPlayerCaptain(player, division) && <PlayersCaptainBadge>Captain</PlayersCaptainBadge>}
                             {isCaptainLoggedIn && isDraftable && (
                               <button
                                 onClick={(e) => {

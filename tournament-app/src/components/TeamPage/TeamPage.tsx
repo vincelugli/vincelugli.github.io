@@ -10,6 +10,7 @@ import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
 import MatchResultPage from '../MatchResult/MatchResultPage';
+import { useDivision } from '../../context/DivisionContext';
 
 
 const PlayerList = styled.ul`
@@ -64,6 +65,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { tournamentCodes } = useGameMatches();
   const { teams, bracket } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
+  const { division } = useDivision();
 
   const team = teams.find(t => t.id === Number(teamId));
 
@@ -82,11 +84,11 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
       .filter((player): player is Player => player !== undefined);
 
     return roster.sort((a, b) => {
-      if (isPlayerCaptain(a)) return -1;
-      if (isPlayerCaptain(b)) return 1;
+      if (isPlayerCaptain(a, division)) return -1;
+      if (isPlayerCaptain(b, division)) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [getPlayerById, team]);
+  }, [getPlayerById, team, division]);
 
   const teamKnockoutMatches: BracketSeed[] = useMemo(() => {
     const seeds: BracketSeed[][] = bracket.map((round: BracketRound) => {
@@ -126,7 +128,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
         <PlayerList>
           {sortedPlayers.map(player => (
             <PlayerListItem key={player.id}>
-              {isPlayerCaptain(player) && <CaptainIndicator title="Team Captain" />}
+              {isPlayerCaptain(player, division) && <CaptainIndicator title="Team Captain" />}
               <PlayerInfo>
                 <PlayerNameLink href={createOpGgUrl(player.name)} target="_blank" rel="noopener noreferrer">
                   {player.name}
