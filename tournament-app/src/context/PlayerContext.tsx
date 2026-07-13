@@ -9,8 +9,9 @@ import { getFirebasePrefix } from '../utils';
 interface PlayerContextType {
   players: Player[];
   draftablePlayers: Player[];
+  substitutes: Player[];
   loading: boolean;
-  getPlayerById: (id: number) => Player | undefined;
+  getPlayerById: (id: number, isSub?: boolean) => Player | undefined;
 }
 
 // Create the context with a default value
@@ -27,6 +28,7 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [draftablePlayers, setDraftablePlayers] = useState<Player[]>([]);
+  const [substitutes, setSubstitutes] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { division } = useDivision();
@@ -41,9 +43,12 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const snapshot = await getDoc(playersRef);
 
         if (snapshot.exists()) {
-            setPlayers(snapshot.data().players);
+            const data = snapshot.data();
+            setPlayers(data.players || []);
+            setSubstitutes(data.subs || []);
         } else {
             setPlayers([]);
+            setSubstitutes([]);
         }
       } catch (error) {
         console.error("Failed to fetch player data:", error);
@@ -77,11 +82,17 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [division, hash]);
 
   // Helper function to find a player by ID, memoized for performance
-  const getPlayerById = (id: number) => players.find(p => p.id === id);
+  const getPlayerById = (id: number, isSub?: boolean) => {
+    if (isSub) {
+      return substitutes.find(p => p.id === id);
+    }
+    return players.find(p => p.id === id);
+  };
 
   const value = {
     players,
     draftablePlayers,
+    substitutes,
     loading,
     getPlayerById,
   };

@@ -142,18 +142,8 @@ export interface SignUpData {
   submittedAt: Timestamp; // To track when the sign-up happened
 }
 
-export interface SubPlayer {
-  name: string;
-  peakRankTier: string;
-  peakRankDivision: number;
-  soloRankTier: string;
-  soloRankDivision: number;
-  flexRankTier: string;
-  flexRankDivision: number;
-  timezone: string;
+export interface SubPlayer extends Player {
   contact: string;
-  role: string;
-  secondaryRoles: string[];
 }
 
 export interface TournamentCode {
