@@ -44,6 +44,12 @@ export function createOpGgUrl(name: string): string {
     return `https://op.gg/summoners/na/${encodeURIComponent(name.replace('#', '-'))}`
 }
 
+export function createOpGgMultiSearchUrl(names: string[]): string {
+    const encodedNames = names.map(name => encodeURIComponent(name)).join('%2C');
+    return `https://op.gg/lol/multisearch/na?summoners=${encodedNames}`;
+}
+
+
 export function rankTierToShortName(rankTier: string): string {
     const TIER_TO_SHORT: {[key: string]: string} = {
         "Challenger": "C",
