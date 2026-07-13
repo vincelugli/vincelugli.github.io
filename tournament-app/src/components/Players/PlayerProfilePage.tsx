@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
@@ -82,6 +82,8 @@ const formatChampNameForDdragon = (name: string): string => {
 
 const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
+  const [searchParams] = useSearchParams();
+  const isSub = searchParams.get('isSub') === 'true';
   const { division } = useDivision();
   const { getPlayerById } = usePlayers();
   const { teams } = useTournament();
@@ -156,7 +158,7 @@ const PlayerProfilePage: React.FC = () => {
 
       try {
         // 1. Get player raw info
-        const rawPlayer = getPlayerById(parseInt(playerId, 10));
+        const rawPlayer = getPlayerById(parseInt(playerId, 10), isSub);
         if (!rawPlayer) {
           setPlayer(null);
           setLoading(false);
