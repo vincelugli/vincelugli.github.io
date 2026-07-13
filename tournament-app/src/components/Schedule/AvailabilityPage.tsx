@@ -49,9 +49,9 @@ const GridContainer = styled.div`
   margin-bottom: 3rem;
 `;
 
-const Grid = styled.div`
+const Grid = styled.div<{ showTimezone: boolean }>`
   display: grid;
-  grid-template-columns: 100px repeat(7, 1fr);
+  grid-template-columns: 100px ${({ showTimezone }) => showTimezone ? '130px' : ''} repeat(7, 1fr);
   gap: 5px;
   min-width: 800px;
 `;
@@ -190,9 +190,71 @@ const combineConsecutiveTimes = (activeSlots: string[], timeList: string[]) => {
   return result;
 };
 
+const timezoneOffsets: { [key: string]: number } = {
+  'PT': 0,
+  'MT': 1,
+  'CT': 2,
+  'ET': 3,
+  'GMT': 8,
+  'CET': 9,
+  'EET': 10,
+};
+
+const convertTime = (timeStr: string, offset: number) => {
+  const [hourStr, minStr] = timeStr.split(':');
+  let hour = parseInt(hourStr, 10);
+  const newHourRaw = hour + offset;
+  let newHour = (newHourRaw + 24) % 24;
+  
+  let suffix = '';
+  if (newHourRaw >= 24) {
+    suffix = ' (+1d)';
+  } else if (newHourRaw < 0) {
+    suffix = ' (-1d)';
+  }
+  
+  return `${newHour.toString().padStart(2, '0')}:${minStr}${suffix}`;
+};
+
+const convertTimeAndDay = (day: string, timeStr: string, offset: number) => {
+  const [hourStr, minStr] = timeStr.split(':');
+  let hour = parseInt(hourStr, 10);
+  let dayIndex = days.indexOf(day);
+  
+  let newHour = hour + offset;
+  if (newHour >= 24) {
+    newHour = newHour - 24;
+    dayIndex = (dayIndex + 1) % 7;
+  } else if (newHour < 0) {
+    newHour = newHour + 24;
+    dayIndex = (dayIndex - 1 + 7) % 7;
+  }
+  
+  return {
+    day: days[dayIndex],
+    time: `${newHour.toString().padStart(2, '0')}:${minStr}`
+  };
+};
+
+const convertCombinedTime = (combinedTime: string, offset: number, targetTimezone: string) => {
+  const match = combinedTime.match(/^(\w+) (\d{2}:\d{2}) - (\d{2}:\d{2})$/);
+  if (!match) return combinedTime;
+  const [_, day, start, end] = match;
+  
+  const convertedStart = convertTimeAndDay(day, start, offset);
+  const convertedEnd = convertTimeAndDay(day, end, offset);
+  
+  if (convertedStart.day === convertedEnd.day) {
+    return `${convertedStart.day} ${convertedStart.time} - ${convertedEnd.time} ${targetTimezone}`;
+  } else {
+    return `${convertedStart.day} ${convertedStart.time} - ${convertedEnd.day} ${convertedEnd.time} ${targetTimezone}`;
+  }
+};
+
 const AvailabilityPage: React.FC = () => {
   const [visibleTimes, setVisibleTimes] = useState(['17:00', '18:00', '19:00', '20:00', '21:00', '22:00']);
   const [use30MinIncrements, setUse30MinIncrements] = useState(false);
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const { teams } = useTournament();
   const { currentUser, captainTeamId, isTeamMember, isAdmin, isSub, subName } = useAuth();
   const { division } = useDivision();
@@ -365,14 +427,6 @@ const AvailabilityPage: React.FC = () => {
 
   const isAuthorized = isTeamMember && selectedTeamId === parseInt(captainTeamId, 10);
   const currentTeam = teams.find(t => t.id === selectedTeamId);
-  
-  // For now, let's assume we just toggle for player 1 (dummy player) or all players if we don't have player selection
-  // Realistically, we need a player selector or we just assume the captain marks availability for the *team* as a whole (binary)
-  // But prompt says "Prioritize slots that have as many players available as possible."
-  // Let's assume captain can select which player they are marking for.
-  // For simplicity, let's add a dummy player ID 1 for now if we don't have a player list for the team easily accessible here
-  // Wait, `useTournament` gives us teams, and teams have `players` array (player IDs).
-  // Let's use the actual player IDs from the team!
 
   const teamPlayers = currentTeam?.players || [];
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
@@ -513,6 +567,22 @@ const AvailabilityPage: React.FC = () => {
           </label>
         </div>
         <div>
+          <label>View Timezone: </label>
+          <Select 
+            value={selectedTimezone} 
+            onChange={(e) => setSelectedTimezone(e.target.value)}
+          >
+            <option value="">-- None --</option>
+            <option value="PT">Pacific (PT)</option>
+            <option value="MT">Mountain (MT)</option>
+            <option value="CT">Central (CT)</option>
+            <option value="ET">Eastern (ET)</option>
+            <option value="GMT">Western Europe (GMT)</option>
+            <option value="CET">Central Europe (CET)</option>
+            <option value="EET">Eastern Europe (EET)</option>
+          </Select>
+        </div>
+        <div>
           <label>Select Team: </label>
           <Select 
             value={selectedTeamId || ''} 
@@ -560,41 +630,47 @@ const AvailabilityPage: React.FC = () => {
             </div>
           )}
           <GridContainer>
-            <Grid>
-              <GridHeader>Time</GridHeader>
+            <Grid showTimezone={!!selectedTimezone}>
+              <GridHeader>Time (PT)</GridHeader>
+              {selectedTimezone && <GridHeader>Time ({selectedTimezone})</GridHeader>}
               {days.map(d => <GridHeader key={d}>{d}</GridHeader>)}
               
-              {visibleTimes.map(time => (
-              <React.Fragment key={time}>
-                <TimeLabel>{time}</TimeLabel>
-                {days.map(day => {
-                  const key = `${day}-${time}`;
-                  const avail = isSub ? [] : (selectedTeamId ? (availabilityData[selectedTeamId]?.slots?.[key] || []) : []);
-                  const isSelected = isSub ? 
-                    isSubSlotSelected(subName, day, time) :
-                    (activePlayerId && selectedTeamId ? isPlayerSelected(selectedTeamId, activePlayerId, day, time) : false);
-                  
-                  return (
-                    <Slot 
-                      key={key} 
-                      isSelected={isSelected}
-                      count={avail.length}
-                      isEditable={isSub || (!!isAuthorized && !!activePlayerId)}
-                      onClick={() => {
-                        if (isSub) {
-                          toggleSubSlot(day, time);
-                        } else if (isAuthorized && activePlayerId && selectedTeamId) {
-                          toggleSlot(selectedTeamId, day, time, activePlayerId);
-                        }
-                      }}
-                    >
-                      <SlotCount>{isSub ? (isSelected ? 'Yes' : 'No') : `${avail.length} Available`}</SlotCount>
-                    </Slot>
-                  );
-                })}
-              </React.Fragment>
-            ))}
-          </Grid>
+              {visibleTimes.map(time => {
+                const ptLabel = `${time} PT`;
+                const tzLabel = selectedTimezone ? `${convertTime(time, timezoneOffsets[selectedTimezone])} ${selectedTimezone}` : '';
+                return (
+                  <React.Fragment key={time}>
+                    <TimeLabel>{ptLabel}</TimeLabel>
+                    {selectedTimezone && <TimeLabel>{tzLabel}</TimeLabel>}
+                    {days.map(day => {
+                      const key = `${day}-${time}`;
+                      const avail = isSub ? [] : (selectedTeamId ? (availabilityData[selectedTeamId]?.slots?.[key] || []) : []);
+                      const isSelected = isSub ? 
+                        isSubSlotSelected(subName, day, time) :
+                        (activePlayerId && selectedTeamId ? isPlayerSelected(selectedTeamId, activePlayerId, day, time) : false);
+                      
+                      return (
+                        <Slot 
+                          key={key} 
+                          isSelected={isSelected}
+                          count={avail.length}
+                          isEditable={isSub || (!!isAuthorized && !!activePlayerId)}
+                          onClick={() => {
+                            if (isSub) {
+                              toggleSubSlot(day, time);
+                            } else if (isAuthorized && activePlayerId && selectedTeamId) {
+                              toggleSlot(selectedTeamId, day, time, activePlayerId);
+                            }
+                          }}
+                        >
+                          <SlotCount>{isSub ? (isSelected ? 'Yes' : 'No') : `${avail.length} Available`}</SlotCount>
+                        </Slot>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
+            </Grid>
           </GridContainer>
           {visibleTimes[visibleTimes.length - 1] !== fullTimes[fullTimes.length - 1] && (
             <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
@@ -651,14 +727,22 @@ const AvailabilityPage: React.FC = () => {
 
       {compareTeamAId && compareTeamBId && (
         <BestSlotsContainer>
-          {getBestSlots(compareTeamAId, compareTeamBId).map(slot => (
-            <BestSlotCard key={`${slot.day}-${slot.time}`}>
-              <h3>{slot.day} @ {slot.time}</h3>
-              <p>Score: <ScoreBadge>{slot.score}</ScoreBadge></p>
-              <p>Team A: {slot.teamACount} players</p>
-              <p>Team B: {slot.teamBCount} players</p>
-            </BestSlotCard>
-          ))}
+          {getBestSlots(compareTeamAId, compareTeamBId).map(slot => {
+            const ptTime = `${slot.day} @ ${slot.time} PT`;
+            let tzTime = '';
+            if (selectedTimezone && selectedTimezone !== 'PT') {
+              const converted = convertTimeAndDay(slot.day, slot.time, timezoneOffsets[selectedTimezone]);
+              tzTime = ` (${converted.day} @ ${converted.time} ${selectedTimezone})`;
+            }
+            return (
+              <BestSlotCard key={`${slot.day}-${slot.time}`}>
+                <h3>{ptTime}{tzTime}</h3>
+                <p>Score: <ScoreBadge>{slot.score}</ScoreBadge></p>
+                <p>Team A: {slot.teamACount} players</p>
+                <p>Team B: {slot.teamBCount} players</p>
+              </BestSlotCard>
+            );
+          })}
           {getBestSlots(compareTeamAId, compareTeamBId).length === 0 && (
             <p>No overlapping availability found.</p>
           )}
@@ -679,7 +763,14 @@ const AvailabilityPage: React.FC = () => {
             <BestSlotCard key={name}>
               <h3>{name}</h3>
               <ul style={{ textAlign: 'left', paddingLeft: '1.5rem' }}>
-                {combinedTimes.map(slot => <li key={slot}>{slot}</li>)}
+                {combinedTimes.map(slot => {
+                  const ptTime = convertCombinedTime(slot, 0, 'PT');
+                  if (selectedTimezone && selectedTimezone !== 'PT') {
+                    const tzTime = convertCombinedTime(slot, timezoneOffsets[selectedTimezone], selectedTimezone);
+                    return <li key={slot}>{ptTime} ({tzTime})</li>;
+                  }
+                  return <li key={slot}>{ptTime}</li>;
+                })}
               </ul>
             </BestSlotCard>
           );

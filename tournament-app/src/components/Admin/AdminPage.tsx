@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { doc, getDoc, updateDoc, writeBatch, setDoc, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase';
+import {getFunctions, httpsCallable} from 'firebase/functions';
 import { BracketRound, Player, Team, Match, DraftState, DraftTeam } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 import { getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain } from '../../utils';
-import { FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt } from 'react-icons/fa';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck} from 'react-icons/fa';
 
 // --- Styled Components for Admin Dashboard ---
 
@@ -95,6 +96,8 @@ const StyledTd = styled.td`
   border-bottom: 1px solid ${({ theme }) => theme.borderColor};
   vertical-align: middle;
 `;
+
+
 
 const FormLayout = styled.div`
   display: flex;
@@ -249,7 +252,7 @@ const RANK_TIERS = ["Challenger", "Grandmaster", "Master", "Diamond", "Emerald",
 const ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
 const DIVISIONS = [1, 2, 3, 4, -1];
 
-type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'bulk';
+type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'bulk';
 type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes' | 'matchResults';
 
 // Placeholder definitions for bulk JSON
@@ -398,6 +401,12 @@ const AdminPage: React.FC = () => {
   // Legacy Bulk imports
   const [selectedBulkType, setSelectedBulkType] = useState<DataType>('players');
   const [bulkJsonString, setBulkJsonString] = useState('');
+
+  // Tournament codes generation state
+  const [selectedMatchForCodes, setSelectedMatchForCodes] = useState<string | number>('');
+  const [codesCount, setCodesCount] = useState(1);
+  const [codesIsKnockout, setCodesIsKnockout] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const prefix = getFirebasePrefix();
 
@@ -1055,6 +1064,86 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleGenerateCodes = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMatchForCodes) {
+      showStatus('error', 'Please select a match first.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Contacting Riot Games API and creating codes...');
+
+      const functions = getFunctions();
+      const generateCodesFn = httpsCallable(functions, 'generateTournamentCodesForMatch');
+
+      const year = prefix.replace('grumble', '');
+
+      const result = await generateCodesFn({
+        division,
+        matchId: selectedMatchForCodes,
+        count: codesCount,
+        isKnockout: codesIsKnockout,
+        year
+      });
+
+      const newCodes = (result.data as {codes: string[]}).codes;
+      showStatus('success', `Successfully generated ${newCodes.length} tournament codes: ${newCodes.join(', ')}`);
+
+      setSelectedMatchForCodes('');
+      setCodesCount(1);
+      setCodesIsKnockout(false);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to generate tournament codes.');
+    }
+  };
+
+  const handleBulkGenerateCodesForMissing = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const matchesWithoutCodes = matches.filter(m => !m.tournamentCodes || m.tournamentCodes.length === 0);
+    
+    if (matchesWithoutCodes.length === 0) {
+      showStatus('success', 'All matches already have tournament codes!');
+      return;
+    }
+
+    const confirmMsg = `Are you sure you want to generate ${codesCount} codes for all ${matchesWithoutCodes.length} matches that currently have no codes?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setStatus('loading');
+      const functions = getFunctions();
+      const generateCodesFn = httpsCallable(functions, 'generateTournamentCodesForMatch');
+      const year = prefix.replace('grumble', '');
+
+      let successCount = 0;
+      for (const m of matchesWithoutCodes) {
+        setStatusMsg(`Generating codes for match ${m.id} (${successCount + 1}/${matchesWithoutCodes.length})...`);
+        await generateCodesFn({
+          division,
+          matchId: m.id,
+          count: codesCount,
+          isKnockout: codesIsKnockout,
+          year
+        });
+        successCount++;
+      }
+
+      showStatus('success', `Successfully generated tournament codes for ${successCount} matches.`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to bulk generate tournament codes.');
+    }
+  };
+
   const handleSaveMatchDetails = async () => {
     if (!editingMatch) return;
 
@@ -1240,6 +1329,9 @@ const AdminPage: React.FC = () => {
         </TabButton>
         <TabButton active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
           <FaCalendarAlt /> Matches Schedule
+        </TabButton>
+        <TabButton active={activeTab === 'codes'} onClick={() => setActiveTab('codes')}>
+          <FaLink /> Tournament Codes
         </TabButton>
         <TabButton active={activeTab === 'bulk'} onClick={() => setActiveTab('bulk')}>
           <FaTools /> Bulk JSON
@@ -2110,6 +2202,152 @@ const AdminPage: React.FC = () => {
             </Grid>
           )}
         </div>
+      )}
+
+      {/* --- TAB: TOURNAMENT CODES --- */}
+      {activeTab === 'codes' && (
+        <Grid columns="1fr">
+          {/* Form to generate tournament codes */}
+          <Card>
+            <CardTitle>Generate Riot Tournament Codes</CardTitle>
+            <form onSubmit={handleGenerateCodes}>
+              <FormLayout>
+                <FormGroup>
+                  <Label>Select Match</Label>
+                  <SelectInput
+                    value={selectedMatchForCodes}
+                    onChange={(e) => setSelectedMatchForCodes(e.target.value)}
+                    required
+                  >
+                    <option value="">-- Select Match --</option>
+                    {matches.map(m => {
+                      const t1 = teams.find(t => t.id === m.team1Id);
+                      const t2 = teams.find(t => t.id === m.team2Id);
+                      const stageLabel = m.stage ? ` (${m.stage})` : ` (Week ${m.weekPlayed})`;
+                      return (
+                        <option key={m.id} value={m.id}>
+                          {m.id} : {t1?.name || `Team ${m.team1Id}`} vs {t2?.name || `Team ${m.team2Id}`}{stageLabel}
+                        </option>
+                      );
+                    })}
+                  </SelectInput>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Codes Count (Standard is 1 code per game, best of 3 needs 2-3 codes)</Label>
+                  <TextInput
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={codesCount}
+                    onChange={(e) => setCodesCount(Math.max(1, Number(e.target.value)))}
+                    required
+                  />
+                </FormGroup>
+
+                <CheckboxLabel>
+                  <input
+                    type="checkbox"
+                    checked={codesIsKnockout}
+                    onChange={(e) => setCodesIsKnockout(e.target.checked)}
+                  />
+                  Is Bracket/Knockout match?
+                </CheckboxLabel>
+
+                <ButtonGroup style={{marginTop: '0.5rem'}}>
+                  <ActionButton type="submit" variant="primary" disabled={status === 'loading'}>
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for Selected Match
+                  </ActionButton>
+                  <ActionButton 
+                    type="button" 
+                    variant="secondary" 
+                    disabled={status === 'loading'} 
+                    onClick={handleBulkGenerateCodesForMissing}
+                  >
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for All Empty Matches
+                  </ActionButton>
+                </ButtonGroup>
+              </FormLayout>
+            </form>
+          </Card>
+
+          {/* Current codes listing */}
+          <Card>
+            <CardTitle>Generated Tournament Codes Matrix</CardTitle>
+            <p>List of tournament codes assigned to each match. Players use these codes to enter lobbies.</p>
+            <TableContainer>
+              <StyledTable style={{tableLayout: 'fixed'}}>
+                <thead>
+                  <tr>
+                    <StyledTh style={{width: '15%'}}>Match ID</StyledTh>
+                    <StyledTh style={{width: '45%'}}>Matchup</StyledTh>
+                    <StyledTh style={{width: '40%'}}>Tournament Codes</StyledTh>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matches.map(m => {
+                    const t1 = teams.find(t => t.id === m.team1Id);
+                    const t2 = teams.find(t => t.id === m.team2Id);
+                    const codes = m.tournamentCodes || [];
+                    return (
+                      <tr key={m.id}>
+                        <StyledTd style={{width: '15%'}}>{m.id}</StyledTd>
+                        <StyledTd style={{width: '45%'}}>
+                          <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
+                          <span style={{margin: '0 0.25rem', opacity: 0.5}}>vs</span>
+                          <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
+                          {m.stage ? (
+                            <span style={{marginLeft: '0.5rem', fontSize: '0.8rem', color: '#888', background: 'rgba(0,0,0,0.05)', padding: '0.15rem 0.3rem', borderRadius: '3px'}}>
+                              {m.stage}
+                            </span>
+                          ) : (
+                            <span style={{marginLeft: '0.5rem', fontSize: '0.8rem', color: '#888', background: 'rgba(0,0,0,0.05)', padding: '0.15rem 0.3rem', borderRadius: '3px'}}>
+                              Week {m.weekPlayed}
+                            </span>
+                          )}
+                        </StyledTd>
+                        <StyledTd style={{width: '40%'}}>
+                          {codes.length === 0 ? (
+                            <span style={{color: '#aaa', fontStyle: 'italic'}}>No codes generated yet</span>
+                          ) : (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '0.6rem'}}>
+                              {codes.map(code => (
+                                <div key={code} style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem'}}>
+                                  <code
+                                    title={code}
+                                    style={{
+                                      fontSize: '0.9rem',
+                                      padding: '0.2rem 0.4rem',
+                                      background: 'rgba(0,0,0,0.05)',
+                                      borderRadius: '3px',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      maxWidth: '380px',
+                                      display: 'block'
+                                    }}
+                                  >
+                                    {code}
+                                  </code>
+                                  <ActionButton
+                                    onClick={() => handleCopyCode(code)}
+                                    style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center'}}
+                                  >
+                                    {copiedCode === code ? <><FaCheck style={{color: 'green'}} /> Copied!</> : <><FaCopy /> Copy</>}
+                                  </ActionButton>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </StyledTd>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </StyledTable>
+            </TableContainer>
+          </Card>
+        </Grid>
       )}
 
       {/* --- TAB: BULK JSON IMPORT --- */}
