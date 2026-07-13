@@ -11,7 +11,7 @@ import {CloudTasksClient} from "@google-cloud/tasks";
 import {setGlobalOptions, logger, https} from "firebase-functions";
 import {onDocumentUpdated} from "firebase-functions/v2/firestore";
 import {onTaskDispatched} from "firebase-functions/v2/tasks";
-import {onRequest} from "firebase-functions/v2/https";
+import {onRequest, onCall, HttpsError} from "firebase-functions/v2/https";
 import {z} from "zod";
 import {Timestamp} from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
@@ -369,7 +369,12 @@ export const executeAutoPick = onTaskDispatched({
       "Unranked": 0,
     };
 
-    if (rankTier === "Masters" || rankTier === "Master" || rankTier === "Grandmasters" || rankTier === "Challenger") {
+    if (
+      rankTier === "Masters" ||
+      rankTier === "Master" ||
+      rankTier === "Grandmasters" ||
+      rankTier === "Challenger"
+    ) {
       return rankTierToNumber[rankTier] + rankDivision;
     }
 
@@ -405,15 +410,33 @@ export const executeAutoPick = onTaskDispatched({
     );
 
     if (p1Max === p2Max) {
-      let p1Sum = convertRankToElo(player1.peakRankTier, player1.peakRankDivision);
-      let p2Sum = convertRankToElo(player2.peakRankTier, player2.peakRankDivision);
+      let p1Sum = convertRankToElo(
+        player1.peakRankTier,
+        player1.peakRankDivision
+      );
+      let p2Sum = convertRankToElo(
+        player2.peakRankTier,
+        player2.peakRankDivision
+      );
       if (player1.soloRankDivision !== -1 && player2.soloRankDivision !== -1) {
-        p1Sum += convertRankToElo(player1.soloRankTier, player1.soloRankDivision);
-        p2Sum += convertRankToElo(player2.soloRankTier, player2.soloRankDivision);
+        p1Sum += convertRankToElo(
+          player1.soloRankTier,
+          player1.soloRankDivision
+        );
+        p2Sum += convertRankToElo(
+          player2.soloRankTier,
+          player2.soloRankDivision
+        );
       }
       if (player1.flexRankDivision !== -1 && player2.flexRankDivision !== -1) {
-        p1Sum += convertRankToElo(player1.flexRankTier, player1.flexRankDivision);
-        p2Sum += convertRankToElo(player2.flexRankTier, player2.flexRankDivision);
+        p1Sum += convertRankToElo(
+          player1.flexRankTier,
+          player1.flexRankDivision
+        );
+        p2Sum += convertRankToElo(
+          player2.flexRankTier,
+          player2.flexRankDivision
+        );
       }
       if (p1Sum === p2Sum) {
         return player1.id - player2.id;
@@ -464,7 +487,8 @@ export const executeAutoPick = onTaskDispatched({
     const newPickOrder = [...draftState.pickOrder];
 
     if ((draftState.currentPickIndex + 1) % numTeams === 0) {
-      const currentRound = Math.floor(draftState.currentPickIndex / numTeams) + 1;
+      const currentRound =
+        Math.floor(draftState.currentPickIndex / numTeams) + 1;
 
       if (currentRound < 5) {
         const teamElos = newTeams.map((team: any) => {
@@ -476,7 +500,7 @@ export const executeAutoPick = onTaskDispatched({
             );
             return sum + maxElo;
           }, 0);
-          return { id: team.id, elo: totalElo };
+          return {id: team.id, elo: totalElo};
         });
 
         teamElos.sort((a: any, b: any) => {
@@ -509,9 +533,13 @@ export const executeAutoPick = onTaskDispatched({
           }
         }
 
-        const captains = allPlayers.filter((p: Player) => p.isCaptain).sort((a: Player, b: Player) => compareRanks(b, a));
+        const captains = allPlayers
+          .filter((p: Player) => p.isCaptain)
+          .sort((a: Player, b: Player) => compareRanks(b, a));
         const captainsReversed = [...captains].reverse();
-        const allPlayersSorted = [...allPlayers].sort((a: Player, b: Player) => compareRanks(b, a)).reverse();
+        const allPlayersSorted = [...allPlayers]
+          .sort((a: Player, b: Player) => compareRanks(b, a))
+          .reverse();
 
         const playerSkipSlot: { [playerId: number]: number } = {};
         allPlayersSorted.forEach((player: Player, index: number) => {
@@ -546,7 +574,10 @@ export const executeAutoPick = onTaskDispatched({
 
     let nextPickIndex = draftState.currentPickIndex + 1;
     // Update skipped picks
-    while (typeof (newPickOrder[nextPickIndex]) === "string" && nextPickIndex < newPickOrder.length) {
+    while (
+      typeof newPickOrder[nextPickIndex] === "string" &&
+      nextPickIndex < newPickOrder.length
+    ) {
       nextPickIndex++;
     }
 
@@ -940,3 +971,134 @@ is missing 'division' or 'matchId' field.`);
     }
     res.status(201).send({message: "Standings updated successfully."});
   });
+
+export const generateTournamentCodesForMatch = onCall(
+  {secrets: [riotApiKey]},
+  async (request) => {
+    if (!request.auth || !request.auth.token.adminId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Must be an administrator to perform this action."
+      );
+    }
+
+    const {division, matchId, count, isKnockout, year} = request.data as {
+      division: string;
+      matchId: string | number;
+      count: number;
+      isKnockout?: boolean;
+      year?: string;
+    };
+
+    if (!division || !matchId || !count) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Parameters 'division', 'matchId', and 'count' are required."
+      );
+    }
+
+    const activeYear = year || "2026";
+    const prefix = `grumble${activeYear}`;
+
+    // 1. Get the tournamentId from tournamentMetadata/grumble
+    const metadataDocRef = db.collection("tournamentMetadata").doc("grumble");
+    const metadataDoc = await metadataDocRef.get();
+
+    if (!metadataDoc.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Tournament metadata document 'tournamentMetadata/grumble' not found."
+      );
+    }
+
+    const tournamentId = metadataDoc.data()?.[
+      `${prefix}_tournamentId` || "grumble2026_tournamentId"
+    ];
+    if (!tournamentId) {
+      throw new HttpsError(
+        "not-found",
+        `Tournament ID field '${prefix}_tournamentId' not found ` +
+        "in metadata document."
+      );
+    }
+
+    try {
+      // 2. Call Riot Tournament API to generate codes
+      const riotResponse = await axios.post(
+        "https://americas.api.riotgames.com/lol/tournament/v5/codes" +
+        `?tournamentId=${tournamentId}&count=${count}`,
+        {
+          pickType: "TOURNAMENT_DRAFT",
+          mapType: "SUMMONERS_RIFT",
+          spectatorType: "ALL",
+          teamSize: 5,
+          metadata: `${prefix}_${division}_${matchId}`,
+        },
+        {
+          headers: {
+            "X-Riot-Token": riotApiKey.value(),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const codes = riotResponse.data as string[];
+      if (!codes || !Array.isArray(codes) || codes.length === 0) {
+        throw new Error("No codes returned from Riot API.");
+      }
+
+      // 3. Update matches in Firestore in a transaction / batch
+      const batch = db.batch();
+
+      // Write code mappings
+      for (const code of codes) {
+        const matchRef = db.collection("matches").doc(code);
+        batch.set(matchRef, {
+          matchId: matchId,
+          division: division,
+          isKnockout: isKnockout || false,
+        });
+      }
+
+      await batch.commit();
+
+      // Update matches document array
+      const divisionMatchesRef = db.doc(`matches/${prefix}_${division}`);
+      await db.runTransaction(async (transaction) => {
+        const matchesDoc = await transaction.get(divisionMatchesRef);
+        if (!matchesDoc.exists) {
+          throw new Error(
+            `Matches document '${prefix}_${division}' not found.`
+          );
+        }
+
+        const allMatches = matchesDoc.data()!.matches || [];
+        const matchIndex = allMatches.findIndex((m: any) => m.id === matchId);
+        if (matchIndex === -1) {
+          throw new Error(
+            `Match with ID '${matchId}' not found in matches list.`
+          );
+        }
+
+        const currentMatch = allMatches[matchIndex];
+        const currentCodes = currentMatch.tournamentCodes || [];
+        currentMatch.tournamentCodes = [...currentCodes, ...codes];
+        allMatches[matchIndex] = currentMatch;
+
+        transaction.update(divisionMatchesRef, {matches: allMatches});
+      });
+
+      return {codes};
+    } catch (err: any) {
+      logger.error("Error generating tournament codes:", err);
+      const errMsg =
+        err.response?.data?.status?.message ||
+        err.message ||
+        "Unknown error";
+      throw new HttpsError(
+        "internal",
+        `Riot API error: ${errMsg}`
+      );
+    }
+  }
+);
