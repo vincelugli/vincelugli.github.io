@@ -4,8 +4,8 @@ import { BracketRound, BracketSeed, Match, Player } from '../../types';
 import { PageContainer, TeamHeader, TeamPageTeamName, SectionTitle, MatchHistoryList, MatchNavLink } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
-import { FaStar } from 'react-icons/fa';
-import { createOpGgUrl, isPlayerCaptain } from '../../utils';
+import { FaStar, FaExternalLinkAlt } from 'react-icons/fa';
+import { createOpGgUrl, createOpGgMultiSearchUrl, isPlayerCaptain } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
@@ -54,6 +54,43 @@ const PlayerRole = styled.span`
 const CaptainIndicator = styled(FaStar)`
   color: #ffc107; /* A gold color for the star */
   font-size: 1.2rem;
+`;
+
+const TeamTitleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const OpGgMultiSearchLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #5383e8, #2a58b8);
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(83, 131, 232, 0.3);
+    background: linear-gradient(135deg, #6493f8, #3b69c8);
+    color: white;
+    text-decoration: none;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 interface TeamPageProps {
@@ -124,7 +161,19 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   return (
     <PageContainer>
       <TeamHeader>
-        <TeamPageTeamName>{team.name}</TeamPageTeamName>
+        <TeamTitleContainer>
+          <TeamPageTeamName>{team.name}</TeamPageTeamName>
+          {sortedPlayers.length > 0 && (
+            <OpGgMultiSearchLink
+              href={createOpGgMultiSearchUrl(sortedPlayers.map(p => p.name))}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaExternalLinkAlt size={12} />
+              OP.GG Multi-Search
+            </OpGgMultiSearchLink>
+          )}
+        </TeamTitleContainer>
         <PlayerList>
           {sortedPlayers.map(player => (
             <PlayerListItem key={player.id}>
