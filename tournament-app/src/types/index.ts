@@ -12,6 +12,8 @@ export interface Match {
   isKnockout?: boolean;
   stage?: string;
   scheduledTime?: string;
+  isCasted?: boolean;
+  twitchChannel?: string;
 }
 
 export interface Team {
