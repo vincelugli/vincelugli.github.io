@@ -203,3 +203,61 @@ export function isPlayerCaptain(player: Player, division?: string): boolean {
   return captainNames.includes(player.name.toLowerCase().trim());
 }
 
+export function getNextSunday3PMPT(): Date {
+  const now = new Date();
+  const nextSunday = new Date(now);
+  const currentDay = now.getDay();
+  const daysToAdd = currentDay === 0 ? 7 : 7 - currentDay;
+  nextSunday.setDate(now.getDate() + daysToAdd);
+
+  const tzString = nextSunday.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
+  const parts = tzString.split('/');
+  const year = parts[2];
+  const month = parts[0].padStart(2, '0');
+  const day = parts[1].padStart(2, '0');
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false
+  });
+
+  let testDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 22, 0, 0));
+  let formattedHour = Number(formatter.formatToParts(testDate).find(p => p.type === 'hour')?.value);
+  if (formattedHour !== 15) {
+    testDate = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 23, 0, 0));
+  }
+  return testDate;
+}
+
+export function formatToPMPT(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleString('en-US', {
+    timeZone: 'America/Los_Angeles',
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }) + ' PT';
+}
+
+export function formatToLocal(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+

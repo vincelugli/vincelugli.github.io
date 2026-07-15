@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Match, TournamentCode } from '../types';
 import { useDivision } from './DivisionContext';
@@ -9,7 +9,8 @@ import { getFirebasePrefix } from '../utils';
 interface MatchesContextType {
     matches: Match[],
     loading: boolean,
-    tournamentCodes: TournamentCode[]
+    tournamentCodes: TournamentCode[],
+    updateMatch: (updatedMatch: Match) => Promise<void>
 }
 
 // Create the context with a default value
@@ -80,10 +81,23 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [division, hash]);
 
 
+  const updateMatch = async (updatedMatch: Match) => {
+    try {
+      const prefix = getFirebasePrefix();
+      const updatedList = matches.map(m => m.id === updatedMatch.id ? updatedMatch : m);
+      await updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedList });
+      setMatches(updatedList);
+    } catch (error) {
+      console.error("Failed to update match:", error);
+      throw error;
+    }
+  };
+
   const value = {
     matches,
     loading,
     tournamentCodes,
+    updateMatch,
   };
 
   return <MatchesContext.Provider value={value}>{children}</MatchesContext.Provider>;
