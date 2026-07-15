@@ -226,6 +226,23 @@ const ClearButton = styled(ActionButton)`
   }
 `;
 
+const IconButton = styled.button<{ variant?: 'success' | 'danger' }>`
+  background: ${({ variant, theme }) => (variant === 'success' ? theme.success : variant === 'danger' ? theme.danger : theme.primary)};
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
 const EditBox = styled.div`
   border: 2px solid ${({ theme }) => theme.primary};
   padding: 1.5rem;
@@ -252,7 +269,7 @@ const RANK_TIERS = ["Challenger", "Grandmaster", "Master", "Diamond", "Emerald",
 const ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
 const DIVISIONS = [1, 2, 3, 4, -1];
 
-type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'bulk';
+type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'casters' | 'bulk';
 type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes' | 'matchResults';
 
 // Placeholder definitions for bulk JSON
@@ -410,6 +427,10 @@ const AdminPage: React.FC = () => {
 
   const prefix = getFirebasePrefix();
 
+  // Casters state
+  const [casterCodes, setCasterCodes] = useState<{ [id: string]: { name: string, accessCode: string } }>({});
+  const [newCasterName, setNewCasterName] = useState('');
+
   // Authentication check
   useEffect(() => {
     if (!isAdmin) {
@@ -469,6 +490,15 @@ const AdminPage: React.FC = () => {
       }
     });
 
+    const castersCodesRef = doc(db, 'teamAccessCodes', `${prefix}_casters`);
+    const unsubscribeCastersCodes = onSnapshot(castersCodesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setCasterCodes(snapshot.data() as { [id: string]: { name: string, accessCode: string } });
+      } else {
+        setCasterCodes({});
+      }
+    });
+
     setStatus('idle');
     setStatusMsg('');
 
@@ -478,6 +508,7 @@ const AdminPage: React.FC = () => {
       unsubscribeTeams();
       unsubscribeMatches();
       unsubscribeBracket();
+      unsubscribeCastersCodes();
     };
   }, [division, prefix, isAdmin]);
 
@@ -490,6 +521,69 @@ const AdminPage: React.FC = () => {
       setStatus('idle');
       setStatusMsg('');
     }, 5000);
+  };
+
+  const handleCreateCasterCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCasterName.trim()) {
+      showStatus('error', 'Caster name is required.');
+      return;
+    }
+    try {
+      setStatus('loading');
+      setStatusMsg('Generating caster access code...');
+      
+      const nextId = 'caster_' + (Object.keys(casterCodes).length > 0
+        ? Math.max(...Object.keys(casterCodes).map(k => Number(k.replace('caster_', '')))) + 1
+        : 1);
+        
+      const codeAlphabet = 'ABCDEFGHJKLMNOPQRSTUVWXYZ23456789';
+      let code = '';
+      const existingCodes = Object.values(casterCodes).map(c => c.accessCode);
+      
+      // Ensure unique code
+      do {
+        code = '';
+        for (let i = 0; i < 6; i++) {
+          code += codeAlphabet.charAt(Math.floor(Math.random() * codeAlphabet.length));
+        }
+      } while (existingCodes.includes(code));
+
+      const updatedCasters = {
+        ...casterCodes,
+        [nextId]: {
+          name: newCasterName.trim(),
+          accessCode: code
+        }
+      };
+
+      await setDoc(doc(db, 'teamAccessCodes', `${prefix}_casters`), updatedCasters);
+      setNewCasterName('');
+      showStatus('success', `Created caster code for ${newCasterName.trim()}: ${code}`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', 'Failed to generate caster access code.');
+    }
+  };
+
+  const handleDeleteCasterCode = async (casterId: string) => {
+    const caster = casterCodes[casterId];
+    if (!caster) return;
+    if (!window.confirm(`Are you sure you want to delete the caster code for ${caster.name}?`)) return;
+
+    try {
+      setStatus('loading');
+      setStatusMsg(`Deleting caster code for ${caster.name}...`);
+      
+      const updatedCasters = { ...casterCodes };
+      delete updatedCasters[casterId];
+      
+      await setDoc(doc(db, 'teamAccessCodes', `${prefix}_casters`), updatedCasters);
+      showStatus('success', `Deleted caster code for ${caster.name}.`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', 'Failed to delete caster access code.');
+    }
   };
 
   // 1. Undo draft picks while keeping draft order
@@ -1332,6 +1426,9 @@ const AdminPage: React.FC = () => {
         </TabButton>
         <TabButton active={activeTab === 'codes'} onClick={() => setActiveTab('codes')}>
           <FaLink /> Tournament Codes
+        </TabButton>
+        <TabButton active={activeTab === 'casters'} onClick={() => setActiveTab('casters')}>
+          <FaUsers /> Caster Codes
         </TabButton>
         <TabButton active={activeTab === 'bulk'} onClick={() => setActiveTab('bulk')}>
           <FaTools /> Bulk JSON
@@ -2346,6 +2443,75 @@ const AdminPage: React.FC = () => {
                 </tbody>
               </StyledTable>
             </TableContainer>
+          </Card>
+        </Grid>
+      )}
+
+      {/* --- TAB: CASTER ACCESS CODES --- */}
+      {activeTab === 'casters' && (
+        <Grid columns="1fr 1fr">
+          {/* List of current casters and their access codes */}
+          <Card>
+            <CardTitle><FaUsers /> Registered Casters & Access Codes</CardTitle>
+            <p>A list of all casters registered for the year <strong>{prefix.replace('grumble', '')}</strong>.</p>
+            {Object.keys(casterCodes).length === 0 ? (
+              <p style={{ fontStyle: 'italic', color: '#888' }}>No casters registered yet.</p>
+            ) : (
+              <TableContainer>
+                <StyledTable>
+                  <thead>
+                    <tr>
+                      <StyledTh>Name</StyledTh>
+                      <StyledTh>Access Code</StyledTh>
+                      <StyledTh style={{ width: '10%' }}>Actions</StyledTh>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(casterCodes).map(([casterId, caster]) => (
+                      <tr key={casterId}>
+                        <StyledTd><strong>{caster.name}</strong></StyledTd>
+                        <StyledTd>
+                          <code style={{ fontSize: '1.1rem', background: '#333', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'monospace' }}>
+                            {caster.accessCode}
+                          </code>
+                        </StyledTd>
+                        <StyledTd>
+                          <IconButton variant="danger" title="Delete Caster" onClick={() => handleDeleteCasterCode(casterId)}>
+                            <FaTrash />
+                          </IconButton>
+                        </StyledTd>
+                      </tr>
+                    ))}
+                  </tbody>
+                </StyledTable>
+              </TableContainer>
+            )}
+          </Card>
+
+          {/* Form to create a new caster access code */}
+          <Card>
+            <CardTitle>Create Caster Access Code</CardTitle>
+            <form onSubmit={handleCreateCasterCode}>
+              <FormLayout>
+                <FormGroup>
+                  <Label htmlFor="caster-name-input">Caster Name</Label>
+                  <TextInput
+                    id="caster-name-input"
+                    type="text"
+                    placeholder="e.g. Captain Flowers"
+                    value={newCasterName}
+                    onChange={(e) => setNewCasterName(e.target.value)}
+                    required
+                  />
+                </FormGroup>
+
+                <ButtonGroup style={{ marginTop: '1rem' }}>
+                  <ActionButton type="submit" variant="primary" disabled={status === 'loading'}>
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaPlus />} Generate Caster Code
+                  </ActionButton>
+                </ButtonGroup>
+              </FormLayout>
+            </form>
           </Card>
         </Grid>
       )}

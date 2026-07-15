@@ -131,7 +131,7 @@ const MobileLoginButton = styled.div`
 
 const Header: React.FC = () => {
   const auth = getAuth();
-  const {currentUser: user, isAdmin, isSub, subName, captainTeamId} = useAuth();
+  const {currentUser: user, isAdmin, isSub, subName, captainTeamId, isCaster, casterName} = useAuth();
   const {teams} = useTournament();
   const {players} = usePlayers();
 
@@ -185,6 +185,7 @@ const Header: React.FC = () => {
 
   const getDisplayName = () => {
     if (isAdmin) return "Admin";
+    if (isCaster) return casterName || "Caster";
     if (isSub) return subName || "Sub";
     if (captainTeamId) {
       const team = teams?.find(t => t.id === Number(captainTeamId));

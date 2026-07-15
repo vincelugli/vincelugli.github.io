@@ -120,17 +120,27 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
     const goldRef = db.collection("teamAccessCodes").doc(`${prefix}_gold`);
     const testRef = db.collection("teamAccessCodes").doc(`${prefix}_test`);
     const subsRef = db.collection("teamAccessCodes").doc(`${prefix}_subs`);
+    const castersRef = db.collection("teamAccessCodes")
+      .doc(`${prefix}_casters`);
 
-    const [masterSnap, goldSnap, testSnap, subsSnap] = await Promise.all([
+    const [
+      masterSnap,
+      goldSnap,
+      testSnap,
+      subsSnap,
+      castersSnap,
+    ] = await Promise.all([
       masterRef.get(),
       goldRef.get(),
       testRef.get(),
       subsRef.get(),
+      castersRef.get(),
     ]);
 
     let matchedData: any = null;
     let matchedId: string | null = null;
     let isSub = false;
+    let isCaster = false;
 
     if (masterSnap.exists) {
       const data = masterSnap.data();
@@ -177,6 +187,18 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
       }
     }
 
+    if (!matchedData && castersSnap.exists) {
+      const data = castersSnap.data();
+      for (const [id, entry] of Object.entries(data || {})) {
+        if ((entry as any).accessCode === accessCode) {
+          matchedData = entry;
+          matchedId = id;
+          isCaster = true;
+          break;
+        }
+      }
+    }
+
     if (!matchedData) {
       throw new https.HttpsError(
         "not-found",
@@ -191,6 +213,13 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
       customToken = await admin.auth().createCustomToken(
         uid,
         {isSub: true, subName: matchedData.name}
+      );
+    } else if (isCaster) {
+      logger.debug(`Access granted to Caster: ${matchedData.name}`);
+      const uid = `caster-${matchedId}`;
+      customToken = await admin.auth().createCustomToken(
+        uid,
+        {isCaster: true, casterName: matchedData.name}
       );
     } else {
       logger.debug(`Access granted to ${matchedData.captainName}`);

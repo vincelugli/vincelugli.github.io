@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaCalendarAlt, FaEdit, FaTimes, FaSave, FaClock } from 'react-icons/fa';
+import { FaCalendarAlt, FaEdit, FaTimes, FaSave, FaClock, FaTwitch } from 'react-icons/fa';
 import styled from 'styled-components';
 import { SchedulePageContainer, ScheduleTitle, TimelineContainer, StageCard, StageIcon, StageContent, StageTitle, StageDescription, StageLink, StageDate } from '../../styles';
 import { useDivision } from '../../context/DivisionContext';
@@ -100,6 +100,12 @@ const MatchTeams = styled.div`
   @media (max-width: 768px) {
     width: 100%;
   }
+`;
+
+const MatchupInfoGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const TeamNameContainer = styled.div<{ align: 'left' | 'right' }>`
@@ -224,6 +230,210 @@ const IconButton = styled.button<{ variant?: 'success' | 'danger' }>`
 
   &:hover {
     opacity: 0.9;
+  }
+`;
+
+const BroadcastBadge = styled.span`
+  background-color: #9146ff; /* Twitch Purple */
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
+const BroadcastLink = styled.a`
+  color: #9146ff;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const BroadcastContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+`;
+
+const DrawerOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+`;
+
+const DrawerContainer = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  max-width: 90vw;
+  height: 100vh;
+  background: ${({ theme }) => theme.background};
+  border-left: 1px solid ${({ theme }) => theme.borderColor};
+  box-shadow: -4px 0 15px ${({ theme }) => theme.boxShadow};
+  z-index: 1001;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-sizing: border-box;
+  animation: slideIn 0.25s ease-out;
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+`;
+
+const DrawerHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 1rem;
+`;
+
+const DrawerTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+const CloseIconButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.textAlt};
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+const DrawerContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+`;
+
+const DrawerSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: ${({ theme }) => theme.backgroundTwo};
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+const SectionHeaderTitle = styled.h4`
+  margin: 0;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.text};
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+`;
+
+const MatchInfoBanner = styled.div`
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.75rem;
+  background: ${({ theme }) => theme.body};
+  border-radius: 6px;
+  color: ${({ theme }) => theme.text};
+`;
+
+const DrawerLabel = styled.label`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+const DrawerInput = styled.input`
+  padding: 0.6rem;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  box-sizing: border-box;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const DrawerCheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+`;
+
+const DrawerFooter = styled.div`
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid ${({ theme }) => theme.borderColor};
+  padding-top: 1rem;
+`;
+
+const DrawerButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: ${({ variant, theme }) => (variant === 'secondary' ? `1px solid ${theme.borderColor}` : 'none')};
+  background: ${({ variant, theme }) => (variant === 'secondary' ? 'transparent' : theme.primary)};
+  color: ${({ variant, theme }) => (variant === 'secondary' ? theme.text : 'white')};
+
+  &:hover {
+    background: ${({ variant, theme }) => (variant === 'secondary' ? theme.body : theme.primaryHover)};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -370,11 +580,13 @@ const SchedulePage: React.FC = () => {
 
   const { matches, loading: matchesLoading, updateMatch } = useGameMatches();
   const { teams, loading: teamsLoading } = useTournament();
-  const { currentUser, isAdmin, captainTeamId, authDivision } = useAuth();
+  const { currentUser, isAdmin, captainTeamId, authDivision, isCaster, casterName } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'matches' | 'timeline'>('matches');
-  const [editingMatchId, setEditingMatchId] = useState<string | number | null>(null);
+  const [selectedMatchForEdit, setSelectedMatchForEdit] = useState<Match | null>(null);
   const [editTimeValue, setEditTimeValue] = useState<string>('');
+  const [broadcastCastedValue, setBroadcastCastedValue] = useState<boolean>(false);
+  const [broadcastChannelValue, setBroadcastChannelValue] = useState<string>('');
 
   const getIconContent = (startDate: Date, endDate: Date, number: number) => {
     if (getStatusFromDate(startDate, endDate) === 'completed') return '✓';
@@ -400,28 +612,34 @@ const SchedulePage: React.FC = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const handleStartEdit = (match: Match) => {
+  const handleOpenEditPanel = (match: Match) => {
+    setSelectedMatchForEdit(match);
     const currentMatchTime = match.scheduledTime ? new Date(match.scheduledTime) : getNextSunday3PMPT();
     setEditTimeValue(toLocalDateTimeLocalString(currentMatchTime));
-    setEditingMatchId(match.id);
+    setBroadcastCastedValue(!!match.isCasted);
+    setBroadcastChannelValue(match.twitchChannel || 'grumbleofficial');
   };
 
-  const handleSaveTime = async (match: Match) => {
-    if (!editTimeValue) return;
+  const handleSaveMatchDetails = async () => {
+    if (!selectedMatchForEdit) return;
     try {
       const newDate = new Date(editTimeValue);
       if (isNaN(newDate.getTime())) {
         alert("Invalid date/time selected.");
         return;
       }
+
       const updatedMatch = {
-        ...match,
-        scheduledTime: newDate.toISOString()
+        ...selectedMatchForEdit,
+        scheduledTime: newDate.toISOString(),
+        isCasted: broadcastCastedValue,
+        twitchChannel: broadcastChannelValue.trim()
       };
+
       await updateMatch(updatedMatch);
-      setEditingMatchId(null);
+      setSelectedMatchForEdit(null);
     } catch (error) {
-      alert("Failed to update match time. Please try again.");
+      alert("Failed to save match details. Please try again.");
     }
   };
 
@@ -542,58 +760,49 @@ const SchedulePage: React.FC = () => {
 
                     return (
                       <MatchItem key={match.id}>
-                        <MatchTeams>
-                          <TeamNameContainer align="right">
-                            {team1 ? (
-                              <TeamNameLink to={`/teams/${team1.id}`}>{team1Name}</TeamNameLink>
-                            ) : (
-                              <TeamNameSpan>{team1Name}</TeamNameSpan>
-                            )}
-                          </TeamNameContainer>
-                          <VersusSpan>vs</VersusSpan>
-                          <TeamNameContainer align="left">
-                            {team2 ? (
-                              <TeamNameLink to={`/teams/${team2.id}`}>{team2Name}</TeamNameLink>
-                            ) : (
-                              <TeamNameSpan>{team2Name}</TeamNameSpan>
-                            )}
-                          </TeamNameContainer>
-                        </MatchTeams>
+                        <MatchupInfoGroup>
+                          <MatchTeams>
+                            <TeamNameContainer align="right">
+                              {team1 ? (
+                                <TeamNameLink to={`/teams/${team1.id}`}>{team1Name}</TeamNameLink>
+                              ) : (
+                                <TeamNameSpan>{team1Name}</TeamNameSpan>
+                              )}
+                            </TeamNameContainer>
+                            <VersusSpan>vs</VersusSpan>
+                            <TeamNameContainer align="left">
+                              {team2 ? (
+                                <TeamNameLink to={`/teams/${team2.id}`}>{team2Name}</TeamNameLink>
+                              ) : (
+                                <TeamNameSpan>{team2Name}</TeamNameSpan>
+                              )}
+                            </TeamNameContainer>
+                          </MatchTeams>
+
+                          {match.isCasted && (
+                            <BroadcastContainer>
+                              <BroadcastBadge>
+                                <FaTwitch /> CASTED
+                              </BroadcastBadge>
+                              {match.twitchChannel && (
+                                <BroadcastLink
+                                  href={`https://twitch.tv/${match.twitchChannel}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <FaTwitch /> {match.twitchChannel}
+                                </BroadcastLink>
+                              )}
+                            </BroadcastContainer>
+                          )}
+                        </MatchupInfoGroup>
 
                         <MatchTimeDetails>
-                          {editingMatchId === match.id ? (
-                            <EditForm>
-                              <DateTimeInput
-                                type="datetime-local"
-                                value={editTimeValue}
-                                onChange={(e) => setEditTimeValue(e.target.value)}
-                              />
-                              <ActionButtonGroup>
-                                <IconButton
-                                  variant="success"
-                                  title="Save Time"
-                                  onClick={() => handleSaveTime(match)}
-                                >
-                                  <FaSave />
-                                </IconButton>
-                                <IconButton
-                                  variant="danger"
-                                  title="Cancel"
-                                  onClick={() => setEditingMatchId(null)}
-                                >
-                                  <FaTimes />
-                                </IconButton>
-                              </ActionButtonGroup>
-                            </EditForm>
-                          ) : (
-                            <>
-                              {renderTimeDisplay(match)}
-                              {isAuthorizedToEdit(match) && (
-                                <EditButton onClick={() => handleStartEdit(match)}>
-                                  <FaEdit /> Reschedule
-                                </EditButton>
-                              )}
-                            </>
+                          {renderTimeDisplay(match)}
+                          {(isAuthorizedToEdit(match) || isCaster || isAdmin) && (
+                            <EditButton onClick={() => handleOpenEditPanel(match)}>
+                              <FaEdit /> Edit Match
+                            </EditButton>
                           )}
                         </MatchTimeDetails>
                       </MatchItem>
@@ -605,6 +814,93 @@ const SchedulePage: React.FC = () => {
           )}
         </MatchesContainer>
       )}
+
+      {selectedMatchForEdit && (() => {
+        const team1 = teams.find(t => t.id === selectedMatchForEdit.team1Id);
+        const team2 = teams.find(t => t.id === selectedMatchForEdit.team2Id);
+        const team1Name = team1?.name || (selectedMatchForEdit.team1Id === -1 ? 'Bye' : 'Unknown Team');
+        const team2Name = team2?.name || (selectedMatchForEdit.team2Id === -1 ? 'Bye' : 'Unknown Team');
+        const canEditTime = isAuthorizedToEdit(selectedMatchForEdit);
+        const canEditCasting = isCaster || isAdmin;
+
+        return (
+          <>
+            <DrawerOverlay onClick={() => setSelectedMatchForEdit(null)} />
+            <DrawerContainer>
+              <DrawerHeader>
+                <DrawerTitle>Edit Match Details</DrawerTitle>
+                <CloseIconButton onClick={() => setSelectedMatchForEdit(null)}>
+                  <FaTimes />
+                </CloseIconButton>
+              </DrawerHeader>
+
+              <DrawerContent>
+                <MatchInfoBanner>
+                  {team1Name} vs {team2Name}
+                </MatchInfoBanner>
+
+                {/* Section 1: Reschedule Match Time */}
+                <DrawerSection>
+                  <SectionHeaderTitle>Schedule Match</SectionHeaderTitle>
+                  <DrawerLabel htmlFor="drawer-datetime-input">Match Time (Local Timezone)</DrawerLabel>
+                  <DrawerInput
+                    id="drawer-datetime-input"
+                    type="datetime-local"
+                    value={editTimeValue}
+                    onChange={(e) => setEditTimeValue(e.target.value)}
+                    disabled={!canEditTime}
+                  />
+                  {!canEditTime && (
+                    <span style={{ fontSize: '0.8rem', color: '#ff4d4f', fontStyle: 'italic' }}>
+                      Only team captains or admins can reschedule match times.
+                    </span>
+                  )}
+                </DrawerSection>
+
+                {/* Section 2: Casting & Broadcast details */}
+                <DrawerSection>
+                  <SectionHeaderTitle>Casting Details</SectionHeaderTitle>
+                  <DrawerCheckboxLabel>
+                    <input
+                      type="checkbox"
+                      checked={broadcastCastedValue}
+                      onChange={(e) => setBroadcastCastedValue(e.target.checked)}
+                      disabled={!canEditCasting}
+                    />
+                    <span>Will be casted</span>
+                  </DrawerCheckboxLabel>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.5rem' }}>
+                    <DrawerLabel htmlFor="drawer-twitch-input">Twitch Username</DrawerLabel>
+                    <DrawerInput
+                      id="drawer-twitch-input"
+                      type="text"
+                      placeholder="e.g. CaptainFlowers"
+                      value={broadcastChannelValue}
+                      onChange={(e) => setBroadcastChannelValue(e.target.value)}
+                      disabled={!canEditCasting}
+                    />
+                  </div>
+                  {!canEditCasting && (
+                    <span style={{ fontSize: '0.8rem', color: '#ff4d4f', fontStyle: 'italic' }}>
+                      Only registered casters or admins can edit broadcast details.
+                    </span>
+                  )}
+                </DrawerSection>
+              </DrawerContent>
+
+              <DrawerFooter>
+                <DrawerButton variant="secondary" onClick={() => setSelectedMatchForEdit(null)}>
+                  Cancel
+                </DrawerButton>
+                <DrawerButton onClick={handleSaveMatchDetails}>
+                  Save Changes
+                </DrawerButton>
+              </DrawerFooter>
+            </DrawerContainer>
+          </>
+        );
+      })()}
     </SchedulePageContainer>
   );
 };

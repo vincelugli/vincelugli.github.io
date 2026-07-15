@@ -11,6 +11,8 @@ interface AuthContextType {
   isTeamMember: boolean;
   isSub: boolean;
   subName: string;
+  isCaster: boolean;
+  casterName: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +24,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [isSub, setIsSub] = useState(false);
   const [subName, setSubName] = useState('');
+  const [isCaster, setIsCaster] = useState(false);
+  const [casterName, setCasterName] = useState('');
   const [loading, setLoading] = useState(true);
   const [captainTeamId, setCaptainTeamId] = useState('');
   const auth = getAuth();
@@ -38,18 +42,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCaptainTeamId(idTokenResult.claims.teamId as string);
         setAuthDivision(idTokenResult.claims.division as string);
         setSubName(idTokenResult.claims.subName as string);
+        setIsCaster(!!idTokenResult.claims.isCaster);
+        setCasterName(idTokenResult.claims.casterName as string || '');
       } else {
         setIsAdmin(false);
         setIsTeamMember(false);
         setIsSub(false);
         setSubName('');
+        setIsCaster(false);
+        setCasterName('');
       }
       setLoading(false);
     });
     return unsubscribe;
   }, [auth, setCurrentUser, setIsAdmin, setLoading]);
 
-  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision, isTeamMember, isSub, subName };
+  const value = { currentUser, isAdmin, loading, captainTeamId, authDivision, isTeamMember, isSub, subName, isCaster, casterName };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
