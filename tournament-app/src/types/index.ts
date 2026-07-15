@@ -11,6 +11,7 @@ export interface Match {
   score?: string; // e.g., "2-1", only for 'completed' status
   isKnockout?: boolean;
   stage?: string;
+  scheduledTime?: string;
 }
 
 export interface Team {
