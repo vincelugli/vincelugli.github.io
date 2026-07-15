@@ -1,8 +1,35 @@
 import React, {useState, useEffect} from 'react';
 import {getAuth, signInWithCustomToken} from 'firebase/auth';
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import styled from 'styled-components';
-import {HamburgerIcon, MobileMenu, HeaderLeft, HeaderRight, HeaderContainer, Logo, MobileMainLink, MobileNavItem, MobileSubMenu, MobileSubMenuItem, Nav, NavItem, SubMenu, SubMenuItem, SubMenuAction, MobileSubMenuAction, LogoutButton, UserNameDisplay} from '../../styles';
+import {
+  HamburgerIcon,
+  MobileMenu,
+  HeaderLeft,
+  HeaderRight,
+  HeaderContainer,
+  Logo,
+  MobileMainLink,
+  MobileNavItem,
+  MobileSubMenu,
+  MobileSubMenuItem,
+  Nav,
+  NavItem,
+  SubMenu,
+  SubMenuItem,
+  SubMenuAction,
+  MobileSubMenuAction,
+  LogoutButton,
+  UserNameDisplay,
+  HeaderModalOverlay,
+  HeaderModalBox,
+  HeaderModalTitle,
+  HeaderModalInput,
+  HeaderModalActions,
+  HeaderModalButton,
+  HeaderErrorMsg,
+  HeaderLoginButton,
+  HeaderMobileLoginButton,
+} from '../../styles';
 import {FaBars, FaChevronDown, FaTimes} from 'react-icons/fa';
 import DivisionSelector from './DivisionSelector';
 import ThemeToggleButton from './ThemeToggleButton';
@@ -10,123 +37,6 @@ import {getYearDisplayString, getYearFromHash} from '../../utils';
 import {useAuth} from './AuthContext';
 import {useTournament} from '../../context/TournamentContext';
 import {usePlayers} from '../../context/PlayerContext';
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-`;
-
-const ModalBox = styled.div`
-  background: ${({ theme }) => theme.background};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  padding: 2rem;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 20px ${({ theme }) => theme.boxShadow};
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  position: relative;
-`;
-
-const ModalTitle = styled.h2`
-  margin: 0;
-  font-size: 1.6rem;
-  color: ${({ theme }) => theme.text};
-`;
-
-const ModalInput = styled.input`
-  padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 6px;
-  font-size: 1rem;
-  background: ${({ theme }) => theme.backgroundTwo};
-  color: ${({ theme }) => theme.text};
-  width: 100%;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.primary};
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-`;
-
-const ModalButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  background: ${({ variant, theme }) => (variant === 'secondary' ? 'transparent' : theme.primary)};
-  color: ${({ variant, theme }) => (variant === 'secondary' ? theme.text : 'white')};
-  border: ${({ variant, theme }) => (variant === 'secondary' ? `1px solid ${theme.borderColor}` : 'none')};
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${({ variant, theme }) => (variant === 'secondary' ? theme.body : theme.primaryHover)};
-    opacity: 0.95;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorMsg = styled.p`
-  color: ${({ theme }) => theme.danger};
-  font-size: 0.9rem;
-  margin: 0;
-`;
-
-const HeaderLoginButton = styled.button`
-  background: ${({ theme }) => theme.primary};
-  color: white;
-  border: none;
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    background: ${({ theme }) => theme.primaryHover};
-  }
-
-  @media (max-width: 1000px) {
-    display: none;
-  }
-`;
-
-const MobileLoginButton = styled.div`
-  font-size: 1.5rem;
-  padding: 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  color: ${({ theme }) => theme.primary};
-  font-weight: bold;
-
-  &:hover {
-    background-color: ${({ theme }) => theme.body};
-  }
-`;
 
 
 const Header: React.FC = () => {
@@ -365,25 +275,25 @@ const Header: React.FC = () => {
           </MobileNavItem>
         ) : (
           <MobileNavItem>
-            <MobileLoginButton
+            <HeaderMobileLoginButton
               onClick={() => {
                 closeAllMenus();
                 setIsLoginModalOpen(true);
               }}
             >
               Login
-            </MobileLoginButton>
+            </HeaderMobileLoginButton>
           </MobileNavItem>
         )}
       </MobileMenu>
 
 
     {isLoginModalOpen && (
-        <ModalOverlay onClick={() => setIsLoginModalOpen(false)}>
-          <ModalBox onClick={(e) => e.stopPropagation()}>
-            <ModalTitle>Enter Access Code</ModalTitle>
+        <HeaderModalOverlay onClick={() => setIsLoginModalOpen(false)}>
+          <HeaderModalBox onClick={(e) => e.stopPropagation()}>
+            <HeaderModalTitle>Enter Access Code</HeaderModalTitle>
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <ModalInput
+              <HeaderModalInput
                 autoFocus
                 type="text"
                 placeholder="Team Access Code"
@@ -391,26 +301,26 @@ const Header: React.FC = () => {
                 onChange={(e) => setAccessCode(e.target.value)}
                 disabled={loginLoading}
               />
-              {loginError && <ErrorMsg>{loginError}</ErrorMsg>}
-              <ModalActions>
-                <ModalButton
+              {loginError && <HeaderErrorMsg>{loginError}</HeaderErrorMsg>}
+              <HeaderModalActions>
+                <HeaderModalButton
                   type="button"
                   variant="secondary"
                   onClick={() => setIsLoginModalOpen(false)}
                   disabled={loginLoading}
                 >
                   Cancel
-                </ModalButton>
-                <ModalButton
+                </HeaderModalButton>
+                <HeaderModalButton
                   type="submit"
                   disabled={loginLoading}
                 >
                   {loginLoading ? 'Verifying...' : 'Log In'}
-                </ModalButton>
-              </ModalActions>
+                </HeaderModalButton>
+              </HeaderModalActions>
             </form>
-          </ModalBox>
-        </ModalOverlay>
+          </HeaderModalBox>
+        </HeaderModalOverlay>
       )}
     </HeaderContainer>
   );

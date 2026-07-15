@@ -1,73 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import styled from 'styled-components';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { FaTimes } from 'react-icons/fa';
-import { Form, FormGroup, Label, Input } from '../../styles/index';
+import {
+  Form,
+  FormGroup,
+  Label,
+  Input,
+  BugReportModalBackdrop,
+  BugReportModalContainer,
+  BugReportModalHeader,
+  BugReportModalTitle,
+  BugReportModalCloseButton,
+  BugReportModalTextArea,
+  BugReportModalStatusMessage,
+} from '../../styles/index';
 import Button from './Button';
-
-const ModalBackdrop = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const ModalContainer = styled.div`
-  background: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 500px;
-  position: relative;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  padding-bottom: 1rem;
-`;
-
-const ModalTitle = styled.h2`
-  margin: 0;
-  font-size: 1.8rem;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: ${({ theme }) => theme.textAlt};
-  &:hover { color: ${({ theme }) => theme.text}; }
-`;
-
-const TextArea = styled.textarea`
-  padding: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-family: 'Courier New', Courier, monospace;
-  min-height: 50px;
-  resize: vertical;
-  &:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-`;
-
-const StatusMessage = styled.p<{ status: string }>` /* ... */ `;
 
 
 
@@ -128,15 +76,15 @@ const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose }) => {
   }
 
   return (
-    <ModalBackdrop onClick={onClose}>
-      <ModalContainer onClick={(e) => e.stopPropagation()}>
-        <ModalHeader>
-          <ModalTitle>Report a Bug</ModalTitle>
-          <CloseButton onClick={onClose}><FaTimes /></CloseButton>
-        </ModalHeader>
+    <BugReportModalBackdrop onClick={onClose}>
+      <BugReportModalContainer onClick={(e) => e.stopPropagation()}>
+        <BugReportModalHeader>
+          <BugReportModalTitle>Report a Bug</BugReportModalTitle>
+          <BugReportModalCloseButton onClick={onClose}><FaTimes /></BugReportModalCloseButton>
+        </BugReportModalHeader>
 
         {status === 'success' ? (
-          <StatusMessage status="success">Thank you! Your feedback has been submitted.</StatusMessage>
+          <BugReportModalStatusMessage status="success">Thank you! Your feedback has been submitted.</BugReportModalStatusMessage>
         ) : (
           <Form onSubmit={handleSubmit}>
             <FormGroup>
@@ -149,16 +97,16 @@ const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose }) => {
             </FormGroup>
             <FormGroup>
               <Label htmlFor="feedback">Additional Feedback (Optional)</Label>
-              <TextArea id="feedback" name="feedback" value={formData.feedback} onChange={handleChange} />
+              <BugReportModalTextArea id="feedback" name="feedback" value={formData.feedback} onChange={handleChange} />
             </FormGroup>
             <Button type="submit" disabled={status === 'loading'}>
               {status === 'loading' ? 'Submitting...' : 'Submit Report'}
             </Button>
-            {status === 'error' && <StatusMessage status="error">Failed to submit. Please try again.</StatusMessage>}
+            {status === 'error' && <BugReportModalStatusMessage status="error">Failed to submit. Please try again.</BugReportModalStatusMessage>}
           </Form>
         )}
-      </ModalContainer>
-    </ModalBackdrop>
+      </BugReportModalContainer>
+    </BugReportModalBackdrop>
   );
 };
 

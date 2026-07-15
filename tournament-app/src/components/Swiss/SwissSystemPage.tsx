@@ -1,98 +1,21 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
-import { Link } from 'react-router-dom';
 import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import SwissStandings from './SwissStandings';
-
-const PageContainer = styled.div`
-  padding: 2rem;
-  background-color: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-  border-radius: 8px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 2rem;
-  border-bottom: 2px solid ${({ theme }) => theme.body};
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-`;
-
-const RoundsContainer = styled.div`
-  margin-top: 2rem;
-`;
-
-const TabHeader = styled.div`
-  display: flex;
-  gap: 1rem;
-  border-bottom: 2px solid ${({ theme }) => theme.body};
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-`;
-
-const TabButton = styled.button<{ active: boolean }>`
-  background: none;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: ${({ active, theme }) => (active ? theme.primary : theme.textAlt)};
-  border-bottom: 3px solid ${({ active, theme }) => (active ? theme.primary : 'transparent')};
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.primary};
-  }
-`;
-
-const MatchGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 1.5rem;
-`;
-
-const MatchCard = styled.div`
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const MatchTeamSpan = styled.span<{ winner?: boolean }>`
-  font-weight: ${({ winner }) => (winner ? '700' : '400')};
-  color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
-`;
-
-const MatchTeamLink = styled(Link)<{ winner?: boolean }>`
-  font-weight: ${({ winner }) => (winner ? '700' : '400')};
-  color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const Versus = styled.span`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.textAlt};
-`;
-
-const ScoreText = styled.span`
-  font-size: 1.25rem;
-  font-weight: 700;
-  background-color: ${({ theme }) => theme.body};
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-`;
+import {
+  SwissPageContainer,
+  SwissSectionTitle,
+  SwissRoundsContainer,
+  SwissTabHeader,
+  SwissTabButton,
+  SwissMatchGrid,
+  SwissMatchCard,
+  SwissMatchTeamSpan,
+  SwissMatchTeamLink,
+  SwissVersus,
+  SwissScoreText,
+} from '../../styles';
 
 const SwissSystemPage: React.FC = () => {
   const { teams, loading: teamsLoading } = useTournament();
@@ -101,17 +24,17 @@ const SwissSystemPage: React.FC = () => {
 
   if (teamsLoading || matchesLoading) {
     return (
-      <PageContainer>
+      <SwissPageContainer>
         <p>Loading Swiss stage data...</p>
-      </PageContainer>
+      </SwissPageContainer>
     );
   }
 
   if (!teams || teams.length === 0) {
     return (
-      <PageContainer>
+      <SwissPageContainer>
         <p>Teams not yet finalized.</p>
-      </PageContainer>
+      </SwissPageContainer>
     );
   }
 
@@ -128,25 +51,25 @@ const SwissSystemPage: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <SectionTitle>Swiss Stage Standings</SectionTitle>
+    <SwissPageContainer>
+      <SwissSectionTitle>Swiss Stage Standings</SwissSectionTitle>
       <SwissStandings />
 
-      <SectionTitle>Match History</SectionTitle>
-      <RoundsContainer>
-        <TabHeader>
+      <SwissSectionTitle>Match History</SwissSectionTitle>
+      <SwissRoundsContainer>
+        <SwissTabHeader>
           {rounds.map(round => (
-            <TabButton
+            <SwissTabButton
               key={round}
               active={activeRound === round}
               onClick={() => setActiveRound(round)}
             >
               {round}
-            </TabButton>
+            </SwissTabButton>
           ))}
-        </TabHeader>
+        </SwissTabHeader>
 
-        <MatchGrid>
+        <SwissMatchGrid>
           {getRoundMatches(activeRound).map((match: Match) => {
             const team1 = teams.find(t => t.id === match.team1Id);
             const team2 = teams.find(t => t.id === match.team2Id);
@@ -154,35 +77,35 @@ const SwissSystemPage: React.FC = () => {
             const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 
             return (
-              <MatchCard key={match.id}>
+              <SwissMatchCard key={match.id}>
                 <div>
                   {team1 ? (
-                    <MatchTeamLink to={`/teams/${team1.id}`} winner={match.winnerId === team1.id}>
+                    <SwissMatchTeamLink to={`/teams/${team1.id}`} winner={match.winnerId === team1.id}>
                       {team1Name}
-                    </MatchTeamLink>
+                    </SwissMatchTeamLink>
                   ) : (
-                    <MatchTeamSpan winner={false}>{team1Name}</MatchTeamSpan>
+                    <SwissMatchTeamSpan winner={false}>{team1Name}</SwissMatchTeamSpan>
                   )}
-                  <Versus> vs </Versus>
+                  <SwissVersus> vs </SwissVersus>
                   {team2 ? (
-                    <MatchTeamLink to={`/teams/${team2.id}`} winner={match.winnerId === team2.id}>
+                    <SwissMatchTeamLink to={`/teams/${team2.id}`} winner={match.winnerId === team2.id}>
                       {team2Name}
-                    </MatchTeamLink>
+                    </SwissMatchTeamLink>
                   ) : (
-                    <MatchTeamSpan winner={false}>{team2Name}</MatchTeamSpan>
+                    <SwissMatchTeamSpan winner={false}>{team2Name}</SwissMatchTeamSpan>
                   )}
                 </div>
                 {match.status === 'completed' ? (
-                  <ScoreText>{match.score}</ScoreText>
+                  <SwissScoreText>{match.score}</SwissScoreText>
                 ) : (
                   <span>Upcoming</span>
                 )}
-              </MatchCard>
+              </SwissMatchCard>
             );
           })}
-        </MatchGrid>
-      </RoundsContainer>
-    </PageContainer>
+        </SwissMatchGrid>
+      </SwissRoundsContainer>
+    </SwissPageContainer>
   );
 };
 

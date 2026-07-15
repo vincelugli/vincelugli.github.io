@@ -1,97 +1,18 @@
 import React, { useState, useCallback } from 'react';
-import styled from 'styled-components';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
-
-// --- Styled Components ---
-
-const PageContainer = styled.div`
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 2.5rem;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-`;
-
-const Title = styled.h1`
-  font-size: 2.8rem;
-  color: #333;
-  text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 600;
-  color: #555;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  &:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-`;
-
-const Select = styled.select`
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  background-color: white;
-`;
-
-const TextArea = styled.textarea`
-  padding: 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  min-height: 100px;
-  resize: vertical;
-`;
-
-const SubmitButton = styled.button`
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: white;
-  background-color: #007bff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  
-  &:hover { background-color: #0056b3; }
-  &:disabled {
-    background-color: #a0c7e4;
-    cursor: not-allowed;
-  }
-`;
-
-const StatusMessage = styled.p<{ status: string }>`
-  text-align: center;
-  font-weight: 600;
-  padding: 1rem;
-  border-radius: 5px;
-  color: white;
-  background-color: ${({ status }) => status === 'success' ? '#28a745' : '#dc3545'};
-`;
+import {
+  SignUpPageContainer,
+  SignUpPageTitle,
+  SignUpPageForm,
+  SignUpPageFormGroup,
+  SignUpPageLabel,
+  SignUpPageInput,
+  SignUpPageSelect,
+  SignUpPageTextArea,
+  SignUpPageSubmitButton,
+  SignUpPageStatusMessage,
+} from '../../styles';
 
 // --- Component Definition ---
 
@@ -153,67 +74,67 @@ const SignUpPage: React.FC = () => {
   }, [formData]);
 
   return (
-    <PageContainer>
-      <Title>Tournament Sign-up</Title>
-      <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label htmlFor="mainSummonerName">Main Account Summoner Name</Label>
-          <Input id="mainSummonerName" name="mainSummonerName" type="text" value={formData.mainSummonerName} onChange={handleChange} required />
-        </FormGroup>
-        <FormGroup>
-          <Label htmlFor="mainAccountRegion">Main Account Region</Label>
-          <Select id="mainAccountRegion" name="mainAccountRegion" value={formData.mainAccountRegion} onChange={handleChange} required>
+    <SignUpPageContainer>
+      <SignUpPageTitle>Tournament Sign-up</SignUpPageTitle>
+      <SignUpPageForm onSubmit={handleSubmit}>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="mainSummonerName">Main Account Summoner Name</SignUpPageLabel>
+          <SignUpPageInput id="mainSummonerName" name="mainSummonerName" type="text" value={formData.mainSummonerName} onChange={handleChange} required />
+        </SignUpPageFormGroup>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="mainAccountRegion">Main Account Region</SignUpPageLabel>
+          <SignUpPageSelect id="mainAccountRegion" name="mainAccountRegion" value={formData.mainAccountRegion} onChange={handleChange} required>
             <option value="NA">North America</option>
             <option value="EUW">Europe West</option>
             <option value="LAN">Latin American North</option>
             <option value="LAS">Latin American South</option>
             <option value="Other">Other</option>
-          </Select>
-        </FormGroup>
+          </SignUpPageSelect>
+        </SignUpPageFormGroup>
 
-        <FormGroup>
-          <Label htmlFor="location">Location (Timezone)</Label>
-          <Select id="location" name="location" value={formData.location} onChange={handleChange} required>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="location">Location (Timezone)</SignUpPageLabel>
+          <SignUpPageSelect id="location" name="location" value={formData.location} onChange={handleChange} required>
             <option value="PST">Pacific (PST)</option>
             <option value="MST">Mountain (MST)</option>
             <option value="CST">Central (CST)</option>
             <option value="EST">Eastern (EST)</option>
             <option value="Other">Other</option>
-          </Select>
-        </FormGroup>
+          </SignUpPageSelect>
+        </SignUpPageFormGroup>
 
-        <FormGroup>
-          <Label htmlFor="role">Role</Label>
-          <Select id="role" name="role" value={formData.role} onChange={handleChange} required>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="role">Role</SignUpPageLabel>
+          <SignUpPageSelect id="role" name="role" value={formData.role} onChange={handleChange} required>
             <option value="Player">Player</option>
             <option value="Sub">Sub</option>
             <option value="Coach">Coach</option>
-          </Select>
-        </FormGroup>
+          </SignUpPageSelect>
+        </SignUpPageFormGroup>
 
-        <FormGroup>
-          <Label htmlFor="peakRank">Peak Rank</Label>
-          <Input id="peakRank" name="peakRank" type="text" value={formData.peakRank} onChange={handleChange} required />
-        </FormGroup>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="peakRank">Peak Rank</SignUpPageLabel>
+          <SignUpPageInput id="peakRank" name="peakRank" type="text" value={formData.peakRank} onChange={handleChange} required />
+        </SignUpPageFormGroup>
 
-        <FormGroup>
-          <Label htmlFor="peakRankSeason">Peak Rank Season</Label>
-          <Input id="peakRankSeason" name="peakRankSeason" type="text" value={formData.peakRankSeason} onChange={handleChange} required />
-        </FormGroup>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="peakRankSeason">Peak Rank Season</SignUpPageLabel>
+          <SignUpPageInput id="peakRankSeason" name="peakRankSeason" type="text" value={formData.peakRankSeason} onChange={handleChange} required />
+        </SignUpPageFormGroup>
 
-        <FormGroup>
-          <Label htmlFor="altSummonerNames">Alternate Account Summoner Names (comma-separated)</Label>
-          <TextArea id="altSummonerNames" name="altSummonerNames" value={formData.altSummonerNames} onChange={handleChange} />
-        </FormGroup>
+        <SignUpPageFormGroup>
+          <SignUpPageLabel htmlFor="altSummonerNames">Alternate Account Summoner Names (comma-separated)</SignUpPageLabel>
+          <SignUpPageTextArea id="altSummonerNames" name="altSummonerNames" value={formData.altSummonerNames} onChange={handleChange} />
+        </SignUpPageFormGroup>
 
-        <SubmitButton type="submit" disabled={status === 'loading'}>
+        <SignUpPageSubmitButton type="submit" disabled={status === 'loading'}>
           {status === 'loading' ? 'Submitting...' : 'Submit Sign-up'}
-        </SubmitButton>
+        </SignUpPageSubmitButton>
 
-        {status === 'success' && <StatusMessage status="success">Sign-up successful! Thank you.</StatusMessage>}
-        {status === 'error' && <StatusMessage status="error">Something went wrong. Please try again.</StatusMessage>}
-      </Form>
-    </PageContainer>
+        {status === 'success' && <SignUpPageStatusMessage status="success">Sign-up successful! Thank you.</SignUpPageStatusMessage>}
+        {status === 'error' && <SignUpPageStatusMessage status="error">Something went wrong. Please try again.</SignUpPageStatusMessage>}
+      </SignUpPageForm>
+    </SignUpPageContainer>
   );
 };
 

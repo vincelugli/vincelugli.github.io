@@ -1,49 +1,14 @@
 import React from 'react';
-import styled from 'styled-components';
 import { useTournament } from '../../context/TournamentContext';
 import { compareTeams } from '../../utils';
-import { TeamName } from '../../styles';
-
-const StandingsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-`;
-
-const StandingCard = styled.div<{ type: 'advanced' | 'eliminated' | 'active' }>`
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  border-radius: 8px;
-  padding: 1.5rem;
-  border-left: 5px solid ${({ theme, type }) =>
-    type === 'advanced' ? theme.success :
-      type === 'eliminated' ? theme.danger :
-        theme.primary};
-  box-shadow: ${({ theme }) => theme.boxShadow};
-`;
-
-const CardTitle = styled.h3`
-  margin-top: 0;
-  font-size: 1.25rem;
-  color: ${({ theme }) => theme.secondaryText};
-`;
-
-const TeamList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-`;
-
-const TeamItem = styled.li`
-  padding: 0.5rem 0;
-  border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  &:last-child {
-    border-bottom: none;
-  }
-`;
+import {
+  TeamName,
+  SwissStandingsContainer,
+  SwissStandingCard,
+  SwissStandingCardTitle,
+  SwissStandingTeamList,
+  SwissStandingTeamItem,
+} from '../../styles';
 
 const SwissStandings: React.FC = () => {
   const { teams, loading } = useTournament();
@@ -61,43 +26,43 @@ const SwissStandings: React.FC = () => {
   const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(compareTeams);
 
   return (
-    <StandingsContainer>
-      <StandingCard type="advanced">
-        <CardTitle>Advanced to Bracket (3 Wins)</CardTitle>
-        <TeamList>
+    <SwissStandingsContainer>
+      <SwissStandingCard type="advanced">
+        <SwissStandingCardTitle>Advanced to Bracket (3 Wins)</SwissStandingCardTitle>
+        <SwissStandingTeamList>
           {advancedTeams.map(t => (
-            <TeamItem key={t.id}>
+            <SwissStandingTeamItem key={t.id}>
               <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
               <span>{t.record || `${t.wins}-${t.losses}`}</span>
-            </TeamItem>
+            </SwissStandingTeamItem>
           ))}
-        </TeamList>
-      </StandingCard>
+        </SwissStandingTeamList>
+      </SwissStandingCard>
 
-      <StandingCard type="active">
-        <CardTitle>Active Teams</CardTitle>
-        <TeamList>
+      <SwissStandingCard type="active">
+        <SwissStandingCardTitle>Active Teams</SwissStandingCardTitle>
+        <SwissStandingTeamList>
           {activeTeams.map(t => (
-            <TeamItem key={t.id}>
+            <SwissStandingTeamItem key={t.id}>
               <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
               <span>{t.record || `${t.wins}-${t.losses}`}</span>
-            </TeamItem>
+            </SwissStandingTeamItem>
           ))}
-        </TeamList>
-      </StandingCard>
+        </SwissStandingTeamList>
+      </SwissStandingCard>
 
-      <StandingCard type="eliminated">
-        <CardTitle>Eliminated (3 Losses)</CardTitle>
-        <TeamList>
+      <SwissStandingCard type="eliminated">
+        <SwissStandingCardTitle>Eliminated (3 Losses)</SwissStandingCardTitle>
+        <SwissStandingTeamList>
           {eliminatedTeams.map(t => (
-            <TeamItem key={t.id}>
+            <SwissStandingTeamItem key={t.id}>
               <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
               <span>{t.record || `${t.wins}-${t.losses}`}</span>
-            </TeamItem>
+            </SwissStandingTeamItem>
           ))}
-        </TeamList>
-      </StandingCard>
-    </StandingsContainer>
+        </SwissStandingTeamList>
+      </SwissStandingCard>
+    </SwissStandingsContainer>
   );
 };
 
