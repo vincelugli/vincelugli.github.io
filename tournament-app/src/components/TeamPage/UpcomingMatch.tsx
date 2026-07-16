@@ -1,24 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import styled from 'styled-components';
 import { Match, Team } from '../../types';
-import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchNavLink } from '../../styles';
-
-// NEW: A styled component for the game selection dropdown
-const GameSelect = styled.select`
-  padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 600;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  cursor: pointer;
-
-  option {
-    background-color: ${({ theme }) => theme.background};
-    color: ${({ theme }) => theme.text};
-  }
-`;
+import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchNavLink, UpcomingMatchGameSelect } from '../../styles';
 
 interface UpcomingMatchProps {
   match: Match;
@@ -54,7 +36,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
       {!!opponent && isUserTeamCaptain && <TournamentCodeContainer>
         <label>TOURNAMENT CODE</label>
         <CodeBox>
-          <GameSelect
+          <UpcomingMatchGameSelect
             value={selectedGameIndex}
             onChange={(e) => setSelectedGameIndex(parseInt(e.target.value, 10))}
           >
@@ -63,7 +45,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
                 Game {index + 1}
               </option>
             ))}
-          </GameSelect>
+          </UpcomingMatchGameSelect>
           <Code>{currentCode}</Code>
           <CopyButton onClick={handleCopyCode}>
             {copiedCode === currentCode ? 'Copied!' : 'Copy'}

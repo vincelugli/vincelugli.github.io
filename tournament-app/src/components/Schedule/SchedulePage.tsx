@@ -1,441 +1,58 @@
 import React, { useState } from 'react';
 import { FaCalendarAlt, FaEdit, FaTimes, FaSave, FaClock, FaTwitch } from 'react-icons/fa';
-import styled from 'styled-components';
-import { SchedulePageContainer, ScheduleTitle, TimelineContainer, StageCard, StageIcon, StageContent, StageTitle, StageDescription, StageLink, StageDate } from '../../styles';
+import {
+  SchedulePageContainer,
+  ScheduleTitle,
+  TimelineContainer,
+  StageCard,
+  StageIcon,
+  StageContent,
+  StageTitle,
+  StageDescription,
+  StageLink,
+  StageDate,
+  TabHeader,
+  TabButton,
+  MatchesContainer,
+  RoundGroup,
+  RoundTitle,
+  ScheduleMatchList,
+  ScheduleMatchItem,
+  MatchTeams,
+  MatchupInfoGroup,
+  TeamNameContainer,
+  ScheduleTeamNameLink,
+  TeamNameSpan,
+  VersusSpan,
+  MatchTimeDetails,
+  TimeDisplay,
+  MainTime,
+  SecondaryTime,
+  EditButton,
+  BroadcastBadge,
+  BroadcastLink,
+  BroadcastContainer,
+  DrawerOverlay,
+  DrawerContainer,
+  DrawerHeader,
+  DrawerTitle,
+  CloseIconButton,
+  DrawerContent,
+  DrawerSection,
+  SectionHeaderTitle,
+  MatchInfoBanner,
+  DrawerLabel,
+  DrawerInput,
+  DrawerCheckboxLabel,
+  DrawerFooter,
+  DrawerButton
+} from '../../styles';
 import { useDivision } from '../../context/DivisionContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useTournament } from '../../context/TournamentContext';
 import { useAuth } from '../Common/AuthContext';
 import { Match } from '../../types';
 import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal } from '../../utils';
-import { Link } from 'react-router-dom';
-
-const TabHeader = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  border-bottom: 2px solid ${({ theme }) => theme.backgroundThree};
-  margin-bottom: 2.5rem;
-`;
-
-const TabButton = styled.button<{ active: boolean }>`
-  background: none;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: ${({ active, theme }) => (active ? theme.primary : theme.textAlt)};
-  border-bottom: 3px solid ${({ active, theme }) => (active ? theme.primary : 'transparent')};
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.primary};
-  }
-`;
-
-const MatchesContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`;
-
-const RoundGroup = styled.div`
-  background: ${({ theme }) => theme.backgroundTwo};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px ${({ theme }) => theme.boxShadow};
-`;
-
-const RoundTitle = styled.h3`
-  font-size: 1.4rem;
-  color: ${({ theme }) => theme.text};
-  margin-top: 0;
-  margin-bottom: 1.25rem;
-  border-bottom: 1.5px solid ${({ theme }) => theme.borderColor};
-  padding-bottom: 0.5rem;
-`;
-
-const MatchList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const MatchItem = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: ${({ theme }) => theme.background};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 6px;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    box-shadow: 0 4px 10px ${({ theme }) => theme.boxShadow};
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-`;
-
-const MatchTeams = styled.div`
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 1rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  width: 480px;
-
-  @media (max-width: 900px) {
-    width: 400px;
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const MatchupInfoGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-const TeamNameContainer = styled.div<{ align: 'left' | 'right' }>`
-  text-align: ${({ align }) => align};
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const TeamNameLink = styled(Link)`
-  color: ${({ theme }) => theme.primary};
-  text-decoration: none;
-  font-weight: 600;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const TeamNameSpan = styled.span`
-  color: ${({ theme }) => theme.text};
-  font-weight: 600;
-`;
-
-const VersusSpan = styled.span`
-  color: ${({ theme }) => theme.textAlt};
-  font-size: 0.9rem;
-`;
-
-const MatchTimeDetails = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: space-between;
-  }
-`;
-
-const TimeDisplay = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-`;
-
-const MainTime = styled.span`
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.text};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const SecondaryTime = styled.span`
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.textAlt};
-`;
-
-const EditButton = styled.button`
-  background: none;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  color: ${({ theme }) => theme.textAlt};
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.body};
-    color: ${({ theme }) => theme.text};
-    border-color: ${({ theme }) => theme.primary};
-  }
-`;
-
-const EditForm = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-`;
-
-const DateTimeInput = styled.input`
-  padding: 0.5rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: ${({ theme }) => theme.backgroundTwo};
-  color: ${({ theme }) => theme.text};
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.primary};
-  }
-`;
-
-const ActionButtonGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-`;
-
-const IconButton = styled.button<{ variant?: 'success' | 'danger' }>`
-  background: ${({ variant, theme }) => (variant === 'success' ? theme.success : variant === 'danger' ? theme.danger : theme.primary)};
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
-const BroadcastBadge = styled.span`
-  background-color: #9146ff; /* Twitch Purple */
-  color: white;
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-`;
-
-const BroadcastLink = styled.a`
-  color: #9146ff;
-  text-decoration: none;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const BroadcastContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-top: 0.6rem;
-`;
-
-const DrawerOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-`;
-
-const DrawerContainer = styled.div`
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 400px;
-  max-width: 90vw;
-  height: 100vh;
-  background: ${({ theme }) => theme.background};
-  border-left: 1px solid ${({ theme }) => theme.borderColor};
-  box-shadow: -4px 0 15px ${({ theme }) => theme.boxShadow};
-  z-index: 1001;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  box-sizing: border-box;
-  animation: slideIn 0.25s ease-out;
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-`;
-
-const DrawerHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  padding-bottom: 1rem;
-`;
-
-const DrawerTitle = styled.h2`
-  margin: 0;
-  font-size: 1.5rem;
-  color: ${({ theme }) => theme.text};
-`;
-
-const CloseIconButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.textAlt};
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    color: ${({ theme }) => theme.text};
-  }
-`;
-
-const DrawerContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  flex: 1;
-  overflow-y: auto;
-`;
-
-const DrawerSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  background: ${({ theme }) => theme.backgroundTwo};
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-`;
-
-const SectionHeaderTitle = styled.h4`
-  margin: 0;
-  font-size: 1.1rem;
-  color: ${({ theme }) => theme.text};
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  padding-bottom: 0.35rem;
-  margin-bottom: 0.5rem;
-`;
-
-const MatchInfoBanner = styled.div`
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-  padding: 0.75rem;
-  background: ${({ theme }) => theme.body};
-  border-radius: 6px;
-  color: ${({ theme }) => theme.text};
-`;
-
-const DrawerLabel = styled.label`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textAlt};
-`;
-
-const DrawerInput = styled.input`
-  padding: 0.6rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-  box-sizing: border-box;
-  width: 100%;
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.primary};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const DrawerCheckboxLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: ${({ theme }) => theme.text};
-  cursor: pointer;
-`;
-
-const DrawerFooter = styled.div`
-  display: flex;
-  gap: 1rem;
-  border-top: 1px solid ${({ theme }) => theme.borderColor};
-  padding-top: 1rem;
-`;
-
-const DrawerButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
-  flex: 1;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: ${({ variant, theme }) => (variant === 'secondary' ? `1px solid ${theme.borderColor}` : 'none')};
-  background: ${({ variant, theme }) => (variant === 'secondary' ? 'transparent' : theme.primary)};
-  color: ${({ variant, theme }) => (variant === 'secondary' ? theme.text : 'white')};
-
-  &:hover {
-    background: ${({ variant, theme }) => (variant === 'secondary' ? theme.body : theme.primaryHover)};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
 
 const tournamentStagesMaster = [
   {
@@ -751,7 +368,7 @@ const SchedulePage: React.FC = () => {
             sortedGroupKeys.map(groupName => (
               <RoundGroup key={groupName}>
                 <RoundTitle>{groupName}</RoundTitle>
-                <MatchList>
+                <ScheduleMatchList>
                   {groupedMatches[groupName].map(match => {
                     const team1 = teams.find(t => t.id === match.team1Id);
                     const team2 = teams.find(t => t.id === match.team2Id);
@@ -759,12 +376,12 @@ const SchedulePage: React.FC = () => {
                     const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 
                     return (
-                      <MatchItem key={match.id}>
+                      <ScheduleMatchItem key={match.id}>
                         <MatchupInfoGroup>
                           <MatchTeams>
                             <TeamNameContainer align="right">
                               {team1 ? (
-                                <TeamNameLink to={`/teams/${team1.id}`}>{team1Name}</TeamNameLink>
+                                <ScheduleTeamNameLink to={`/teams/${team1.id}`}>{team1Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team1Name}</TeamNameSpan>
                               )}
@@ -772,7 +389,7 @@ const SchedulePage: React.FC = () => {
                             <VersusSpan>vs</VersusSpan>
                             <TeamNameContainer align="left">
                               {team2 ? (
-                                <TeamNameLink to={`/teams/${team2.id}`}>{team2Name}</TeamNameLink>
+                                <ScheduleTeamNameLink to={`/teams/${team2.id}`}>{team2Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team2Name}</TeamNameSpan>
                               )}
@@ -805,10 +422,10 @@ const SchedulePage: React.FC = () => {
                             </EditButton>
                           )}
                         </MatchTimeDetails>
-                      </MatchItem>
+                      </ScheduleMatchItem>
                     );
                   })}
-                </MatchList>
+                </ScheduleMatchList>
               </RoundGroup>
             ))
           )}

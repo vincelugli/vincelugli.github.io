@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTournament } from '../../context/TournamentContext';
@@ -11,124 +10,24 @@ import { Team, Player } from '../../types';
 import Button from '../Common/Button';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { Input, ErrorMessage } from '../../styles';
-
-const PageContainer = styled.div`
-  padding: 2rem;
-  background-color: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-  border-radius: 8px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 2rem;
-  border-bottom: 2px solid ${({ theme }) => theme.body};
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-`;
-
-const ControlsContainer = styled.div`
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  align-items: center;
-`;
-
-const Select = styled.select`
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid ${({ theme }) => theme.borderBottom};
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  color: ${({ theme }) => theme.text};
-`;
-
-const GridContainer = styled.div`
-  overflow-x: auto;
-  margin-bottom: 3rem;
-`;
-
-const Grid = styled.div<{ showTimezone: boolean }>`
-  display: grid;
-  grid-template-columns: 100px ${({ showTimezone }) => showTimezone ? '130px' : ''} repeat(7, 1fr);
-  gap: 5px;
-  min-width: 800px;
-`;
-
-const GridHeader = styled.div`
-  font-weight: bold;
-  text-align: center;
-  padding: 0.5rem;
-  background-color: ${({ theme }) => theme.body};
-  border-radius: 4px;
-`;
-
-const TimeLabel = styled.div`
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: ${({ theme }) => theme.body};
-  border-radius: 4px;
-`;
-
-const Slot = styled.div<{ isSelected: boolean; count: number; isEditable: boolean }>`
-  height: 50px;
-  background-color: ${({ isSelected, count, theme }) => 
-    isSelected ? theme.primary : 
-    count > 0 ? `${theme.primary}40` : // Light primary if some players
-    theme.backgroundTwo};
-  border: 1px solid ${({ theme }) => theme.borderBottom};
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: ${({ isEditable }) => (isEditable ? 'pointer' : 'default')};
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: ${({ isEditable, theme }) => (isEditable ? theme.primaryHover : '')};
-  }
-`;
-
-const SlotCount = styled.span`
-  font-size: 0.8rem;
-  font-weight: bold;
-`;
-
-const BestSlotsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-`;
-
-const BestSlotCard = styled.div`
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.borderBottom};
-  text-align: center;
-`;
-
-const ScoreBadge = styled.span`
-  background-color: ${({ theme }) => theme.primary};
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: bold;
-`;
-
-const StatusMessage = styled.div`
-  background-color: ${({ theme }) => theme.backgroundTwo};
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  border: 1px solid ${({ theme }) => theme.borderBottom};
-  font-weight: 500;
-`;
+import {
+  Input,
+  ErrorMessage,
+  AvailabilityPageContainer,
+  AvailabilitySectionTitle,
+  AvailabilityControlsContainer,
+  AvailabilitySelect,
+  AvailabilityGridContainer,
+  AvailabilityGrid,
+  AvailabilityGridHeader,
+  AvailabilityTimeLabel,
+  AvailabilitySlot,
+  AvailabilitySlotCount,
+  AvailabilityBestSlotsContainer,
+  AvailabilityBestSlotCard,
+  AvailabilityScoreBadge,
+  AvailabilityStatusMessage,
+} from '../../styles';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const fullTimes = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
@@ -533,10 +432,10 @@ const AvailabilityPage: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <SectionTitle>Team Availability</SectionTitle>
+    <AvailabilityPageContainer>
+      <AvailabilitySectionTitle>Team Availability</AvailabilitySectionTitle>
       
-      <StatusMessage>
+      <AvailabilityStatusMessage>
         <div>{getStatusMessage()}</div>
         {!currentUser && (
           <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -553,9 +452,9 @@ const AvailabilityPage: React.FC = () => {
             {loginError && <ErrorMessage style={{ margin: 0 }}>{loginError}</ErrorMessage>}
           </div>
         )}
-      </StatusMessage>
+      </AvailabilityStatusMessage>
       
-      <ControlsContainer>
+      <AvailabilityControlsContainer>
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input 
@@ -568,7 +467,7 @@ const AvailabilityPage: React.FC = () => {
         </div>
         <div>
           <label>View Timezone: </label>
-          <Select 
+          <AvailabilitySelect 
             value={selectedTimezone} 
             onChange={(e) => setSelectedTimezone(e.target.value)}
           >
@@ -580,11 +479,11 @@ const AvailabilityPage: React.FC = () => {
             <option value="GMT">Western Europe (GMT)</option>
             <option value="CET">Central Europe (CET)</option>
             <option value="EET">Eastern Europe (EET)</option>
-          </Select>
+          </AvailabilitySelect>
         </div>
         <div>
           <label>Select Team: </label>
-          <Select 
+          <AvailabilitySelect 
             value={selectedTeamId || ''} 
             onChange={(e) => setSelectedTeamId(parseInt(e.target.value, 10))}
             disabled={!!isTeamMember || isSub}
@@ -593,13 +492,13 @@ const AvailabilityPage: React.FC = () => {
             {teams.map(t => (
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
-          </Select>
+          </AvailabilitySelect>
         </div>
 
         {isAuthorized && teamPlayers.length > 0 && (
           <div>
             <label>Marking for Player: </label>
-            <Select 
+            <AvailabilitySelect 
               value={activePlayerId || ''} 
               onChange={(e) => setActivePlayerId(parseInt(e.target.value, 10))}
             >
@@ -611,7 +510,7 @@ const AvailabilityPage: React.FC = () => {
                   </option>
                 );
               })}
-            </Select>
+            </AvailabilitySelect>
           </div>
         )}
 
@@ -620,7 +519,7 @@ const AvailabilityPage: React.FC = () => {
             {saving ? 'Saving...' : 'Save Availability'}
           </Button>
         )}
-      </ControlsContainer>
+      </AvailabilityControlsContainer>
 
       {(selectedTeamId || isSub) && (
         <>
@@ -629,19 +528,19 @@ const AvailabilityPage: React.FC = () => {
               <Button onClick={addHourAbove} variant="secondary">↑ Add Hour Above</Button>
             </div>
           )}
-          <GridContainer>
-            <Grid showTimezone={!!selectedTimezone}>
-              <GridHeader>Time (PT)</GridHeader>
-              {selectedTimezone && <GridHeader>Time ({selectedTimezone})</GridHeader>}
-              {days.map(d => <GridHeader key={d}>{d}</GridHeader>)}
+          <AvailabilityGridContainer>
+            <AvailabilityGrid showTimezone={!!selectedTimezone}>
+              <AvailabilityGridHeader>Time (PT)</AvailabilityGridHeader>
+              {selectedTimezone && <AvailabilityGridHeader>Time ({selectedTimezone})</AvailabilityGridHeader>}
+              {days.map(d => <AvailabilityGridHeader key={d}>{d}</AvailabilityGridHeader>)}
               
               {visibleTimes.map(time => {
                 const ptLabel = `${time} PT`;
                 const tzLabel = selectedTimezone ? `${convertTime(time, timezoneOffsets[selectedTimezone])} ${selectedTimezone}` : '';
                 return (
                   <React.Fragment key={time}>
-                    <TimeLabel>{ptLabel}</TimeLabel>
-                    {selectedTimezone && <TimeLabel>{tzLabel}</TimeLabel>}
+                    <AvailabilityTimeLabel>{ptLabel}</AvailabilityTimeLabel>
+                    {selectedTimezone && <AvailabilityTimeLabel>{tzLabel}</AvailabilityTimeLabel>}
                     {days.map(day => {
                       const key = `${day}-${time}`;
                       const avail = isSub ? [] : (selectedTeamId ? (availabilityData[selectedTeamId]?.slots?.[key] || []) : []);
@@ -650,7 +549,7 @@ const AvailabilityPage: React.FC = () => {
                         (activePlayerId && selectedTeamId ? isPlayerSelected(selectedTeamId, activePlayerId, day, time) : false);
                       
                       return (
-                        <Slot 
+                        <AvailabilitySlot 
                           key={key} 
                           isSelected={isSelected}
                           count={avail.length}
@@ -663,15 +562,15 @@ const AvailabilityPage: React.FC = () => {
                             }
                           }}
                         >
-                          <SlotCount>{isSub ? (isSelected ? 'Yes' : 'No') : `${avail.length} Available`}</SlotCount>
-                        </Slot>
+                          <AvailabilitySlotCount>{isSub ? (isSelected ? 'Yes' : 'No') : `${avail.length} Available`}</AvailabilitySlotCount>
+                        </AvailabilitySlot>
                       );
                     })}
                   </React.Fragment>
                 );
               })}
-            </Grid>
-          </GridContainer>
+            </AvailabilityGrid>
+          </AvailabilityGridContainer>
           {visibleTimes[visibleTimes.length - 1] !== fullTimes[fullTimes.length - 1] && (
             <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
               <Button onClick={addHourBelow} variant="secondary">↓ Add Hour Below</Button>
@@ -680,12 +579,12 @@ const AvailabilityPage: React.FC = () => {
         </>
       )}
 
-      <SectionTitle>Find Best Match Time</SectionTitle>
-      <ControlsContainer>
+      <AvailabilitySectionTitle>Find Best Match Time</AvailabilitySectionTitle>
+      <AvailabilityControlsContainer>
         {isTeamMember ? (
           <div>
             <label>Opponent: </label>
-            <Select 
+            <AvailabilitySelect 
               value={compareTeamBId || ''} 
               onChange={(e) => setCompareTeamBId(parseInt(e.target.value, 10))}
             >
@@ -693,13 +592,13 @@ const AvailabilityPage: React.FC = () => {
               {teams.filter(t => t.id !== parseInt(captainTeamId, 10)).map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
-            </Select>
+            </AvailabilitySelect>
           </div>
         ) : (
           <>
             <div>
               <label>Team A: </label>
-              <Select 
+              <AvailabilitySelect 
                 value={compareTeamAId || ''} 
                 onChange={(e) => setCompareTeamAId(parseInt(e.target.value, 10))}
               >
@@ -707,11 +606,11 @@ const AvailabilityPage: React.FC = () => {
                 {teams.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-              </Select>
+              </AvailabilitySelect>
             </div>
             <div>
               <label>Team B: </label>
-              <Select 
+              <AvailabilitySelect 
                 value={compareTeamBId || ''} 
                 onChange={(e) => setCompareTeamBId(parseInt(e.target.value, 10))}
               >
@@ -719,14 +618,14 @@ const AvailabilityPage: React.FC = () => {
                 {teams.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
-              </Select>
+              </AvailabilitySelect>
             </div>
           </>
         )}
-      </ControlsContainer>
+      </AvailabilityControlsContainer>
 
       {compareTeamAId && compareTeamBId && (
-        <BestSlotsContainer>
+        <AvailabilityBestSlotsContainer>
           {getBestSlots(compareTeamAId, compareTeamBId).map(slot => {
             const ptTime = `${slot.day} @ ${slot.time} PT`;
             let tzTime = '';
@@ -735,21 +634,21 @@ const AvailabilityPage: React.FC = () => {
               tzTime = ` (${converted.day} @ ${converted.time} ${selectedTimezone})`;
             }
             return (
-              <BestSlotCard key={`${slot.day}-${slot.time}`}>
+              <AvailabilityBestSlotCard key={`${slot.day}-${slot.time}`}>
                 <h3>{ptTime}{tzTime}</h3>
-                <p>Score: <ScoreBadge>{slot.score}</ScoreBadge></p>
+                <p>Score: <AvailabilityScoreBadge>{slot.score}</AvailabilityScoreBadge></p>
                 <p>Team A: {slot.teamACount} players</p>
                 <p>Team B: {slot.teamBCount} players</p>
-              </BestSlotCard>
+              </AvailabilityBestSlotCard>
             );
           })}
           {getBestSlots(compareTeamAId, compareTeamBId).length === 0 && (
             <p>No overlapping availability found.</p>
           )}
-        </BestSlotsContainer>
+        </AvailabilityBestSlotsContainer>
       )}
-      <SectionTitle>Available Substitutes</SectionTitle>
-      <BestSlotsContainer>
+      <AvailabilitySectionTitle>Available Substitutes</AvailabilitySectionTitle>
+      <AvailabilityBestSlotsContainer>
         {Object.entries(subAvailabilityData).map(([name, data]) => {
           const activeSlots = Object.entries(data.slots || {})
             .filter(([_, isAvail]) => isAvail)
@@ -760,7 +659,7 @@ const AvailabilityPage: React.FC = () => {
           const combinedTimes = combineConsecutiveTimes(activeSlots, use30MinIncrements ? fullTimes30 : fullTimes);
 
           return (
-            <BestSlotCard key={name}>
+            <AvailabilityBestSlotCard key={name}>
               <h3>{name}</h3>
               <ul style={{ textAlign: 'left', paddingLeft: '1.5rem' }}>
                 {combinedTimes.map(slot => {
@@ -772,11 +671,11 @@ const AvailabilityPage: React.FC = () => {
                   return <li key={slot}>{ptTime}</li>;
                 })}
               </ul>
-            </BestSlotCard>
+            </AvailabilityBestSlotCard>
           );
         })}
-      </BestSlotsContainer>
-    </PageContainer>
+      </AvailabilityBestSlotsContainer>
+    </AvailabilityPageContainer>
   );
 };
 

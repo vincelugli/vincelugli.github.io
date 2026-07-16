@@ -9,6 +9,8 @@ export interface Match {
   weekPlayed: number;
   winnerId?: number | null; // Only for 'completed' status
   score?: string; // e.g., "2-1", only for 'completed' status
+  team1Wins?: number;
+  team2Wins?: number;
   isKnockout?: boolean;
   stage?: string;
   scheduledTime?: string;

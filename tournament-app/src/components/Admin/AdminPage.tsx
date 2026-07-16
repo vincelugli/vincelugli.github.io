@@ -1,268 +1,49 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import styled from 'styled-components';
 import { doc, getDoc, updateDoc, writeBatch, setDoc, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {getFunctions, httpsCallable} from 'firebase/functions';
 import { BracketRound, Player, Team, Match, DraftState, DraftTeam } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
-import { AdminPageContainer, AdminTitle, SelectionContainer, AdminLabel, AdminSelect, Form, TextArea } from '../../styles/index';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 import { getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain } from '../../utils';
-import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck} from 'react-icons/fa';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync} from 'react-icons/fa';
+import {
+  AdminPageContainer,
+  AdminTitle,
+  SelectionContainer,
+  AdminLabel,
+  AdminSelect,
+  Form,
+  TextArea,
+  AdminTabBar,
+  AdminTabButton,
+  AdminCard,
+  AdminCardTitle,
+  AdminGrid,
+  AdminTableContainer,
+  AdminStyledTable,
+  AdminStyledTh,
+  AdminStyledTd,
+  AdminFormLayout,
+  AdminFormGroup,
+  AdminFormLabel,
+  AdminTextInput,
+  AdminSelectInput,
+  AdminCheckboxLabel,
+  AdminSearchInput,
+  AdminBadge,
+  AdminButtonGroup,
+  AdminStatusText,
+  AdminActionButton,
+  AdminClearButton,
+  AdminIconButton,
+  AdminEditBox,
+  AdminFloatingConfirm,
+} from '../../styles/index';
 
-// --- Styled Components for Admin Dashboard ---
-
-const TabBar = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 2px solid ${({ theme }) => theme.borderColor};
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-`;
-
-const TabButton = styled.button<{ active: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border: none;
-  background: ${({ active, theme }) => active ? theme.primary : 'transparent'};
-  color: ${({ active, theme }) => active ? '#ffffff' : theme.text};
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    background: ${({ active, theme }) => active ? theme.primaryHover : theme.backgroundTwo};
-  }
-`;
-
-const Card = styled.div`
-  background: ${({ theme }) => theme.backgroundTwo};
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px ${({ theme }) => theme.boxShadow};
-`;
-
-const CardTitle = styled.h3`
-  margin-top: 0;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  padding-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const Grid = styled.div<{ columns?: string }>`
-  display: grid;
-  grid-template-columns: ${({ columns }) => columns || '1fr 1fr'};
-  gap: 1.5rem;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const TableContainer = styled.div`
-  overflow-x: auto;
-  margin-top: 1rem;
-`;
-
-const StyledTable = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.5rem;
-`;
-
-const StyledTh = styled.th`
-  text-align: left;
-  padding: 0.75rem;
-  border-bottom: 2px solid ${({ theme }) => theme.borderColor};
-  background-color: ${({ theme }) => theme.backgroundThree};
-  font-weight: 600;
-`;
-
-const StyledTd = styled.td`
-  padding: 0.75rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
-  vertical-align: middle;
-`;
-
-
-
-const FormLayout = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-`;
-
-const Label = styled.label`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textAlt};
-`;
-
-const TextInput = styled.input`
-  padding: 0.6rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    outline: none;
-  }
-`;
-
-const SelectInput = styled.select`
-  padding: 0.6rem;
-  border: 1px solid ${({ theme }) => theme.borderColor};
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: ${({ theme }) => theme.background};
-  color: ${({ theme }) => theme.text};
-
-  &:focus {
-    border-color: ${({ theme }) => theme.primary};
-    outline: none;
-  }
-`;
-
-const CheckboxLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  cursor: pointer;
-  margin-top: 0.5rem;
-`;
-
-const SearchInput = styled(TextInput)`
-  margin-bottom: 1rem;
-  width: 100%;
-  max-width: 320px;
-`;
-
-const Badge = styled.span<{ variant?: 'primary' | 'success' | 'danger' | 'warning' }>`
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  background-color: ${({ variant, theme }) => {
-    switch (variant) {
-      case 'success': return theme.success + '22';
-      case 'danger': return theme.danger + '22';
-      case 'warning': return '#ffc10722';
-      case 'primary':
-      default: return theme.primary + '22';
-    }
-  }};
-  color: ${({ variant, theme }) => {
-    switch (variant) {
-      case 'success': return theme.success;
-      case 'danger': return theme.danger;
-      case 'warning': return '#ffc107';
-      case 'primary':
-      default: return theme.primary;
-    }
-  }};
-  border: 1px solid ${({ variant, theme }) => {
-    switch (variant) {
-      case 'success': return theme.success;
-      case 'danger': return theme.danger;
-      case 'warning': return '#ffc107';
-      case 'primary':
-      default: return theme.primary;
-    }
-  }};
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
-
-const StatusText = styled.p<{ status: 'success' | 'error' | 'loading' }>`
-  padding: 0.75rem;
-  border-radius: 4px;
-  font-weight: 500;
-  margin: 1rem 0;
-  background-color: ${({ status, theme }) => status === 'success' ? theme.success + '22' : status === 'error' ? theme.danger + '22' : theme.backgroundThree};
-  color: ${({ status, theme }) => status === 'success' ? theme.success : status === 'error' ? theme.danger : theme.text};
-  border: 1px solid ${({ status, theme }) => status === 'success' ? theme.success : status === 'error' ? theme.danger : theme.borderColor};
-`;
-
-const ActionButton = styled(Button)`
-  padding: 0.5rem 0.8rem;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-`;
-
-const ClearButton = styled(ActionButton)`
-  background-color: ${({ theme }) => theme.danger};
-  &:hover {
-    background-color: #c82333;
-  }
-`;
-
-const IconButton = styled.button<{ variant?: 'success' | 'danger' }>`
-  background: ${({ variant, theme }) => (variant === 'success' ? theme.success : variant === 'danger' ? theme.danger : theme.primary)};
-  color: white;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
-const EditBox = styled.div`
-  border: 2px solid ${({ theme }) => theme.primary};
-  padding: 1.5rem;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.background};
-  margin-bottom: 1.5rem;
-`;
-
-const FloatingConfirm = styled.div`
-  border: 1px solid #ffc107;
-  background-color: #fff3cd;
-  color: #856404;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-top: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-`;
 
 // Constants
 const RANK_TIERS = ["Challenger", "Grandmaster", "Master", "Diamond", "Emerald", "Platinum", "Gold", "Silver", "Bronze", "Iron", "Unranked"];
@@ -424,6 +205,7 @@ const AdminPage: React.FC = () => {
   const [codesCount, setCodesCount] = useState(1);
   const [codesIsKnockout, setCodesIsKnockout] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [manualCodeForStandings, setManualCodeForStandings] = useState('');
 
   const prefix = getFirebasePrefix();
 
@@ -1238,6 +1020,23 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleUpdateStandingsForCode = async (code: string) => {
+    try {
+      setStatus('loading');
+      setStatusMsg(`Updating standings for code: ${code}...`);
+
+      const functions = getFunctions();
+      const updateStandingsFn = httpsCallable(functions, 'updateStandingsWithExistingMatchResult');
+
+      await updateStandingsFn({ shortCode: code });
+
+      showStatus('success', `Successfully updated standings for code: ${code}`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to update standings.');
+    }
+  };
+
   const handleSaveMatchDetails = async () => {
     if (!editingMatch) return;
 
@@ -1401,50 +1200,50 @@ const AdminPage: React.FC = () => {
       <AdminTitle>Admin Dashboard</AdminTitle>
 
       {statusMsg && (
-        <StatusText status={status === 'success' ? 'success' : status === 'error' ? 'error' : 'loading'}>
+        <AdminStatusText status={status === 'success' ? 'success' : status === 'error' ? 'error' : 'loading'}>
           {status === 'loading' && <FaSpinner className="spin" style={{ marginRight: '0.5rem' }} />}
           {statusMsg}
-        </StatusText>
+        </AdminStatusText>
       )}
 
       {/* Primary Tab Navigation */}
-      <TabBar>
-        <TabButton active={activeTab === 'draft'} onClick={() => setActiveTab('draft')}>
+      <AdminTabBar>
+        <AdminTabButton active={activeTab === 'draft'} onClick={() => setActiveTab('draft')}>
           <FaTools /> Draft Control
-        </TabButton>
-        <TabButton active={activeTab === 'players'} onClick={() => setActiveTab('players')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'players'} onClick={() => setActiveTab('players')}>
           <FaUsers /> Player Pool
-        </TabButton>
-        <TabButton active={activeTab === 'teams'} onClick={() => setActiveTab('teams')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'teams'} onClick={() => setActiveTab('teams')}>
           <FaUsers /> Teams
-        </TabButton>
-        <TabButton active={activeTab === 'bracket'} onClick={() => setActiveTab('bracket')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'bracket'} onClick={() => setActiveTab('bracket')}>
           <FaTrophy /> Brackets
-        </TabButton>
-        <TabButton active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
           <FaCalendarAlt /> Matches Schedule
-        </TabButton>
-        <TabButton active={activeTab === 'codes'} onClick={() => setActiveTab('codes')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'codes'} onClick={() => setActiveTab('codes')}>
           <FaLink /> Tournament Codes
-        </TabButton>
-        <TabButton active={activeTab === 'casters'} onClick={() => setActiveTab('casters')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'casters'} onClick={() => setActiveTab('casters')}>
           <FaUsers /> Caster Codes
-        </TabButton>
-        <TabButton active={activeTab === 'bulk'} onClick={() => setActiveTab('bulk')}>
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'bulk'} onClick={() => setActiveTab('bulk')}>
           <FaTools /> Bulk JSON
-        </TabButton>
-      </TabBar>
+        </AdminTabButton>
+      </AdminTabBar>
 
       {/* --- TAB: DRAFT CONTROL --- */}
       {activeTab === 'draft' && (
         <div>
-          <Card>
-            <CardTitle>Draft Pick History & Reset</CardTitle>
+          <AdminCard>
+            <AdminCardTitle>Draft Pick History & Reset</AdminCardTitle>
             <p>Configure draft variables or revert picking mistakes.</p>
 
             {draftState ? (
               <div style={{ marginBottom: '1.5rem' }}>
-                <p><strong>Draft Status:</strong> {draftState.currentPickIndex >= draftState.pickOrder.length ? <Badge variant="success">Completed</Badge> : <Badge variant="primary">In Progress</Badge>}</p>
+                <p><strong>Draft Status:</strong> {draftState.currentPickIndex >= draftState.pickOrder.length ? <AdminBadge variant="success">Completed</AdminBadge> : <AdminBadge variant="primary">In Progress</AdminBadge>}</p>
                 <p><strong>Current Pick Number:</strong> {draftState.currentPickIndex + 1} / {draftState.pickOrder.length}</p>
                 <p><strong>Draft Pool Size:</strong> {draftState.availablePlayers?.length} players remaining</p>
                 <p><strong>Completed Pick Count:</strong> {Object.keys(draftState.completedPicks || {}).length}</p>
@@ -1453,43 +1252,43 @@ const AdminPage: React.FC = () => {
               <p style={{ color: 'orange' }}>No draft state currently initialized for {division} division.</p>
             )}
 
-            <ButtonGroup>
-              <ActionButton variant="primary" onClick={handleUndoLastPick} disabled={!draftState || Object.keys(draftState.completedPicks || {}).length === 0}>
+            <AdminButtonGroup>
+              <AdminActionButton variant="primary" onClick={handleUndoLastPick} disabled={!draftState || Object.keys(draftState.completedPicks || {}).length === 0}>
                 <FaUndo /> Undo Last Pick
-              </ActionButton>
-            </ButtonGroup>
+              </AdminActionButton>
+            </AdminButtonGroup>
 
-            <FloatingConfirm style={{ marginTop: '2rem' }}>
+            <AdminFloatingConfirm style={{ marginTop: '2rem' }}>
               <div>
-                <CheckboxLabel>
+                <AdminCheckboxLabel>
                   <input
                     type="checkbox"
                     checked={confirmResetDraft}
                     onChange={(e) => setConfirmResetDraft(e.target.checked)}
                   />
                   I understand this will clear current rosters, drafts history and reset all picks for <strong>{division}</strong>.
-                </CheckboxLabel>
+                </AdminCheckboxLabel>
               </div>
-              <ClearButton onClick={handleResetDraft} disabled={!confirmResetDraft}>
+              <AdminClearButton onClick={handleResetDraft} disabled={!confirmResetDraft}>
                 Initialize/Reset Draft
-              </ClearButton>
-            </FloatingConfirm>
-          </Card>
+              </AdminClearButton>
+            </AdminFloatingConfirm>
+          </AdminCard>
 
           {draftState && draftState.pickOrder && draftState.pickOrder.length > 0 && (
-            <Card style={{ marginTop: '1.5rem' }}>
-              <CardTitle>Edit Individual Pick Slots</CardTitle>
+            <AdminCard style={{ marginTop: '1.5rem' }}>
+              <AdminCardTitle>Edit Individual Pick Slots</AdminCardTitle>
               <p>Directly modify, swap, or clear any individual pick assignment in the draft matrix.</p>
-              <TableContainer>
-                <StyledTable>
+              <AdminTableContainer>
+                <AdminStyledTable>
                   <thead>
                     <tr>
-                      <StyledTh style={{ width: '10%' }}>Pick #</StyledTh>
-                      <StyledTh style={{ width: '10%' }}>Round</StyledTh>
-                      <StyledTh style={{ width: '20%' }}>Team Picking</StyledTh>
-                      <StyledTh style={{ width: '20%' }}>Assigned Player</StyledTh>
-                      <StyledTh style={{ width: '25%' }}>Change / Assign Player</StyledTh>
-                      <StyledTh style={{ width: '15%' }}>Skip Pick</StyledTh>
+                      <AdminStyledTh style={{ width: '10%' }}>Pick #</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '10%' }}>Round</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '20%' }}>Team Picking</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '20%' }}>Assigned Player</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '25%' }}>Change / Assign Player</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '15%' }}>Skip Pick</AdminStyledTh>
                     </tr>
                   </thead>
                   <tbody>
@@ -1507,14 +1306,14 @@ const AdminPage: React.FC = () => {
                       if (isSkipped && !isManuallySkipped) {
                         return (
                           <tr key={index} style={{ opacity: 0.6, backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                            <StyledTd>#{index + 1}</StyledTd>
-                            <StyledTd>Round {roundNumber}</StyledTd>
-                            <StyledTd colSpan={3} style={{ fontStyle: 'italic' }}>
+                            <AdminStyledTd>#{index + 1}</AdminStyledTd>
+                            <AdminStyledTd>Round {roundNumber}</AdminStyledTd>
+                            <AdminStyledTd colSpan={3} style={{ fontStyle: 'italic' }}>
                               Skipped (Forced pick: Captain {teamId})
-                            </StyledTd>
-                            <StyledTd>
-                              <Badge variant="danger">Forced Skip</Badge>
-                            </StyledTd>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminBadge variant="danger">Forced Skip</AdminBadge>
+                            </AdminStyledTd>
                           </tr>
                         );
                       }
@@ -1524,50 +1323,50 @@ const AdminPage: React.FC = () => {
                         const originalTeam = teams.find(t => t.id === originalTeamId);
                         return (
                           <tr key={index} style={{ backgroundColor: 'rgba(220, 53, 69, 0.05)' }}>
-                            <StyledTd><strong>#{index + 1}</strong></StyledTd>
-                            <StyledTd>Round {roundNumber}</StyledTd>
-                            <StyledTd style={{ fontStyle: 'italic' }}>
+                            <AdminStyledTd><strong>#{index + 1}</strong></AdminStyledTd>
+                            <AdminStyledTd>Round {roundNumber}</AdminStyledTd>
+                            <AdminStyledTd style={{ fontStyle: 'italic' }}>
                               Skipped ({originalTeam?.name || `Team ${originalTeamId}`})
-                            </StyledTd>
-                            <StyledTd colSpan={2} style={{ fontStyle: 'italic', color: '#888' }}>
+                            </AdminStyledTd>
+                            <AdminStyledTd colSpan={2} style={{ fontStyle: 'italic', color: '#888' }}>
                               Pick slot marked as skipped
-                            </StyledTd>
-                            <StyledTd>
-                              <ActionButton 
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminActionButton 
                                 variant="primary" 
                                 onClick={() => handleToggleSkipPick(index)}
                                 style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
                               >
                                 Restore Pick
-                              </ActionButton>
-                            </StyledTd>
+                              </AdminActionButton>
+                            </AdminStyledTd>
                           </tr>
                         );
                       }
 
                       return (
                         <tr key={index}>
-                          <StyledTd><strong>#{index + 1}</strong></StyledTd>
-                          <StyledTd>Round {roundNumber}</StyledTd>
-                          <StyledTd><strong>{team?.name || `Team ${teamId}`}</strong></StyledTd>
-                          <StyledTd>
+                          <AdminStyledTd><strong>#{index + 1}</strong></AdminStyledTd>
+                          <AdminStyledTd>Round {roundNumber}</AdminStyledTd>
+                          <AdminStyledTd><strong>{team?.name || `Team ${teamId}`}</strong></AdminStyledTd>
+                          <AdminStyledTd>
                             {draftedPlayer ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Badge variant="success">{draftedPlayer.name.split('#')[0]}</Badge>
-                                <ClearButton 
+                                <AdminBadge variant="success">{draftedPlayer.name.split('#')[0]}</AdminBadge>
+                                <AdminClearButton 
                                   onClick={() => handleUpdateIndividualPick(index, null)} 
                                   title="Clear Pick Slot"
                                   style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}
                                 >
                                   <FaTimes /> Clear
-                                </ClearButton>
+                                </AdminClearButton>
                               </div>
                             ) : (
                               <span style={{ color: '#aaa', fontStyle: 'italic' }}>TBD (Empty)</span>
                             )}
-                          </StyledTd>
-                          <StyledTd>
-                            <SelectInput
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminSelectInput
                               value={draftedPlayerId || 0}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
@@ -1588,23 +1387,23 @@ const AdminPage: React.FC = () => {
                                   {ap.name} ({ap.role})
                                 </option>
                               ))}
-                            </SelectInput>
-                          </StyledTd>
-                          <StyledTd>
-                            <ClearButton 
+                            </AdminSelectInput>
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminClearButton 
                               onClick={() => handleToggleSkipPick(index)}
                               style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
                             >
                               Skip Pick
-                            </ClearButton>
-                          </StyledTd>
+                            </AdminClearButton>
+                          </AdminStyledTd>
                         </tr>
                       );
                     })}
                   </tbody>
-                </StyledTable>
-              </TableContainer>
-            </Card>
+                </AdminStyledTable>
+              </AdminTableContainer>
+            </AdminCard>
           )}
         </div>
       )}
@@ -1613,207 +1412,207 @@ const AdminPage: React.FC = () => {
       {activeTab === 'players' && (
         <div>
           {editingPlayer ? (
-            <EditBox>
-              <CardTitle>Edit Player details: {editingPlayer.name}</CardTitle>
-              <FormLayout>
-                <Grid>
-                  <FormGroup>
-                    <Label>Summoner Name</Label>
-                    <TextInput
+            <AdminEditBox>
+              <AdminCardTitle>Edit Player details: {editingPlayer.name}</AdminCardTitle>
+              <AdminFormLayout>
+                <AdminGrid>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Summoner Name</AdminFormLabel>
+                    <AdminTextInput
                       type="text"
                       value={editingPlayer.name}
                       onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
                     />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Primary Role</Label>
-                    <SelectInput
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Primary Role</AdminFormLabel>
+                    <AdminSelectInput
                       value={editingPlayer.role}
                       onChange={(e) => setEditingPlayer({ ...editingPlayer, role: e.target.value })}
                     >
                       {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                    </SelectInput>
-                  </FormGroup>
-                </Grid>
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <Grid columns="1fr 1fr 1fr">
-                  <FormGroup>
-                    <Label>Peak Rank</Label>
+                <AdminGrid columns="1fr 1fr 1fr">
+                  <AdminFormGroup>
+                    <AdminFormLabel>Peak Rank</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <SelectInput
+                      <AdminSelectInput
                         value={editingPlayer.peakRankTier}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, peakRankTier: e.target.value })}
                       >
                         {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </SelectInput>
-                      <SelectInput
+                      </AdminSelectInput>
+                      <AdminSelectInput
                         value={editingPlayer.peakRankDivision}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, peakRankDivision: Number(e.target.value) })}
                       >
                         {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                      </SelectInput>
+                      </AdminSelectInput>
                     </div>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Solo Rank</Label>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Solo Rank</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <SelectInput
+                      <AdminSelectInput
                         value={editingPlayer.soloRankTier}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankTier: e.target.value })}
                       >
                         {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </SelectInput>
-                      <SelectInput
+                      </AdminSelectInput>
+                      <AdminSelectInput
                         value={editingPlayer.soloRankDivision}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankDivision: Number(e.target.value) })}
                       >
                         {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                      </SelectInput>
+                      </AdminSelectInput>
                     </div>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Flex Rank</Label>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Flex Rank</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <SelectInput
+                      <AdminSelectInput
                         value={editingPlayer.flexRankTier}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankTier: e.target.value })}
                       >
                         {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </SelectInput>
-                      <SelectInput
+                      </AdminSelectInput>
+                      <AdminSelectInput
                         value={editingPlayer.flexRankDivision}
                         onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankDivision: Number(e.target.value) })}
                       >
                         {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                      </SelectInput>
+                      </AdminSelectInput>
                     </div>
-                  </FormGroup>
-                </Grid>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <FormGroup>
-                  <CheckboxLabel>
+                <AdminFormGroup>
+                  <AdminCheckboxLabel>
                     <input
                       type="checkbox"
                       checked={editingPlayer.isCaptain}
                       onChange={(e) => setEditingPlayer({ ...editingPlayer, isCaptain: e.target.checked })}
                     />
                     Is Captain?
-                  </CheckboxLabel>
-                </FormGroup>
+                  </AdminCheckboxLabel>
+                </AdminFormGroup>
 
-                <ButtonGroup style={{ marginTop: '1rem' }}>
-                  <ActionButton variant="primary" onClick={handleSaveUpdatedPlayer}>
+                <AdminButtonGroup style={{ marginTop: '1rem' }}>
+                  <AdminActionButton variant="primary" onClick={handleSaveUpdatedPlayer}>
                     <FaSave /> Save Changes
-                  </ActionButton>
-                  <ActionButton onClick={() => setEditingPlayer(null)}>
+                  </AdminActionButton>
+                  <AdminActionButton onClick={() => setEditingPlayer(null)}>
                     <FaTimes /> Cancel
-                  </ActionButton>
-                </ButtonGroup>
-              </FormLayout>
-            </EditBox>
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
+            </AdminEditBox>
           ) : (
-            <Grid columns="1fr 2fr">
+            <AdminGrid columns="1fr 2fr">
               {/* Form to Add New Player */}
-              <Card>
-                <CardTitle>Add New Player</CardTitle>
+              <AdminCard>
+                <AdminCardTitle>Add New Player</AdminCardTitle>
                 <form onSubmit={handleCreatePlayer}>
-                  <FormLayout>
-                    <FormGroup>
-                      <Label>Summoner Name</Label>
-                      <TextInput
+                  <AdminFormLayout>
+                    <AdminFormGroup>
+                      <AdminFormLabel>Summoner Name</AdminFormLabel>
+                      <AdminTextInput
                         type="text"
                         placeholder="Player#NA1"
                         value={newPlayerForm.name}
                         onChange={(e) => setNewPlayerForm({ ...newPlayerForm, name: e.target.value })}
                         required
                       />
-                    </FormGroup>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Primary Role</Label>
-                      <SelectInput
+                    <AdminFormGroup>
+                      <AdminFormLabel>Primary Role</AdminFormLabel>
+                      <AdminSelectInput
                         value={newPlayerForm.role}
                         onChange={(e) => setNewPlayerForm({ ...newPlayerForm, role: e.target.value })}
                       >
                         {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                      </SelectInput>
-                    </FormGroup>
+                      </AdminSelectInput>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Peak Rank</Label>
+                    <AdminFormGroup>
+                      <AdminFormLabel>Peak Rank</AdminFormLabel>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <SelectInput
+                        <AdminSelectInput
                           value={newPlayerForm.peakRankTier}
                           onChange={(e) => setNewPlayerForm({ ...newPlayerForm, peakRankTier: e.target.value })}
                         >
                           {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                        </SelectInput>
-                        <SelectInput
+                        </AdminSelectInput>
+                        <AdminSelectInput
                           value={newPlayerForm.peakRankDivision}
                           onChange={(e) => setNewPlayerForm({ ...newPlayerForm, peakRankDivision: Number(e.target.value) })}
                         >
                           {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                        </SelectInput>
+                        </AdminSelectInput>
                       </div>
-                    </FormGroup>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <CheckboxLabel>
+                    <AdminFormGroup>
+                      <AdminCheckboxLabel>
                         <input
                           type="checkbox"
                           checked={newPlayerForm.isCaptain}
                           onChange={(e) => setNewPlayerForm({ ...newPlayerForm, isCaptain: e.target.checked })}
                         />
                         Is Captain?
-                      </CheckboxLabel>
-                    </FormGroup>
+                      </AdminCheckboxLabel>
+                    </AdminFormGroup>
 
                     <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0.5rem 0' }} />
 
-                    <CheckboxLabel>
+                    <AdminCheckboxLabel>
                       <input
                         type="checkbox"
                         checked={newPlayerForm.addToPool}
                         onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToPool: e.target.checked })}
                       />
                       Add to Player Pool
-                    </CheckboxLabel>
+                    </AdminCheckboxLabel>
 
-                    <CheckboxLabel>
+                    <AdminCheckboxLabel>
                       <input
                         type="checkbox"
                         checked={newPlayerForm.addToDraft}
                         onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToDraft: e.target.checked })}
                       />
                       Add to Draft Available List
-                    </CheckboxLabel>
+                    </AdminCheckboxLabel>
 
-                    <ActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem' }}>
+                    <AdminActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem' }}>
                       <FaPlus /> Add Player
-                    </ActionButton>
-                  </FormLayout>
+                    </AdminActionButton>
+                  </AdminFormLayout>
                 </form>
-              </Card>
+              </AdminCard>
 
               {/* Player Pool List */}
-              <Card>
-                <CardTitle>Player list ({filteredPlayers.length})</CardTitle>
-                <SearchInput
+              <AdminCard>
+                <AdminCardTitle>Player list ({filteredPlayers.length})</AdminCardTitle>
+                <AdminSearchInput
                   type="text"
                   placeholder="Filter players by name/role..."
                   value={playerSearch}
                   onChange={(e) => setPlayerSearch(e.target.value)}
                 />
-                <TableContainer>
-                  <StyledTable>
+                <AdminTableContainer>
+                  <AdminStyledTable>
                     <thead>
                       <tr>
-                        <StyledTh>Name</StyledTh>
-                        <StyledTh>Role</StyledTh>
-                        <StyledTh>Peak</StyledTh>
-                        <StyledTh>Cap</StyledTh>
-                        <StyledTh>Draft Pool</StyledTh>
-                        <StyledTh>Actions</StyledTh>
+                        <AdminStyledTh>Name</AdminStyledTh>
+                        <AdminStyledTh>Role</AdminStyledTh>
+                        <AdminStyledTh>Peak</AdminStyledTh>
+                        <AdminStyledTh>Cap</AdminStyledTh>
+                        <AdminStyledTh>Draft Pool</AdminStyledTh>
+                        <AdminStyledTh>Actions</AdminStyledTh>
                       </tr>
                     </thead>
                     <tbody>
@@ -1822,38 +1621,38 @@ const AdminPage: React.FC = () => {
                         const isDrafted = draftState?.teams?.some(t => t.players?.some(tp => tp.id === p.id));
                         return (
                           <tr key={p.id}>
-                            <StyledTd><strong>{p.name.split('#')[0]}</strong> <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>#{p.name.split('#')[1] || 'NA1'}</span></StyledTd>
-                            <StyledTd>{p.role}</StyledTd>
-                            <StyledTd>{rankTierToShortName(p.peakRankTier)}{p.peakRankDivision !== -1 ? p.peakRankDivision : ''}</StyledTd>
-                            <StyledTd>{p.isCaptain ? <Badge variant="danger">Yes</Badge> : 'No'}</StyledTd>
-                            <StyledTd>
+                            <AdminStyledTd><strong>{p.name.split('#')[0]}</strong> <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>#{p.name.split('#')[1] || 'NA1'}</span></AdminStyledTd>
+                            <AdminStyledTd>{p.role}</AdminStyledTd>
+                            <AdminStyledTd>{rankTierToShortName(p.peakRankTier)}{p.peakRankDivision !== -1 ? p.peakRankDivision : ''}</AdminStyledTd>
+                            <AdminStyledTd>{p.isCaptain ? <AdminBadge variant="danger">Yes</AdminBadge> : 'No'}</AdminStyledTd>
+                            <AdminStyledTd>
                               {isDrafted ? (
-                                <Badge variant="success">Drafted</Badge>
+                                <AdminBadge variant="success">Drafted</AdminBadge>
                               ) : inDraftAvail ? (
-                                <Badge variant="primary">Available</Badge>
+                                <AdminBadge variant="primary">Available</AdminBadge>
                               ) : (
-                                <Badge variant="warning">Missing</Badge>
+                                <AdminBadge variant="warning">Missing</AdminBadge>
                               )}
-                            </StyledTd>
-                            <StyledTd>
-                              <ButtonGroup>
-                                <ActionButton onClick={() => setEditingPlayer(p)}><FaEdit /></ActionButton>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminButtonGroup>
+                                <AdminActionButton onClick={() => setEditingPlayer(p)}><FaEdit /></AdminActionButton>
                                 {!inDraftAvail && !isDrafted && (
-                                  <ActionButton variant="primary" onClick={() => handleAddPlayerToDraftPool(p)} title="Add to draft pool">
+                                  <AdminActionButton variant="primary" onClick={() => handleAddPlayerToDraftPool(p)} title="Add to draft pool">
                                     <FaPlus /> Pool
-                                  </ActionButton>
+                                  </AdminActionButton>
                                 )}
-                                <ClearButton onClick={() => handleDeletePlayer(p.id, true, true)} title="Delete completely"><FaTrash /></ClearButton>
-                              </ButtonGroup>
-                            </StyledTd>
+                                <AdminClearButton onClick={() => handleDeletePlayer(p.id, true, true)} title="Delete completely"><FaTrash /></AdminClearButton>
+                              </AdminButtonGroup>
+                            </AdminStyledTd>
                           </tr>
                         );
                       })}
                     </tbody>
-                  </StyledTable>
-                </TableContainer>
-              </Card>
-            </Grid>
+                  </AdminStyledTable>
+                </AdminTableContainer>
+              </AdminCard>
+            </AdminGrid>
           )}
         </div>
       )}
@@ -1862,113 +1661,113 @@ const AdminPage: React.FC = () => {
       {activeTab === 'teams' && (
         <div>
           {editingTeam ? (
-            <EditBox>
-              <CardTitle>Edit Team: {editingTeam.name}</CardTitle>
-              <FormLayout>
-                <Grid>
-                  <FormGroup>
-                    <Label>Team Name</Label>
-                    <TextInput
+            <AdminEditBox>
+              <AdminCardTitle>Edit Team: {editingTeam.name}</AdminCardTitle>
+              <AdminFormLayout>
+                <AdminGrid>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Team Name</AdminFormLabel>
+                    <AdminTextInput
                       type="text"
                       value={editingTeam.name}
                       onChange={(e) => setEditingTeam({ ...editingTeam, name: e.target.value })}
                     />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Record (Wins - Losses)</Label>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Record (Wins - Losses)</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <TextInput
+                      <AdminTextInput
                         type="number"
                         placeholder="Wins"
                         value={editingTeam.wins}
                         onChange={(e) => setEditingTeam({ ...editingTeam, wins: Number(e.target.value), record: `${e.target.value}-${editingTeam.losses}` })}
                       />
-                      <TextInput
+                      <AdminTextInput
                         type="number"
                         placeholder="Losses"
                         value={editingTeam.losses}
                         onChange={(e) => setEditingTeam({ ...editingTeam, losses: Number(e.target.value), record: `${editingTeam.wins}-${e.target.value}` })}
                       />
                     </div>
-                  </FormGroup>
-                </Grid>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <Grid>
-                  <FormGroup>
-                    <Label>Game Record (Game Wins - Game Losses)</Label>
+                <AdminGrid>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Game Record (Game Wins - Game Losses)</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <TextInput
+                      <AdminTextInput
                         type="number"
                         placeholder="Game Wins"
                         value={editingTeam.gameWins}
                         onChange={(e) => setEditingTeam({ ...editingTeam, gameWins: Number(e.target.value), gameRecord: `${e.target.value}-${editingTeam.gameLosses}` })}
                       />
-                      <TextInput
+                      <AdminTextInput
                         type="number"
                         placeholder="Game Losses"
                         value={editingTeam.gameLosses}
                         onChange={(e) => setEditingTeam({ ...editingTeam, gameLosses: Number(e.target.value), gameRecord: `${editingTeam.gameWins}-${e.target.value}` })}
                       />
                     </div>
-                  </FormGroup>
-                </Grid>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <ButtonGroup style={{ marginTop: '1rem' }}>
-                  <ActionButton variant="primary" onClick={handleSaveTeamDetails}>
+                <AdminButtonGroup style={{ marginTop: '1rem' }}>
+                  <AdminActionButton variant="primary" onClick={handleSaveTeamDetails}>
                     <FaSave /> Save Team
-                  </ActionButton>
-                  <ActionButton onClick={() => setEditingTeam(null)}>
+                  </AdminActionButton>
+                  <AdminActionButton onClick={() => setEditingTeam(null)}>
                     <FaTimes /> Cancel
-                  </ActionButton>
-                </ButtonGroup>
-              </FormLayout>
-            </EditBox>
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
+            </AdminEditBox>
           ) : (
-            <Card>
+            <AdminCard>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <CardTitle style={{ border: 'none', margin: 0 }}>Tournament Teams List ({teams.length})</CardTitle>
-                <ActionButton variant="primary" onClick={handleCreateTeamsFromDraft}>
+                <AdminCardTitle style={{ border: 'none', margin: 0 }}>Tournament Teams List ({teams.length})</AdminCardTitle>
+                <AdminActionButton variant="primary" onClick={handleCreateTeamsFromDraft}>
                   Create/Sync Teams from Draft Pool
-                </ActionButton>
+                </AdminActionButton>
               </div>
 
-              <TableContainer>
-                <StyledTable>
+              <AdminTableContainer>
+                <AdminStyledTable>
                   <thead>
                     <tr>
-                      <StyledTh>ID</StyledTh>
-                      <StyledTh>Team Name</StyledTh>
-                      <StyledTh>Match Record</StyledTh>
-                      <StyledTh>Game Record</StyledTh>
-                      <StyledTh>Roster Players</StyledTh>
-                      <StyledTh>Actions</StyledTh>
+                      <AdminStyledTh>ID</AdminStyledTh>
+                      <AdminStyledTh>Team Name</AdminStyledTh>
+                      <AdminStyledTh>Match Record</AdminStyledTh>
+                      <AdminStyledTh>Game Record</AdminStyledTh>
+                      <AdminStyledTh>Roster Players</AdminStyledTh>
+                      <AdminStyledTh>Actions</AdminStyledTh>
                     </tr>
                   </thead>
                   <tbody>
                     {teams.map(t => (
                       <tr key={t.id}>
-                        <StyledTd>{t.id}</StyledTd>
-                        <StyledTd><strong>{t.name}</strong></StyledTd>
-                        <StyledTd>{t.record || `${t.wins}-${t.losses}`}</StyledTd>
-                        <StyledTd>{t.gameRecord || `${t.gameWins}-${t.gameLosses}`}</StyledTd>
-                        <StyledTd>{t.players?.join(', ') || 'Roster empty'}</StyledTd>
-                        <StyledTd>
-                          <ActionButton onClick={() => setEditingTeam(t)}><FaEdit /> Edit</ActionButton>
-                        </StyledTd>
+                        <AdminStyledTd>{t.id}</AdminStyledTd>
+                        <AdminStyledTd><strong>{t.name}</strong></AdminStyledTd>
+                        <AdminStyledTd>{t.record || `${t.wins}-${t.losses}`}</AdminStyledTd>
+                        <AdminStyledTd>{t.gameRecord || `${t.gameWins}-${t.gameLosses}`}</AdminStyledTd>
+                        <AdminStyledTd>{t.players?.join(', ') || 'Roster empty'}</AdminStyledTd>
+                        <AdminStyledTd>
+                          <AdminActionButton onClick={() => setEditingTeam(t)}><FaEdit /> Edit</AdminActionButton>
+                        </AdminStyledTd>
                       </tr>
                     ))}
                   </tbody>
-                </StyledTable>
-              </TableContainer>
-            </Card>
+                </AdminStyledTable>
+              </AdminTableContainer>
+            </AdminCard>
           )}
         </div>
       )}
 
       {/* --- TAB: BRACKETS --- */}
       {activeTab === 'bracket' && (
-        <Card>
-          <CardTitle>Brackets Rounds & Seed Management</CardTitle>
+        <AdminCard>
+          <AdminCardTitle>Brackets Rounds & Seed Management</AdminCardTitle>
           <p>Update teams, statuses, or scores for bracket rounds.</p>
 
           {bracket.length === 0 ? (
@@ -1977,291 +1776,291 @@ const AdminPage: React.FC = () => {
             bracket.map((round, rIdx) => (
               <div key={round.title} style={{ marginBottom: '2rem', borderBottom: '1px solid #ccc', paddingBottom: '1.5rem' }}>
                 <h4>{round.title}</h4>
-                <TableContainer>
-                  <StyledTable>
+                <AdminTableContainer>
+                  <AdminStyledTable>
                     <thead>
                       <tr>
-                        <StyledTh>Seed ID</StyledTh>
-                        <StyledTh>Team 1</StyledTh>
-                        <StyledTh>Team 2</StyledTh>
-                        <StyledTh>Week</StyledTh>
-                        <StyledTh>Status</StyledTh>
-                        <StyledTh>Score</StyledTh>
-                        <StyledTh>Winner</StyledTh>
-                        <StyledTh>Knockout?</StyledTh>
+                        <AdminStyledTh>Seed ID</AdminStyledTh>
+                        <AdminStyledTh>Team 1</AdminStyledTh>
+                        <AdminStyledTh>Team 2</AdminStyledTh>
+                        <AdminStyledTh>Week</AdminStyledTh>
+                        <AdminStyledTh>Status</AdminStyledTh>
+                        <AdminStyledTh>Score</AdminStyledTh>
+                        <AdminStyledTh>Winner</AdminStyledTh>
+                        <AdminStyledTh>Knockout?</AdminStyledTh>
                       </tr>
                     </thead>
                     <tbody>
                       {round.seeds?.map((seed, sIdx) => (
                         <tr key={seed.id}>
-                          <StyledTd>{seed.id}</StyledTd>
-                          <StyledTd>
-                            <SelectInput
+                          <AdminStyledTd>{seed.id}</AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminSelectInput
                               value={seed.team1Id || 0}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team1Id: Number(e.target.value) })}
                             >
                               <option value={0}>TBD</option>
                               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </SelectInput>
-                          </StyledTd>
-                          <StyledTd>
-                            <SelectInput
+                            </AdminSelectInput>
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminSelectInput
                               value={seed.team2Id || 0}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team2Id: Number(e.target.value) })}
                             >
                               <option value={0}>TBD</option>
                               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </SelectInput>
-                          </StyledTd>
-                          <StyledTd>
-                            <TextInput
+                            </AdminSelectInput>
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminTextInput
                               type="number"
                               style={{ width: '60px' }}
                               value={seed.weekPlayed || 1}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { weekPlayed: Number(e.target.value) })}
                             />
-                          </StyledTd>
-                          <StyledTd>
-                            <SelectInput
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminSelectInput
                               value={seed.status}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { status: e.target.value })}
                             >
                               <option value="upcoming">Upcoming</option>
                               <option value="completed">Completed</option>
-                            </SelectInput>
-                          </StyledTd>
-                          <StyledTd>
-                            <TextInput
+                            </AdminSelectInput>
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminTextInput
                               type="text"
                               style={{ width: '80px' }}
                               placeholder="0-0"
                               value={seed.score || ''}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { score: e.target.value })}
                             />
-                          </StyledTd>
-                          <StyledTd>
-                            <SelectInput
+                          </AdminStyledTd>
+                          <AdminStyledTd>
+                            <AdminSelectInput
                               value={seed.winnerId || 0}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { winnerId: Number(e.target.value) || null })}
                             >
                               <option value={0}>None</option>
                               {seed.team1Id && <option value={seed.team1Id}>Team 1 (ID: {seed.team1Id})</option>}
                               {seed.team2Id && <option value={seed.team2Id}>Team 2 (ID: {seed.team2Id})</option>}
-                            </SelectInput>
-                          </StyledTd>
-                          <StyledTd>
+                            </AdminSelectInput>
+                          </AdminStyledTd>
+                          <AdminStyledTd>
                             <input
                               type="checkbox"
                               checked={seed.isKnockout}
                               onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { isKnockout: e.target.checked })}
                             />
-                          </StyledTd>
+                          </AdminStyledTd>
                         </tr>
                       ))}
                     </tbody>
-                  </StyledTable>
-                </TableContainer>
+                  </AdminStyledTable>
+                </AdminTableContainer>
               </div>
             ))
           )}
-        </Card>
+        </AdminCard>
       )}
 
       {/* --- TAB: MATCHES SCHEDULE --- */}
       {activeTab === 'matches' && (
         <div>
           {editingMatch ? (
-            <EditBox>
-              <CardTitle>Edit Match ID: {editingMatch.id}</CardTitle>
-              <FormLayout>
-                <Grid>
-                  <FormGroup>
-                    <Label>Team 1</Label>
-                    <SelectInput
+            <AdminEditBox>
+              <AdminCardTitle>Edit Match ID: {editingMatch.id}</AdminCardTitle>
+              <AdminFormLayout>
+                <AdminGrid>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Team 1</AdminFormLabel>
+                    <AdminSelectInput
                       value={editingMatch.team1Id}
                       onChange={(e) => setEditingMatch({ ...editingMatch, team1Id: Number(e.target.value) })}
                     >
                       <option value={0}>Select Team</option>
                       {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </SelectInput>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Team 2</Label>
-                    <SelectInput
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Team 2</AdminFormLabel>
+                    <AdminSelectInput
                       value={editingMatch.team2Id}
                       onChange={(e) => setEditingMatch({ ...editingMatch, team2Id: Number(e.target.value) })}
                     >
                       <option value={0}>Select Team</option>
                       {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </SelectInput>
-                  </FormGroup>
-                </Grid>
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <Grid columns="1fr 1fr 1fr">
-                  <FormGroup>
-                    <Label>Match Status</Label>
-                    <SelectInput
+                <AdminGrid columns="1fr 1fr 1fr">
+                  <AdminFormGroup>
+                    <AdminFormLabel>Match Status</AdminFormLabel>
+                    <AdminSelectInput
                       value={editingMatch.status}
                       onChange={(e) => setEditingMatch({ ...editingMatch, status: e.target.value as 'upcoming' | 'completed' })}
                     >
                       <option value="upcoming">Upcoming</option>
                       <option value="completed">Completed</option>
-                    </SelectInput>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Winner ID</Label>
-                    <SelectInput
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Winner ID</AdminFormLabel>
+                    <AdminSelectInput
                       value={editingMatch.winnerId || 0}
                       onChange={(e) => setEditingMatch({ ...editingMatch, winnerId: Number(e.target.value) || null })}
                     >
                       <option value={0}>None</option>
                       <option value={editingMatch.team1Id}>Team 1 (ID: {editingMatch.team1Id})</option>
                       <option value={editingMatch.team2Id}>Team 2 (ID: {editingMatch.team2Id})</option>
-                    </SelectInput>
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Score (e.g. 2-1)</Label>
-                    <TextInput
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Score (e.g. 2-1)</AdminFormLabel>
+                    <AdminTextInput
                       type="text"
                       placeholder="Score"
                       value={editingMatch.score || ''}
                       onChange={(e) => setEditingMatch({ ...editingMatch, score: e.target.value })}
                     />
-                  </FormGroup>
-                </Grid>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <Grid columns="2fr 1fr">
-                  <FormGroup>
-                    <Label>Tournament Code (shortCode)</Label>
-                    <TextInput
+                <AdminGrid columns="2fr 1fr">
+                  <AdminFormGroup>
+                    <AdminFormLabel>Tournament Code (shortCode)</AdminFormLabel>
+                    <AdminTextInput
                       type="text"
                       placeholder="Riot Code"
                       value={editingMatch.tournamentCodes?.join(', ') || ''}
                       onChange={(e) => setEditingMatch({ ...editingMatch, tournamentCodes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                     />
-                  </FormGroup>
-                  <FormGroup>
-                    <Label>Week Played</Label>
-                    <TextInput
+                  </AdminFormGroup>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Week Played</AdminFormLabel>
+                    <AdminTextInput
                       type="number"
                       value={editingMatch.weekPlayed}
                       onChange={(e) => setEditingMatch({ ...editingMatch, weekPlayed: Number(e.target.value) })}
                     />
-                  </FormGroup>
-                </Grid>
+                  </AdminFormGroup>
+                </AdminGrid>
 
-                <ButtonGroup style={{ marginTop: '1rem' }}>
-                  <ActionButton variant="primary" onClick={handleSaveMatchDetails}>
+                <AdminButtonGroup style={{ marginTop: '1rem' }}>
+                  <AdminActionButton variant="primary" onClick={handleSaveMatchDetails}>
                     <FaSave /> Save Match
-                  </ActionButton>
-                  <ActionButton onClick={() => setEditingMatch(null)}>
+                  </AdminActionButton>
+                  <AdminActionButton onClick={() => setEditingMatch(null)}>
                     <FaTimes /> Cancel
-                  </ActionButton>
-                </ButtonGroup>
-              </FormLayout>
-            </EditBox>
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
+            </AdminEditBox>
           ) : (
-            <Grid columns="1fr 2fr">
+            <AdminGrid columns="1fr 2fr">
               {/* Form to Create Match */}
               <div>
-                <Card>
-                  <CardTitle>Create New Match</CardTitle>
+                <AdminCard>
+                  <AdminCardTitle>Create New Match</AdminCardTitle>
                   <form onSubmit={handleCreateMatch}>
-                  <FormLayout>
-                    <FormGroup>
-                      <Label>Match Unique ID (e.g. 101 or match_1)</Label>
-                      <TextInput
+                  <AdminFormLayout>
+                    <AdminFormGroup>
+                      <AdminFormLabel>Match Unique ID (e.g. 101 or match_1)</AdminFormLabel>
+                      <AdminTextInput
                         type="text"
                         placeholder="Unique Match ID"
                         value={newMatchForm.id}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, id: e.target.value })}
                         required
                       />
-                    </FormGroup>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Team 1</Label>
-                      <SelectInput
+                    <AdminFormGroup>
+                      <AdminFormLabel>Team 1</AdminFormLabel>
+                      <AdminSelectInput
                         value={newMatchForm.team1Id}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, team1Id: Number(e.target.value) })}
                         required
                       >
                         <option value={0}>Select Team</option>
                         {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </SelectInput>
-                    </FormGroup>
+                      </AdminSelectInput>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Team 2</Label>
-                      <SelectInput
+                    <AdminFormGroup>
+                      <AdminFormLabel>Team 2</AdminFormLabel>
+                      <AdminSelectInput
                         value={newMatchForm.team2Id}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, team2Id: Number(e.target.value) })}
                         required
                       >
                         <option value={0}>Select Team</option>
                         {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </SelectInput>
-                    </FormGroup>
+                      </AdminSelectInput>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Week Played</Label>
-                      <TextInput
+                    <AdminFormGroup>
+                      <AdminFormLabel>Week Played</AdminFormLabel>
+                      <AdminTextInput
                         type="number"
                         value={newMatchForm.weekPlayed}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, weekPlayed: Number(e.target.value) })}
                         required
                       />
-                    </FormGroup>
+                    </AdminFormGroup>
 
-                    <FormGroup>
-                      <Label>Stage / Label</Label>
-                      <TextInput
+                    <AdminFormGroup>
+                      <AdminFormLabel>Stage / Label</AdminFormLabel>
+                      <AdminTextInput
                         type="text"
                         placeholder="e.g. Group Stage, Semifinals"
                         value={newMatchForm.stage}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, stage: e.target.value })}
                       />
-                    </FormGroup>
+                    </AdminFormGroup>
 
-                    <CheckboxLabel>
+                    <AdminCheckboxLabel>
                       <input
                         type="checkbox"
                         checked={newMatchForm.isKnockout}
                         onChange={(e) => setNewMatchForm({ ...newMatchForm, isKnockout: e.target.checked })}
                       />
                       Is Bracket/Knockout?
-                    </CheckboxLabel>
+                    </AdminCheckboxLabel>
 
-                    <ActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem' }}>
+                    <AdminActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem' }}>
                       <FaPlus /> Create Match
-                    </ActionButton>
-                  </FormLayout>
+                    </AdminActionButton>
+                  </AdminFormLayout>
                 </form>
-              </Card>
+              </AdminCard>
 
-              <Card style={{ marginTop: '1.5rem' }}>
-                <CardTitle>Generate Swiss Stage</CardTitle>
+              <AdminCard style={{ marginTop: '1.5rem' }}>
+                <AdminCardTitle>Generate Swiss Stage</AdminCardTitle>
                 <p>Automatically generate Round 1 Swiss matchup pairings based on the first-round draft pick order.</p>
-                <ActionButton variant="primary" onClick={handleGenerateSwissStage}>
+                <AdminActionButton variant="primary" onClick={handleGenerateSwissStage}>
                   Generate Swiss Stage (Round 1)
-                </ActionButton>
-              </Card>
+                </AdminActionButton>
+              </AdminCard>
             </div>
 
             {/* Match Schedule Table */}
-              <Card>
-                <CardTitle>Matches list ({matches.length})</CardTitle>
-                <TableContainer>
-                  <StyledTable>
+              <AdminCard>
+                <AdminCardTitle>Matches list ({matches.length})</AdminCardTitle>
+                <AdminTableContainer>
+                  <AdminStyledTable>
                     <thead>
                       <tr>
-                        <StyledTh>ID</StyledTh>
-                        <StyledTh>Week</StyledTh>
-                        <StyledTh>Teams Matchup</StyledTh>
-                        <StyledTh>Status</StyledTh>
-                        <StyledTh>Winner</StyledTh>
-                        <StyledTh>Score</StyledTh>
-                        <StyledTh>Actions</StyledTh>
+                        <AdminStyledTh>ID</AdminStyledTh>
+                        <AdminStyledTh>Week</AdminStyledTh>
+                        <AdminStyledTh>Teams Matchup</AdminStyledTh>
+                        <AdminStyledTh>Status</AdminStyledTh>
+                        <AdminStyledTh>Winner</AdminStyledTh>
+                        <AdminStyledTh>Score</AdminStyledTh>
+                        <AdminStyledTh>Actions</AdminStyledTh>
                       </tr>
                     </thead>
                     <tbody>
@@ -2271,47 +2070,47 @@ const AdminPage: React.FC = () => {
                         const winnerTeam = m.winnerId ? (m.winnerId === m.team1Id ? t1 : t2) : null;
                         return (
                           <tr key={m.id}>
-                            <StyledTd>{m.id}</StyledTd>
-                            <StyledTd>{m.weekPlayed}</StyledTd>
-                            <StyledTd>
+                            <AdminStyledTd>{m.id}</AdminStyledTd>
+                            <AdminStyledTd>{m.weekPlayed}</AdminStyledTd>
+                            <AdminStyledTd>
                               <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
                               <span style={{ margin: '0 0.25rem', opacity: 0.5 }}>vs</span>
                               <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
-                            </StyledTd>
-                            <StyledTd>
-                              {m.status === 'completed' ? <Badge variant="success">Completed</Badge> : <Badge variant="warning">Upcoming</Badge>}
-                            </StyledTd>
-                            <StyledTd>{winnerTeam ? winnerTeam.name : '-'}</StyledTd>
-                            <StyledTd>{m.score || '-'}</StyledTd>
-                            <StyledTd>
-                              <ButtonGroup>
-                                <ActionButton onClick={() => setEditingMatch(m)}><FaEdit /></ActionButton>
-                                <ClearButton onClick={() => handleDeleteMatch(m.id)}><FaTrash /></ClearButton>
-                              </ButtonGroup>
-                            </StyledTd>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              {m.status === 'completed' ? <AdminBadge variant="success">Completed</AdminBadge> : <AdminBadge variant="warning">Upcoming</AdminBadge>}
+                            </AdminStyledTd>
+                            <AdminStyledTd>{winnerTeam ? winnerTeam.name : '-'}</AdminStyledTd>
+                            <AdminStyledTd>{m.score || '-'}</AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminButtonGroup>
+                                <AdminActionButton onClick={() => setEditingMatch(m)}><FaEdit /></AdminActionButton>
+                                <AdminClearButton onClick={() => handleDeleteMatch(m.id)}><FaTrash /></AdminClearButton>
+                              </AdminButtonGroup>
+                            </AdminStyledTd>
                           </tr>
                         );
                       })}
                     </tbody>
-                  </StyledTable>
-                </TableContainer>
-              </Card>
-            </Grid>
+                  </AdminStyledTable>
+                </AdminTableContainer>
+              </AdminCard>
+            </AdminGrid>
           )}
         </div>
       )}
 
       {/* --- TAB: TOURNAMENT CODES --- */}
       {activeTab === 'codes' && (
-        <Grid columns="1fr">
+        <AdminGrid columns="1fr">
           {/* Form to generate tournament codes */}
-          <Card>
-            <CardTitle>Generate Riot Tournament Codes</CardTitle>
+          <AdminCard>
+            <AdminCardTitle>Generate Riot Tournament Codes</AdminCardTitle>
             <form onSubmit={handleGenerateCodes}>
-              <FormLayout>
-                <FormGroup>
-                  <Label>Select Match</Label>
-                  <SelectInput
+              <AdminFormLayout>
+                <AdminFormGroup>
+                  <AdminFormLabel>Select Match</AdminFormLabel>
+                  <AdminSelectInput
                     value={selectedMatchForCodes}
                     onChange={(e) => setSelectedMatchForCodes(e.target.value)}
                     required
@@ -2327,12 +2126,12 @@ const AdminPage: React.FC = () => {
                         </option>
                       );
                     })}
-                  </SelectInput>
-                </FormGroup>
+                  </AdminSelectInput>
+                </AdminFormGroup>
 
-                <FormGroup>
-                  <Label>Codes Count (Standard is 1 code per game, best of 3 needs 2-3 codes)</Label>
-                  <TextInput
+                <AdminFormGroup>
+                  <AdminFormLabel>Codes Count (Standard is 1 code per game, best of 3 needs 2-3 codes)</AdminFormLabel>
+                  <AdminTextInput
                     type="number"
                     min={1}
                     max={10}
@@ -2340,45 +2139,74 @@ const AdminPage: React.FC = () => {
                     onChange={(e) => setCodesCount(Math.max(1, Number(e.target.value)))}
                     required
                   />
-                </FormGroup>
+                </AdminFormGroup>
 
-                <CheckboxLabel>
+                <AdminCheckboxLabel>
                   <input
                     type="checkbox"
                     checked={codesIsKnockout}
                     onChange={(e) => setCodesIsKnockout(e.target.checked)}
                   />
                   Is Bracket/Knockout match?
-                </CheckboxLabel>
+                </AdminCheckboxLabel>
 
-                <ButtonGroup style={{marginTop: '0.5rem'}}>
-                  <ActionButton type="submit" variant="primary" disabled={status === 'loading'}>
+                <AdminButtonGroup style={{marginTop: '0.5rem'}}>
+                  <AdminActionButton type="submit" variant="primary" disabled={status === 'loading'}>
                     {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for Selected Match
-                  </ActionButton>
-                  <ActionButton 
+                  </AdminActionButton>
+                  <AdminActionButton 
                     type="button" 
                     variant="secondary" 
                     disabled={status === 'loading'} 
                     onClick={handleBulkGenerateCodesForMissing}
                   >
                     {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for All Empty Matches
-                  </ActionButton>
-                </ButtonGroup>
-              </FormLayout>
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
             </form>
-          </Card>
+          </AdminCard>
+
+          {/* Sync standings manually card */}
+          <AdminCard style={{ marginTop: '1.5rem' }}>
+            <AdminCardTitle>Sync Standings Manually</AdminCardTitle>
+            <p>If a match result did not update the standings automatically, enter the Riot tournament code (shortCode) to force an update.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (manualCodeForStandings) {
+                handleUpdateStandingsForCode(manualCodeForStandings);
+                setManualCodeForStandings('');
+              }
+            }}>
+              <AdminFormLayout>
+                <AdminFormGroup>
+                  <AdminFormLabel>Tournament Code</AdminFormLabel>
+                  <AdminTextInput
+                    type="text"
+                    placeholder="e.g. NA04f69-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    value={manualCodeForStandings}
+                    onChange={(e) => setManualCodeForStandings(e.target.value)}
+                    required
+                  />
+                </AdminFormGroup>
+                <AdminActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem', width: 'auto' }}>
+                  <FaSync /> Force Sync Standings
+                </AdminActionButton>
+              </AdminFormLayout>
+            </form>
+          </AdminCard>
 
           {/* Current codes listing */}
-          <Card>
-            <CardTitle>Generated Tournament Codes Matrix</CardTitle>
+          <AdminCard>
+            <AdminCardTitle>Generated Tournament Codes Matrix</AdminCardTitle>
             <p>List of tournament codes assigned to each match. Players use these codes to enter lobbies.</p>
-            <TableContainer>
-              <StyledTable style={{tableLayout: 'fixed'}}>
+            <AdminTableContainer>
+              <AdminStyledTable style={{tableLayout: 'fixed'}}>
                 <thead>
                   <tr>
-                    <StyledTh style={{width: '15%'}}>Match ID</StyledTh>
-                    <StyledTh style={{width: '45%'}}>Matchup</StyledTh>
-                    <StyledTh style={{width: '40%'}}>Tournament Codes</StyledTh>
+                    <AdminStyledTh style={{width: '15%'}}>Match ID</AdminStyledTh>
+                    <AdminStyledTh style={{width: '45%'}}>Matchup</AdminStyledTh>
+                    <AdminStyledTh style={{width: '40%'}}>Tournament Codes</AdminStyledTh>
                   </tr>
                 </thead>
                 <tbody>
@@ -2388,8 +2216,8 @@ const AdminPage: React.FC = () => {
                     const codes = m.tournamentCodes || [];
                     return (
                       <tr key={m.id}>
-                        <StyledTd style={{width: '15%'}}>{m.id}</StyledTd>
-                        <StyledTd style={{width: '45%'}}>
+                        <AdminStyledTd style={{width: '15%'}}>{m.id}</AdminStyledTd>
+                        <AdminStyledTd style={{width: '45%'}}>
                           <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
                           <span style={{margin: '0 0.25rem', opacity: 0.5}}>vs</span>
                           <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
@@ -2402,8 +2230,8 @@ const AdminPage: React.FC = () => {
                               Week {m.weekPlayed}
                             </span>
                           )}
-                        </StyledTd>
-                        <StyledTd style={{width: '40%'}}>
+                        </AdminStyledTd>
+                        <AdminStyledTd style={{width: '40%'}}>
                           {codes.length === 0 ? (
                             <span style={{color: '#aaa', fontStyle: 'italic'}}>No codes generated yet</span>
                           ) : (
@@ -2426,76 +2254,85 @@ const AdminPage: React.FC = () => {
                                   >
                                     {code}
                                   </code>
-                                  <ActionButton
-                                    onClick={() => handleCopyCode(code)}
-                                    style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center'}}
-                                  >
-                                    {copiedCode === code ? <><FaCheck style={{color: 'green'}} /> Copied!</> : <><FaCopy /> Copy</>}
-                                  </ActionButton>
+                                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                                    <AdminActionButton
+                                      onClick={() => handleCopyCode(code)}
+                                      style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', width: 'auto', marginTop: 0}}
+                                    >
+                                      {copiedCode === code ? <><FaCheck style={{color: 'green'}} /> Copied!</> : <><FaCopy /> Copy</>}
+                                    </AdminActionButton>
+                                    <AdminActionButton
+                                      onClick={() => handleUpdateStandingsForCode(code)}
+                                      variant="secondary"
+                                      style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', width: 'auto', marginTop: 0}}
+                                    >
+                                      <FaSync /> Sync Standings
+                                    </AdminActionButton>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           )}
-                        </StyledTd>
+                        </AdminStyledTd>
                       </tr>
                     );
                   })}
                 </tbody>
-              </StyledTable>
-            </TableContainer>
-          </Card>
-        </Grid>
+              </AdminStyledTable>
+            </AdminTableContainer>
+          </AdminCard>
+        </AdminGrid>
       )}
 
       {/* --- TAB: CASTER ACCESS CODES --- */}
       {activeTab === 'casters' && (
-        <Grid columns="1fr 1fr">
+        <AdminGrid columns="1fr 1fr">
           {/* List of current casters and their access codes */}
-          <Card>
-            <CardTitle><FaUsers /> Registered Casters & Access Codes</CardTitle>
+          <AdminCard>
+            <AdminCardTitle><FaUsers /> Registered Casters & Access Codes</AdminCardTitle>
             <p>A list of all casters registered for the year <strong>{prefix.replace('grumble', '')}</strong>.</p>
             {Object.keys(casterCodes).length === 0 ? (
               <p style={{ fontStyle: 'italic', color: '#888' }}>No casters registered yet.</p>
             ) : (
-              <TableContainer>
-                <StyledTable>
+              <AdminTableContainer>
+                <AdminStyledTable>
                   <thead>
                     <tr>
-                      <StyledTh>Name</StyledTh>
-                      <StyledTh>Access Code</StyledTh>
-                      <StyledTh style={{ width: '10%' }}>Actions</StyledTh>
+                      <AdminStyledTh>Name</AdminStyledTh>
+                      <AdminStyledTh>Access Code</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '10%' }}>Actions</AdminStyledTh>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.entries(casterCodes).map(([casterId, caster]) => (
                       <tr key={casterId}>
-                        <StyledTd><strong>{caster.name}</strong></StyledTd>
-                        <StyledTd>
+                        <AdminStyledTd><strong>{caster.name}</strong></AdminStyledTd>
+                        <AdminStyledTd>
                           <code style={{ fontSize: '1.1rem', background: '#333', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '4px', fontFamily: 'monospace' }}>
                             {caster.accessCode}
                           </code>
-                        </StyledTd>
-                        <StyledTd>
-                          <IconButton variant="danger" title="Delete Caster" onClick={() => handleDeleteCasterCode(casterId)}>
+                        </AdminStyledTd>
+                        <AdminStyledTd>
+                          <AdminIconButton variant="danger" title="Delete Caster" onClick={() => handleDeleteCasterCode(casterId)}>
                             <FaTrash />
-                          </IconButton>
-                        </StyledTd>
+                          </AdminIconButton>
+                        </AdminStyledTd>
                       </tr>
                     ))}
                   </tbody>
-                </StyledTable>
-              </TableContainer>
+                </AdminStyledTable>
+              </AdminTableContainer>
             )}
-          </Card>
+          </AdminCard>
 
           {/* Form to create a new caster access code */}
-          <Card>
-            <CardTitle>Create Caster Access Code</CardTitle>
+          <AdminCard>
+            <AdminCardTitle>Create Caster Access Code</AdminCardTitle>
             <form onSubmit={handleCreateCasterCode}>
-              <FormLayout>
-                <FormGroup>
-                  <Label htmlFor="caster-name-input">Caster Name</Label>
-                  <TextInput
+              <AdminFormLayout>
+                <AdminFormGroup>
+                  <AdminFormLabel htmlFor="caster-name-input">Caster Name</AdminFormLabel>
+                  <AdminTextInput
                     id="caster-name-input"
                     type="text"
                     placeholder="e.g. Captain Flowers"
@@ -2503,27 +2340,27 @@ const AdminPage: React.FC = () => {
                     onChange={(e) => setNewCasterName(e.target.value)}
                     required
                   />
-                </FormGroup>
+                </AdminFormGroup>
 
-                <ButtonGroup style={{ marginTop: '1rem' }}>
-                  <ActionButton type="submit" variant="primary" disabled={status === 'loading'}>
+                <AdminButtonGroup style={{ marginTop: '1rem' }}>
+                  <AdminActionButton type="submit" variant="primary" disabled={status === 'loading'}>
                     {status === 'loading' ? <FaSpinner className="spin" /> : <FaPlus />} Generate Caster Code
-                  </ActionButton>
-                </ButtonGroup>
-              </FormLayout>
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
             </form>
-          </Card>
-        </Grid>
+          </AdminCard>
+        </AdminGrid>
       )}
 
       {/* --- TAB: BULK JSON IMPORT --- */}
       {activeTab === 'bulk' && (
-        <Card>
-          <CardTitle>Legacy Bulk JSON Import/Export</CardTitle>
+        <AdminCard>
+          <AdminCardTitle>Legacy Bulk JSON Import/Export</AdminCardTitle>
           <p>Directly load or retrieve arrays of JSON documents to/from the database.</p>
 
           <SelectionContainer style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: '1.5rem' }}>
-            <FormGroup>
+            <AdminFormGroup>
               <AdminLabel htmlFor="bulk-data-select">Data type to upload</AdminLabel>
               <AdminSelect
                 id="bulk-data-select"
@@ -2535,7 +2372,7 @@ const AdminPage: React.FC = () => {
                 <option value="bracket">Bracket</option>
                 <option value="matches">Matches</option>
               </AdminSelect>
-            </FormGroup>
+            </AdminFormGroup>
           </SelectionContainer>
 
           <Form onSubmit={handleBulkSubmit}>
@@ -2554,7 +2391,7 @@ const AdminPage: React.FC = () => {
               {status === 'loading' ? 'Committing bulk updates...' : 'Submit Bulk Changes'}
             </Button>
           </Form>
-        </Card>
+        </AdminCard>
       )}
     </AdminPageContainer>
   );

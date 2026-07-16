@@ -1,5 +1,6 @@
 import styled, { createGlobalStyle, css, keyframes } from 'styled-components';
 import { Link, NavLink as RouterNavLink } from 'react-router-dom';
+import { FaStar } from 'react-icons/fa';
 
 // DoubleEliminationBracket
 export const BracketContainer = styled.div`
@@ -1349,6 +1350,386 @@ export const StageDate = styled.div`
   margin: 0.25rem 0 1rem 0; /* Position it neatly between title and description */
 `;
 
+export const TabHeader = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  border-bottom: 2px solid ${({ theme }) => theme.backgroundThree};
+  margin-bottom: 2.5rem;
+`;
+
+export const TabButton = styled.button<{ active: boolean }>`
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: ${({ active, theme }) => (active ? theme.primary : theme.textAlt)};
+  border-bottom: 3px solid ${({ active, theme }) => (active ? theme.primary : 'transparent')};
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const MatchesContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+`;
+
+export const RoundGroup = styled.div`
+  background: ${({ theme }) => theme.backgroundTwo};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.boxShadow};
+`;
+
+export const RoundTitle = styled.h3`
+  font-size: 1.4rem;
+  color: ${({ theme }) => theme.text};
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  border-bottom: 1.5px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 0.5rem;
+`;
+
+export const ScheduleMatchList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+export const ScheduleMatchItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    box-shadow: 0 4px 10px ${({ theme }) => theme.boxShadow};
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+`;
+
+export const MatchTeams = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  width: 480px;
+
+  @media (max-width: 900px) {
+    width: 400px;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+export const MatchupInfoGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+export const TeamNameContainer = styled.div<{ align: 'left' | 'right' }>`
+  text-align: ${({ align }) => align};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const ScheduleTeamNameLink = styled(Link)`
+  color: ${({ theme }) => theme.primary};
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export const TeamNameSpan = styled.span`
+  color: ${({ theme }) => theme.text};
+  font-weight: 600;
+`;
+
+export const VersusSpan = styled.span`
+  color: ${({ theme }) => theme.textAlt};
+  font-size: 0.9rem;
+`;
+
+export const MatchTimeDetails = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: space-between;
+  }
+`;
+
+export const TimeDisplay = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`;
+
+export const MainTime = styled.span`
+  font-size: 1rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.text};
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+export const SecondaryTime = styled.span`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const EditButton = styled.button`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  color: ${({ theme }) => theme.textAlt};
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const BroadcastBadge = styled.span`
+  background-color: #9146ff; /* Twitch Purple */
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
+export const BroadcastLink = styled.a`
+  color: #9146ff;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export const BroadcastContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+`;
+
+export const DrawerOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+`;
+
+export const DrawerContainer = styled.div`
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  max-width: 90vw;
+  height: 100vh;
+  background: ${({ theme }) => theme.background};
+  border-left: 1px solid ${({ theme }) => theme.borderColor};
+  box-shadow: -4px 0 15px ${({ theme }) => theme.boxShadow};
+  z-index: 1001;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-sizing: border-box;
+  animation: slideIn 0.25s ease-out;
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+`;
+
+export const DrawerHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 1rem;
+`;
+
+export const DrawerTitle = styled.h2`
+  margin: 0;
+  font-size: 1.5rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const CloseIconButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.textAlt};
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+export const DrawerContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+`;
+
+export const DrawerSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: ${({ theme }) => theme.backgroundTwo};
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+export const SectionHeaderTitle = styled.h4`
+  margin: 0;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.text};
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+`;
+
+export const MatchInfoBanner = styled.div`
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.75rem;
+  background: ${({ theme }) => theme.body};
+  border-radius: 6px;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const DrawerLabel = styled.label`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const DrawerInput = styled.input`
+  padding: 0.6rem;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  box-sizing: border-box;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const DrawerCheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+`;
+
+export const DrawerFooter = styled.div`
+  display: flex;
+  gap: 1rem;
+  border-top: 1px solid ${({ theme }) => theme.borderColor};
+  padding-top: 1rem;
+`;
+
+export const DrawerButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: ${({ variant, theme }) => (variant === 'secondary' ? `1px solid ${theme.borderColor}` : 'none')};
+  background: ${({ variant, theme }) => (variant === 'secondary' ? 'transparent' : theme.primary)};
+  color: ${({ variant, theme }) => (variant === 'secondary' ? theme.text : 'white')};
+
+  &:hover {
+    background: ${({ variant, theme }) => (variant === 'secondary' ? theme.body : theme.primaryHover)};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
 // AdminPage
 export const AdminPageContainer = styled.div`
   max-width: 1200px;
@@ -2414,3 +2795,1414 @@ export const ProfileRankValue = styled.span<{ tier: string }>`
   color: ${({ tier }) => getTierColor(tier).text};
 `;
 
+// UpcomingMatch
+export const UpcomingMatchGameSelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+
+  option {
+    background-color: ${({ theme }) => theme.background};
+    color: ${({ theme }) => theme.text};
+  }
+`;
+
+// SwissSystemPage
+export const SwissPageContainer = styled.div`
+  padding: 2rem;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+`;
+
+export const SwissSectionTitle = styled.h2`
+  font-size: 2rem;
+  border-bottom: 2px solid ${({ theme }) => theme.body};
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+`;
+
+export const SwissRoundsContainer = styled.div`
+  margin-top: 2rem;
+`;
+
+export const SwissTabHeader = styled.div`
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid ${({ theme }) => theme.body};
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+`;
+
+export const SwissTabButton = styled.button<{ active: boolean }>`
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: ${({ active, theme }) => (active ? theme.primary : theme.textAlt)};
+  border-bottom: 3px solid ${({ active, theme }) => (active ? theme.primary : 'transparent')};
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const SwissMatchGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 1.5rem;
+`;
+
+export const SwissMatchCard = styled.div`
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+`;
+
+export const SwissMatchTeamSpan = styled.span<{ winner?: boolean }>`
+  font-weight: ${({ winner }) => (winner ? '700' : '400')};
+  color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
+`;
+
+export const SwissMatchTeamLink = styled(Link)<{ winner?: boolean }>`
+  font-weight: ${({ winner }) => (winner ? '700' : '400')};
+  color: ${({ winner, theme }) => (winner ? theme.success : 'inherit')};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export const SwissVersus = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const SwissScoreText = styled.span`
+  font-size: 1.25rem;
+  font-weight: 700;
+  background-color: ${({ theme }) => theme.body};
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+`;
+
+export const SwissBracketContainer = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1.5rem;
+  
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.scrollbar};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.border};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const SwissRoundColumn = styled.div`
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+export const SwissRoundHeader = styled.div`
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid ${({ theme }) => theme.primary};
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const SwissRecordGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+export const SwissRecordGroupTitle = styled.div`
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ theme }) => theme.textAlt};
+  margin-bottom: 0.25rem;
+  border-left: 3px solid ${({ theme }) => theme.primary};
+  padding-left: 0.4rem;
+`;
+
+export const SwissMatchupCard = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 6px;
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.primary};
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.boxShadow};
+  }
+`;
+
+export const SwissTeamRow = styled.div<{ isWinner?: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  background-color: ${({ isWinner }) => isWinner ? 'rgba(46, 204, 113, 0.08)' : 'transparent'};
+`;
+
+export const SwissTeamName = styled.div<{ isWinner?: boolean }>`
+  font-size: 0.85rem;
+  font-weight: ${({ isWinner }) => isWinner ? '700' : '500'};
+  color: ${({ isWinner, theme }) => isWinner ? theme.success : theme.text};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 170px;
+`;
+
+export const SwissTeamScore = styled.div<{ isWinner?: boolean }>`
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: ${({ isWinner, theme }) => isWinner ? theme.success : theme.textAlt};
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  min-width: 18px;
+  text-align: center;
+`;
+
+export const SwissMatchMeta = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.textAlt};
+  border-top: 1px solid ${({ theme }) => theme.border};
+  padding-top: 0.3rem;
+  margin-top: 0.15rem;
+`;
+
+export const SwissStatusBadge = styled.span<{ status?: string }>`
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  color: ${({ status, theme }) => status === 'completed' ? theme.textAlt : theme.primary};
+`;
+
+
+// SwissStandings
+export const SwissStandingsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+`;
+
+export const SwissStandingCard = styled.div<{ type: 'advanced' | 'eliminated' | 'active' }>`
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 5px solid ${({ theme, type }) =>
+    type === 'advanced' ? theme.success :
+      type === 'eliminated' ? theme.danger :
+        theme.primary};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+`;
+
+export const SwissStandingCardTitle = styled.h3`
+  margin-top: 0;
+  font-size: 1.25rem;
+  color: ${({ theme }) => theme.secondaryText};
+`;
+
+export const SwissStandingTeamList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+export const SwissStandingTeamItem = styled.li`
+  padding: 0.5rem 0;
+  border-bottom: 1px solid ${({ theme }) => theme.borderBottom};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+// TwitchEmbed
+export const TwitchEmbedContainer = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000; /* Black background for loading */
+  border-radius: 8px;
+  overflow: hidden; /* Ensures the iframe respects the border-radius */
+`;
+
+export const TwitchStyledIframe = styled.iframe`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+`;
+
+// BugReportModal
+export const BugReportModalBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+export const BugReportModalContainer = styled.div`
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+`;
+
+export const BugReportModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 1rem;
+`;
+
+export const BugReportModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.8rem;
+`;
+
+export const BugReportModalCloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: ${({ theme }) => theme.textAlt};
+  &:hover { color: ${({ theme }) => theme.text}; }
+`;
+
+export const BugReportModalTextArea = styled.textarea`
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 50px;
+  resize: vertical;
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+`;
+
+export const BugReportModalStatusMessage = styled.p<{ status: string }>`
+  /* ... */
+`;
+
+// ThemeToggleButton
+export const ThemeToggleIconButton = styled.button`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  color: ${({ theme }) => theme.text};
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: ${({ theme }) => theme.body};
+  }
+`;
+
+// TeamPage
+export const TeamPageContainer = styled.div`
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+`;
+
+export const TeamPageHeaderCard = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  padding: 2.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+
+  @media (max-width: 600px) {
+    padding: 1.5rem;
+  }
+`;
+
+export const TeamPageTitleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  padding-bottom: 1.5rem;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+`;
+
+export const TeamPageHeaderTitle = styled.h1`
+  font-size: 2.75rem;
+  font-weight: 800;
+  color: ${({ theme }) => theme.text};
+  margin: 0;
+
+  @media (max-width: 600px) {
+    font-size: 2.25rem;
+  }
+`;
+
+export const TeamPageActionButtonGroup = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+export const TeamPageActionButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  color: ${({ theme }) => theme.text};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    background-color: ${({ theme }) => theme.backgroundThree || theme.body};
+    border-color: ${({ theme }) => theme.primary};
+    color: ${({ theme }) => theme.primary};
+    text-decoration: none;
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+`;
+
+export const TeamPageOpGgMultiSearchLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #5383e8, #2a58b8);
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 6px rgba(83, 131, 232, 0.15);
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(83, 131, 232, 0.3);
+    background: linear-gradient(135deg, #6493f8, #3b69c8);
+    color: white;
+    text-decoration: none;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const TeamPagePlayerList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+`;
+
+export const TeamPagePlayerCard = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  border: 1px solid ${({ theme }) => theme.border};
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px ${({ theme }) => theme.boxShadow};
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const TeamPagePlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+`;
+
+export const TeamPagePlayerNameLink = styled.a`
+  font-weight: 700;
+  color: ${({ theme }) => theme.text};
+  text-decoration: none;
+  font-size: 1.1rem;
+
+  &:hover {
+    color: ${({ theme }) => theme.primary};
+    text-decoration: underline;
+  }
+`;
+
+export const TeamPagePlayerRole = styled.span`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.textAlt};
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+`;
+
+export const TeamPageCaptainIndicator = styled(FaStar)`
+  color: #ffc107;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+`;
+
+export const TeamPageSection = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+export const TeamPageSectionHeader = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: ${({ theme }) => theme.text};
+  margin: 0;
+  position: relative;
+  padding-left: 0.75rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.2rem;
+    bottom: 0.2rem;
+    width: 4px;
+    background-color: ${({ theme }) => theme.primary};
+    border-radius: 2px;
+  }
+`;
+
+export const TeamPageEmptyStateCard = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  border: 1px dashed ${({ theme }) => theme.border};
+  color: ${({ theme }) => theme.textAlt};
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+`;
+
+export const TeamPageMatchHistoryCard = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  padding: 2rem;
+  border: 1px solid ${({ theme }) => theme.border};
+
+  @media (max-width: 600px) {
+    padding: 1.25rem;
+  }
+
+  & > h1 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin: 0 0 1.5rem 0;
+    color: ${({ theme }) => theme.text};
+    border-bottom: 1px solid ${({ theme }) => theme.border};
+    padding-bottom: 1rem;
+  }
+
+  & > h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem 0;
+    color: ${({ theme }) => theme.textAlt};
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+`;
+
+export const TeamPageMatchesList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+`;
+
+// Header
+export const HeaderModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+`;
+
+export const HeaderModalBox = styled.div`
+  background: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px ${({ theme }) => theme.boxShadow};
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+`;
+
+export const HeaderModalTitle = styled.h2`
+  margin: 0;
+  font-size: 1.6rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const HeaderModalInput = styled.input`
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 6px;
+  font-size: 1rem;
+  background: ${({ theme }) => theme.backgroundTwo};
+  color: ${({ theme }) => theme.text};
+  width: 100%;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const HeaderModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+`;
+
+export const HeaderModalButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
+  background: ${({ variant, theme }) => (variant === 'secondary' ? 'transparent' : theme.primary)};
+  color: ${({ variant, theme }) => (variant === 'secondary' ? theme.text : 'white')};
+  border: ${({ variant, theme }) => (variant === 'secondary' ? `1px solid ${theme.borderColor}` : 'none')};
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ variant, theme }) => (variant === 'secondary' ? theme.body : theme.primaryHover)};
+    opacity: 0.95;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const HeaderErrorMsg = styled.p`
+  color: ${({ theme }) => theme.danger};
+  font-size: 0.9rem;
+  margin: 0;
+`;
+
+export const HeaderLoginButton = styled.button`
+  background: ${({ theme }) => theme.primary};
+  color: white;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: ${({ theme }) => theme.primaryHover};
+  }
+
+  @media (max-width: 1000px) {
+    display: none;
+  }
+`;
+
+export const HeaderMobileLoginButton = styled.div`
+  font-size: 1.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.primary};
+  font-weight: bold;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.body};
+  }
+`;
+
+// Common/Button
+interface CommonFormButtonProps {
+  variant?: 'primary' | 'secondary';
+}
+
+const commonButtonVariants = {
+  primary: css`
+    background-color: ${({ theme }) => theme.primary};
+    color: white;
+    border: 2px solid transparent;
+
+    &:hover {
+      background-color: ${({ theme }) => theme.primaryHover};
+    }
+  `,
+  secondary: css`
+    background-color: ${({ theme }) => theme.textAlt};
+    color: white;
+    border: 2px solid transparent;
+
+    &:hover {
+      background-color: #5a6268;
+    }
+  `,
+};
+
+export const CommonFormButton = styled.button<CommonFormButtonProps>`
+  /* Base styles that apply to all buttons */
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 1rem;
+
+  &:disabled {
+    background-color: ${({ theme }) => theme.border};
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  /* Apply variant styles, defaulting to 'primary' */
+  ${({ variant = 'primary' }) => commonButtonVariants[variant]}
+`;
+
+// Tournament
+export const TournamentSectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid ${({ theme }) => theme.secondaryBorderBotton};
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+`;
+
+export const TournamentInlineSectionTitle = styled.h2`
+  font-size: 1.8rem;
+  color: ${({ theme }) => theme.text};
+  margin: 0;
+`;
+
+export const TournamentViewStageLink = styled(Link)`
+  color: ${({ theme }) => theme.primary};
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+// AdminPage
+export const AdminTabBar = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid ${({ theme }) => theme.borderColor};
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+`;
+
+export const AdminTabButton = styled.button<{ active: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: ${({ active, theme }) => active ? theme.primary : 'transparent'};
+  color: ${({ active, theme }) => active ? '#ffffff' : theme.text};
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: ${({ active, theme }) => active ? theme.primaryHover : theme.backgroundTwo};
+  }
+`;
+
+export const AdminCard = styled.div`
+  background: ${({ theme }) => theme.backgroundTwo};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.boxShadow};
+`;
+
+export const AdminCardTitle = styled.h3`
+  margin-top: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  padding-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+export const AdminGrid = styled.div<{ columns?: string }>`
+  display: grid;
+  grid-template-columns: ${({ columns }) => columns || '1fr 1fr'};
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const AdminTableContainer = styled.div`
+  overflow-x: auto;
+  margin-top: 1rem;
+`;
+
+export const AdminStyledTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+`;
+
+export const AdminStyledTh = styled.th`
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 2px solid ${({ theme }) => theme.borderColor};
+  background-color: ${({ theme }) => theme.backgroundThree};
+  font-weight: 600;
+`;
+
+export const AdminStyledTd = styled.td`
+  padding: 0.75rem;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+  vertical-align: middle;
+`;
+
+export const AdminFormLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+export const AdminFormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+`;
+
+export const AdminFormLabel = styled.label`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const AdminTextInput = styled.input`
+  padding: 0.6rem;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primary};
+    outline: none;
+  }
+`;
+
+export const AdminSelectInput = styled.select`
+  padding: 0.6rem;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primary};
+    outline: none;
+  }
+`;
+
+export const AdminCheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+`;
+
+export const AdminSearchInput = styled(AdminTextInput)`
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 320px;
+`;
+
+export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'danger' | 'warning' }>`
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  background-color: ${({ variant, theme }) => {
+    switch (variant) {
+      case 'success': return theme.success + '22';
+      case 'danger': return theme.danger + '22';
+      case 'warning': return '#ffc10722';
+      case 'primary':
+      default: return theme.primary + '22';
+    }
+  }};
+  color: ${({ variant, theme }) => {
+    switch (variant) {
+      case 'success': return theme.success;
+      case 'danger': return theme.danger;
+      case 'warning': return '#ffc107';
+      case 'primary':
+      default: return theme.primary;
+    }
+  }};
+  border: 1px solid ${({ variant, theme }) => {
+    switch (variant) {
+      case 'success': return theme.success;
+      case 'danger': return theme.danger;
+      case 'warning': return '#ffc107';
+      case 'primary':
+      default: return theme.primary;
+    }
+  }};
+`;
+
+export const AdminButtonGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+export const AdminStatusText = styled.p<{ status: 'success' | 'error' | 'loading' }>`
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-weight: 500;
+  margin: 1rem 0;
+  background-color: ${({ status, theme }) => status === 'success' ? theme.success + '22' : status === 'error' ? theme.danger + '22' : theme.backgroundThree};
+  color: ${({ status, theme }) => status === 'success' ? theme.success : status === 'error' ? theme.danger : theme.text};
+  border: 1px solid ${({ status, theme }) => status === 'success' ? theme.success : status === 'error' ? theme.danger : theme.borderColor};
+`;
+
+export const AdminActionButton = styled(CommonFormButton)`
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
+export const AdminClearButton = styled(AdminActionButton)`
+  background-color: ${({ theme }) => theme.danger};
+  &:hover {
+    background-color: #c82333;
+  }
+`;
+
+export const AdminIconButton = styled.button<{ variant?: 'success' | 'danger' }>`
+  background: ${({ variant, theme }) => (variant === 'success' ? theme.success : variant === 'danger' ? theme.danger : theme.primary)};
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+export const AdminEditBox = styled.div`
+  border: 2px solid ${({ theme }) => theme.primary};
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.background};
+  margin-bottom: 1.5rem;
+`;
+
+export const AdminFloatingConfirm = styled.div`
+  border: 1px solid #ffc107;
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+`;
+
+// AvailabilityPage
+export const AvailabilityPageContainer = styled.div`
+  padding: 2rem;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+`;
+
+export const AvailabilitySectionTitle = styled.h2`
+  font-size: 2rem;
+  border-bottom: 2px solid ${({ theme }) => theme.body};
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+`;
+
+export const AvailabilityControlsContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+`;
+
+export const AvailabilitySelect = styled.select`
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid ${({ theme }) => theme.borderBottom};
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  color: ${({ theme }) => theme.text};
+`;
+
+export const AvailabilityGridContainer = styled.div`
+  overflow-x: auto;
+  margin-bottom: 3rem;
+`;
+
+export const AvailabilityGrid = styled.div<{ showTimezone: boolean }>`
+  display: grid;
+  grid-template-columns: 100px ${({ showTimezone }) => showTimezone ? '130px' : ''} repeat(7, 1fr);
+  gap: 5px;
+  min-width: 800px;
+`;
+
+export const AvailabilityGridHeader = styled.div`
+  font-weight: bold;
+  text-align: center;
+  padding: 0.5rem;
+  background-color: ${({ theme }) => theme.body};
+  border-radius: 4px;
+`;
+
+export const AvailabilityTimeLabel = styled.div`
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ theme }) => theme.body};
+  border-radius: 4px;
+`;
+
+export const AvailabilitySlot = styled.div<{ isSelected: boolean; count: number; isEditable: boolean }>`
+  height: 50px;
+  background-color: ${({ isSelected, count, theme }) => 
+    isSelected ? theme.primary : 
+    count > 0 ? `${theme.primary}40` : // Light primary if some players
+    theme.backgroundTwo};
+  border: 1px solid ${({ theme }) => theme.borderBottom};
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: ${({ isEditable }) => (isEditable ? 'pointer' : 'default')};
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: ${({ isEditable, theme }) => (isEditable ? theme.primaryHover : '')};
+  }
+`;
+
+export const AvailabilitySlotCount = styled.span`
+  font-size: 0.8rem;
+  font-weight: bold;
+`;
+
+export const AvailabilityBestSlotsContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+`;
+
+export const AvailabilityBestSlotCard = styled.div`
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.borderBottom};
+  text-align: center;
+`;
+
+export const AvailabilityScoreBadge = styled.span`
+  background-color: ${({ theme }) => theme.primary};
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+`;
+
+export const AvailabilityStatusMessage = styled.div`
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border: 1px solid ${({ theme }) => theme.borderBottom};
+  font-weight: 500;
+`;
+
+// SignUpPage
+export const SignUpPageContainer = styled.div`
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+`;
+
+export const SignUpPageTitle = styled.h1`
+  font-size: 2.8rem;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2rem;
+`;
+
+export const SignUpPageForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+export const SignUpPageFormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+export const SignUpPageLabel = styled.label`
+  font-weight: 600;
+  color: #555;
+`;
+
+export const SignUpPageInput = styled.input`
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+`;
+
+export const SignUpPageSelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: white;
+`;
+
+export const SignUpPageTextArea = styled.textarea`
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  min-height: 100px;
+  resize: vertical;
+`;
+
+export const SignUpPageSubmitButton = styled.button`
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover { background-color: #0056b3; }
+  &:disabled {
+    background-color: #a0c7e4;
+    cursor: not-allowed;
+  }
+`;
+
+export const SignUpPageStatusMessage = styled.p<{ status: string }>`
+  text-align: center;
+  font-weight: 600;
+  padding: 1rem;
+  border-radius: 5px;
+  color: white;
+  background-color: ${({ status }) => status === 'success' ? '#28a745' : '#dc3545'};
+`;
+
+// MatchResult
+export const MatchResultContainer = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  font-family: 'Roboto', sans-serif;
+  
+  @media (max-width: 992px) {
+    flex-direction: column;
+  }
+`;
+
+export const MatchResultTeamPanelContainer = styled.div<{ teamColor: 'blue' | 'red'; isWinner: boolean }>`
+  flex: 1;
+  background: ${({ theme }) => theme.background};
+  border-radius: 8px;
+  border-top: 5px solid ${({ teamColor }) => (teamColor === 'blue' ? '#007bff' : '#dc3545')};
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  transition: all 0.3s ease-in-out;
+
+  /* Apply special styling if this team is the winner */
+  ${({ isWinner, theme }) =>
+    isWinner &&
+    css`
+      /* Make the shadow more prominent */
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+
+      /* Add a subtle background gradient */
+      background: linear-gradient(180deg, ${theme.background}, ${theme.body});
+    `}
+
+  /* If the team is NOT the winner, make them slightly faded */
+  ${({ isWinner }) =>
+    !isWinner &&
+    css`
+      opacity: 0.7;
+      transform: scale(0.98);
+    `}
+`;
+
+export const MatchResultBansContainer = styled.div`
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  background: ${({ theme }) => theme.body};
+  border-radius: 6px 6px 0 0;
+`;
+
+export const MatchResultBanIcon = styled.img`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  opacity: 0.7;
+  filter: grayscale(80%);
+`;
+
+export const MatchResultPlayersContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+export const MatchResultPlayerRowContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+export const MatchResultChampionIcon = styled.img`
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+`;
+
+export const MatchResultSummonerSpells = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+export const MatchResultSpellIcon = styled.img`
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+`;
+
+export const MatchResultPlayerName = styled.span`
+  font-weight: 600;
+`;
+
+export const MatchResultItemsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+`;
+
+export const MatchResultItemIcon = styled.img`
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+`;
+
+export const MatchResultEmptyItemSlot = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background-color: ${({ theme }) => theme.body};
+  border: 1px solid ${({ theme }) => theme.borderColor};
+`;
+
+export const MatchResultPlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* This will now be the element that expands */
+  min-width: 0; /* Important for allowing text to truncate if needed */
+`;
+
+export const MatchResultKDA = styled.span`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+  margin-top: 2px;
+  font-weight: 500;
+
+  span {
+    color: ${({ theme }) => theme.text};
+    font-weight: 700;
+  }
+`;
