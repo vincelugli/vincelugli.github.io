@@ -9,7 +9,7 @@ import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 import { getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain } from '../../utils';
-import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck} from 'react-icons/fa';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync} from 'react-icons/fa';
 import {
   AdminPageContainer,
   AdminTitle,
@@ -205,6 +205,7 @@ const AdminPage: React.FC = () => {
   const [codesCount, setCodesCount] = useState(1);
   const [codesIsKnockout, setCodesIsKnockout] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [manualCodeForStandings, setManualCodeForStandings] = useState('');
 
   const prefix = getFirebasePrefix();
 
@@ -1016,6 +1017,23 @@ const AdminPage: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to bulk generate tournament codes.');
+    }
+  };
+
+  const handleUpdateStandingsForCode = async (code: string) => {
+    try {
+      setStatus('loading');
+      setStatusMsg(`Updating standings for code: ${code}...`);
+
+      const functions = getFunctions();
+      const updateStandingsFn = httpsCallable(functions, 'updateStandingsWithExistingMatchResult');
+
+      await updateStandingsFn({ shortCode: code });
+
+      showStatus('success', `Successfully updated standings for code: ${code}`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to update standings.');
     }
   };
 
@@ -2149,6 +2167,35 @@ const AdminPage: React.FC = () => {
             </form>
           </AdminCard>
 
+          {/* Sync standings manually card */}
+          <AdminCard style={{ marginTop: '1.5rem' }}>
+            <AdminCardTitle>Sync Standings Manually</AdminCardTitle>
+            <p>If a match result did not update the standings automatically, enter the Riot tournament code (shortCode) to force an update.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (manualCodeForStandings) {
+                handleUpdateStandingsForCode(manualCodeForStandings);
+                setManualCodeForStandings('');
+              }
+            }}>
+              <AdminFormLayout>
+                <AdminFormGroup>
+                  <AdminFormLabel>Tournament Code</AdminFormLabel>
+                  <AdminTextInput
+                    type="text"
+                    placeholder="e.g. NA04f69-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    value={manualCodeForStandings}
+                    onChange={(e) => setManualCodeForStandings(e.target.value)}
+                    required
+                  />
+                </AdminFormGroup>
+                <AdminActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem', width: 'auto' }}>
+                  <FaSync /> Force Sync Standings
+                </AdminActionButton>
+              </AdminFormLayout>
+            </form>
+          </AdminCard>
+
           {/* Current codes listing */}
           <AdminCard>
             <AdminCardTitle>Generated Tournament Codes Matrix</AdminCardTitle>
@@ -2207,12 +2254,21 @@ const AdminPage: React.FC = () => {
                                   >
                                     {code}
                                   </code>
-                                  <AdminActionButton
-                                    onClick={() => handleCopyCode(code)}
-                                    style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center'}}
-                                  >
-                                    {copiedCode === code ? <><FaCheck style={{color: 'green'}} /> Copied!</> : <><FaCopy /> Copy</>}
-                                  </AdminActionButton>
+                                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                                    <AdminActionButton
+                                      onClick={() => handleCopyCode(code)}
+                                      style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', width: 'auto', marginTop: 0}}
+                                    >
+                                      {copiedCode === code ? <><FaCheck style={{color: 'green'}} /> Copied!</> : <><FaCopy /> Copy</>}
+                                    </AdminActionButton>
+                                    <AdminActionButton
+                                      onClick={() => handleUpdateStandingsForCode(code)}
+                                      variant="secondary"
+                                      style={{padding: '0.15rem 0.4rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', width: 'auto', marginTop: 0}}
+                                    >
+                                      <FaSync /> Sync Standings
+                                    </AdminActionButton>
+                                  </div>
                                 </div>
                               ))}
                             </div>

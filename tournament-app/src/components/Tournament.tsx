@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import SwissStage from './Swiss/SwissStage';
-import SwissStandings from './Swiss/SwissStandings';
+import SwissBracket from './Swiss/SwissBracket';
 import DoubleEliminationBracket from './Brackets/DoubleEliminationBracket';
 import {
   TournamentContainer,
@@ -28,9 +28,9 @@ const Tournament: React.FC = () => {
           <>
             <TournamentSectionHeader>
               <TournamentInlineSectionTitle>Swiss Stage</TournamentInlineSectionTitle>
-              <TournamentViewStageLink to="/swiss">Full Swiss Stage & Matches →</TournamentViewStageLink>
+              <TournamentViewStageLink to="/swiss">Full Swiss Stage & Standings →</TournamentViewStageLink>
             </TournamentSectionHeader>
-            <SwissStandings />
+            <SwissBracket />
           </>
         ) : (
           <>

@@ -56,10 +56,6 @@ const GameNotificationSchema = z.object({
   region: z.optional(z.string()),
 });
 
-const UpdateStandingsSchema = z.object({
-  shortCode: z.optional(z.string()),
-});
-
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 40 * 60;
 const PROJECT = "grumble-5885f";
 const LOCATION = "us-central1"; // Or your function"s location
@@ -242,7 +238,7 @@ export const getAuthTokenForAccessCode = https.onCall<AuthData>(
     return {token: customToken};
   });
 
-export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
+export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2026_",
   async (event) => {
     logger.debug("Event received: ", event);
     const change = event.data;
@@ -292,7 +288,7 @@ export const scheduleAutoPick = onDocumentUpdated("drafts/grumble2025_",
         url,
         headers: {"Content-Type": "application/json"},
         body: Buffer
-          .from(JSON.stringify({data: {draftId: "grumble2025_"}}))
+          .from(JSON.stringify({data: {draftId: "grumble2026_"}}))
           .toString("base64"),
         oidcToken: {
           serviceAccountEmail,
@@ -686,10 +682,10 @@ ${notificationData.gameId}`
 
       const matchRef = db
         .collection("matches")
-        .doc(notificationData.shortCode ?? "grumble2025_unknown");
+        .doc(notificationData.shortCode ?? "grumble2026_unknown");
       const resultRef = db
         .collection("match_results")
-        .doc(notificationData.shortCode ?? "grumble2025_unknown");
+        .doc(notificationData.shortCode ?? "grumble2026_unknown");
 
       const batch = db.batch();
 
@@ -733,8 +729,8 @@ is missing 'division' or 'matchId' field.`);
           matchResultData.blueTeam.players.map((p) => p.playerName) :
           matchResultData.redTeam.players.map((p) => p.playerName),
         division);
-      updateStandings(
-        notificationData.shortCode || "grumble2025_unknown",
+      await updateStandings(
+        notificationData.shortCode || "grumble2026_unknown",
         winnerId || -1,
         division,
         matchId);
@@ -768,8 +764,8 @@ const updateStandings = async (
   }
 
   await db.runTransaction(async (transaction) => {
-    const divisionTeamsDocRef = db.doc(`teams/grumble2025_${division}`);
-    const divisionMatchesDocRef = db.doc(`matches/grumble2025_${division}`);
+    const divisionTeamsDocRef = db.doc(`teams/grumble2026_${division}`);
+    const divisionMatchesDocRef = db.doc(`matches/grumble2026_${division}`);
 
     // Read all necessary documents within the transaction
     const [divisionMatchesDoc, divisionTeamsDoc] =
@@ -777,11 +773,11 @@ const updateStandings = async (
 
     if (!divisionMatchesDoc.exists) {
       throw new Error(
-        `Matches document 'grumble2025_${division}' not found.`);
+        `Matches document 'grumble2026_${division}' not found.`);
     }
     if (!divisionTeamsDoc.exists) {
       throw new Error(
-        `Teams document 'grumble2025_${division}' not found.`);
+        `Teams document 'grumble2026_${division}' not found.`);
     }
 
     const allMatches = divisionMatchesDoc.data()!.matches || [];
@@ -885,8 +881,8 @@ export async function findTeamIdByPlayerNames(
     playerNames
   );
 
-  const teamsDocRef = db.doc(`teams/grumble2025_${division}`);
-  const playersDocRef = db.doc(`players/grumble2025_${division}`);
+  const teamsDocRef = db.doc(`teams/grumble2026_${division}`);
+  const playersDocRef = db.doc(`players/grumble2026_${division}`);
 
   try {
     const [teamsDocSnap, playersDocSnap] = await Promise.all([
@@ -895,10 +891,10 @@ export async function findTeamIdByPlayerNames(
     ]);
 
     if (!teamsDocSnap.exists) {
-      throw new Error(`Teams document 'grumble2025_${division}' not found.`);
+      throw new Error(`Teams document 'grumble2026_${division}' not found.`);
     }
     if (!playersDocSnap.exists) {
-      throw new Error(`Players document 'grumble2025_${division}' not found.`);
+      throw new Error(`Players document 'grumble2026_${division}' not found.`);
     }
 
     const allTeams = teamsDocSnap.data()!.teams;
@@ -950,55 +946,72 @@ Team ID ${team.id} (${team.name}).`);
   }
 }
 
-export const updateStandingsWithExistingMatchResult = onRequest(
+export const updateStandingsWithExistingMatchResult = onCall(
   {secrets: [riotApiKey]},
-  async (req, res) => {
-    const reqData = UpdateStandingsSchema.parse(req.body);
+  async (request) => {
+    if (!request.auth || !request.auth.token.adminId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Must be an administrator to perform this action."
+      );
+    }
+
+    const {shortCode} = request.data as {shortCode?: string};
+    if (!shortCode) {
+      throw new HttpsError(
+        "invalid-argument",
+        "The function must be called with a valid 'shortCode'."
+      );
+    }
 
     const resultRef = db
       .collection("match_results")
-      .doc(reqData.shortCode ?? "grumble2025_unknown");
+      .doc(shortCode);
 
     try {
       const resultData = await resultRef.get();
       if (!resultData.exists) {
-        throw new Error(
-          `Result doc for ${reqData.shortCode} not found.`
+        throw new HttpsError(
+          "not-found",
+          `Result doc for ${shortCode} not found.`
         );
       }
 
       const {winner, blueTeam, redTeam} = resultData.data()!;
 
-      const shortCodeDocRef = db.doc(`matches/${reqData.shortCode}`);
+      const shortCodeDocRef = db.doc(`matches/${shortCode}`);
       const shortCodeDoc = await shortCodeDocRef.get();
       if (!shortCodeDoc.exists) {
-        throw new Error(
-          `Document for shortCode '${reqData.shortCode}' not found.`
+        throw new HttpsError(
+          "not-found",
+          `Document for shortCode '${shortCode}' not found.`
         );
       }
       const {division, matchId} = shortCodeDoc.data()!;
       logger.info(`Found division ${division} and matchId ${matchId}`);
       if (!division || !matchId) {
-        throw new Error(
-          `Document '${reqData.shortCode}'
-is missing 'division' or 'matchId' field.`);
+        throw new HttpsError(
+          "failed-precondition",
+          `Document '${shortCode}' is missing 'division' or 'matchId' field.`
+        );
       }
       const winnerId = await findTeamIdByPlayerNames(
         winner === 100 ?
           blueTeam.players.map((p: any) => p.playerName) :
           redTeam.players.map((p: any) => p.playerName),
         division);
-      updateStandings(
-        reqData.shortCode || "grumble2025_unknown",
+      await updateStandings(
+        shortCode,
         winnerId || -1,
         division,
         matchId);
-    } catch (e) {
-      logger.error(
-        `Failed to fetch match data for ${reqData.shortCode}.`);
-      logger.error(`Failed with error ${e}`);
+
+      return {success: true, message: "Standings updated successfully."};
+    } catch (e: any) {
+      logger.error(`Failed to update standings for ${shortCode}: ${e}`);
+      throw new HttpsError("internal",
+        e.message || "An internal error occurred.");
     }
-    res.status(201).send({message: "Standings updated successfully."});
   });
 
 export const generateTournamentCodesForMatch = onCall(

@@ -2901,6 +2901,137 @@ export const SwissScoreText = styled.span`
   border-radius: 4px;
 `;
 
+export const SwissBracketContainer = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 1.5rem;
+  
+  /* Scrollbar styling */
+  &::-webkit-scrollbar {
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.scrollbar};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.border};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const SwissRoundColumn = styled.div`
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.boxShadow};
+  border: 1px solid ${({ theme }) => theme.border};
+`;
+
+export const SwissRoundHeader = styled.div`
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 2px solid ${({ theme }) => theme.primary};
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const SwissRecordGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+export const SwissRecordGroupTitle = styled.div`
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ theme }) => theme.textAlt};
+  margin-bottom: 0.25rem;
+  border-left: 3px solid ${({ theme }) => theme.primary};
+  padding-left: 0.4rem;
+`;
+
+export const SwissMatchupCard = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 6px;
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.primary};
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.boxShadow};
+  }
+`;
+
+export const SwissTeamRow = styled.div<{ isWinner?: boolean }>`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  background-color: ${({ isWinner }) => isWinner ? 'rgba(46, 204, 113, 0.08)' : 'transparent'};
+`;
+
+export const SwissTeamName = styled.div<{ isWinner?: boolean }>`
+  font-size: 0.85rem;
+  font-weight: ${({ isWinner }) => isWinner ? '700' : '500'};
+  color: ${({ isWinner, theme }) => isWinner ? theme.success : theme.text};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 170px;
+`;
+
+export const SwissTeamScore = styled.div<{ isWinner?: boolean }>`
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: ${({ isWinner, theme }) => isWinner ? theme.success : theme.textAlt};
+  background-color: ${({ theme }) => theme.backgroundTwo};
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  min-width: 18px;
+  text-align: center;
+`;
+
+export const SwissMatchMeta = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.textAlt};
+  border-top: 1px solid ${({ theme }) => theme.border};
+  padding-top: 0.3rem;
+  margin-top: 0.15rem;
+`;
+
+export const SwissStatusBadge = styled.span<{ status?: string }>`
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  color: ${({ status, theme }) => status === 'completed' ? theme.textAlt : theme.primary};
+`;
+
+
 // SwissStandings
 export const SwissStandingsContainer = styled.div`
   display: grid;
