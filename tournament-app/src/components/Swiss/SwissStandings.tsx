@@ -27,17 +27,19 @@ const SwissStandings: React.FC = () => {
 
   return (
     <SwissStandingsContainer>
-      <SwissStandingCard type="advanced">
-        <SwissStandingCardTitle>Advanced to Bracket (3 Wins)</SwissStandingCardTitle>
-        <SwissStandingTeamList>
-          {advancedTeams.map(t => (
-            <SwissStandingTeamItem key={t.id}>
-              <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
-              <span>{t.record || `${t.wins}-${t.losses}`}</span>
-            </SwissStandingTeamItem>
-          ))}
-        </SwissStandingTeamList>
-      </SwissStandingCard>
+      {advancedTeams.length > 0 && (
+        <SwissStandingCard type="advanced">
+          <SwissStandingCardTitle>Advanced to Bracket (3 Wins)</SwissStandingCardTitle>
+          <SwissStandingTeamList>
+            {advancedTeams.map(t => (
+              <SwissStandingTeamItem key={t.id}>
+                <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
+                <span>{t.record || `${t.wins}-${t.losses}`}</span>
+              </SwissStandingTeamItem>
+            ))}
+          </SwissStandingTeamList>
+        </SwissStandingCard>
+      )}
 
       <SwissStandingCard type="active">
         <SwissStandingCardTitle>Active Teams</SwissStandingCardTitle>
@@ -51,17 +53,19 @@ const SwissStandings: React.FC = () => {
         </SwissStandingTeamList>
       </SwissStandingCard>
 
-      <SwissStandingCard type="eliminated">
-        <SwissStandingCardTitle>Eliminated (3 Losses)</SwissStandingCardTitle>
-        <SwissStandingTeamList>
-          {eliminatedTeams.map(t => (
-            <SwissStandingTeamItem key={t.id}>
-              <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
-              <span>{t.record || `${t.wins}-${t.losses}`}</span>
-            </SwissStandingTeamItem>
-          ))}
-        </SwissStandingTeamList>
-      </SwissStandingCard>
+      {eliminatedTeams.length > 0 && (
+        <SwissStandingCard type="eliminated">
+          <SwissStandingCardTitle>Eliminated (3 Losses)</SwissStandingCardTitle>
+          <SwissStandingTeamList>
+            {eliminatedTeams.map(t => (
+              <SwissStandingTeamItem key={t.id}>
+                <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
+                <span>{t.record || `${t.wins}-${t.losses}`}</span>
+              </SwissStandingTeamItem>
+            ))}
+          </SwissStandingTeamList>
+        </SwissStandingCard>
+      )}
     </SwissStandingsContainer>
   );
 };
