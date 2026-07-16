@@ -2902,6 +2902,7 @@ export const SwissScoreText = styled.span`
 `;
 
 export const SwissBracketContainer = styled.div`
+  position: relative;
   display: flex;
   gap: 1.5rem;
   padding: 1rem 0;
