@@ -16,6 +16,9 @@ import {
   MatchResultEmptyItemSlot,
   MatchResultPlayerInfo,
   MatchResultKDA,
+  MatchResultDuration,
+  MatchResultTeamHeader,
+  MatchResultColumn,
 } from '../../styles';
 
 // --- Data Dragon Configuration ---
@@ -70,25 +73,49 @@ const TeamPanel: React.FC<{ teamData: TeamResult, teamColor: 'blue' | 'red', isW
 
 interface MatchResultProps {
   result?: MatchResultData;
+  blueTeamName?: string;
+  redTeamName?: string;
 }
 
-const MatchResult: React.FC<MatchResultProps> = ({ result }) => {
+const formatDuration = (seconds: number) => {
+  const totalSeconds = seconds > 100000 ? Math.floor(seconds / 1000) : seconds;
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+const MatchResult: React.FC<MatchResultProps> = ({
+  result,
+  blueTeamName = 'Blue Team',
+  redTeamName = 'Red Team'
+}) => {
   if (result === undefined) {
-    return <></>
+    return <></>;
   }
   return (
-    <MatchResultContainer>
-      <TeamPanel 
-        teamData={result.blueTeam} 
-        teamColor="blue" 
-        isWinner={result.winner === 100} 
-      />
-      <TeamPanel 
-        teamData={result.redTeam} 
-        teamColor="red" 
-        isWinner={result.winner === 200} 
-      />
-    </MatchResultContainer>
+    <div style={{ width: '100%' }}>
+      <MatchResultDuration>
+        Game Duration: {formatDuration(result.gameDuration)}
+      </MatchResultDuration>
+      <MatchResultContainer>
+        <MatchResultColumn>
+          <MatchResultTeamHeader teamColor="blue">{blueTeamName}</MatchResultTeamHeader>
+          <TeamPanel 
+            teamData={result.blueTeam} 
+            teamColor="blue" 
+            isWinner={result.winner === 100} 
+          />
+        </MatchResultColumn>
+        <MatchResultColumn>
+          <MatchResultTeamHeader teamColor="red">{redTeamName}</MatchResultTeamHeader>
+          <TeamPanel 
+            teamData={result.redTeam} 
+            teamColor="red" 
+            isWinner={result.winner === 200} 
+          />
+        </MatchResultColumn>
+      </MatchResultContainer>
+    </div>
   );
 };
 

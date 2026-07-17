@@ -4207,3 +4207,26 @@ export const MatchResultKDA = styled.span`
     font-weight: 700;
   }
 `;
+
+export const MatchResultDuration = styled.div`
+  text-align: center;
+  font-size: 1rem;
+  color: ${({ theme }) => theme.textAlt || '#6c757d'};
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+`;
+
+export const MatchResultTeamHeader = styled.h3<{ teamColor: 'blue' | 'red' }>`
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: ${({ teamColor }) => (teamColor === 'blue' ? '#007bff' : '#dc3545')};
+  text-align: center;
+`;
+
+export const MatchResultColumn = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+`;
+
