@@ -103,6 +103,12 @@ export function getYearFromHash(hash: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
+export function getUrlDivision(division: string): string {
+  if (division === 'master') return 'elder';
+  if (division === 'gold') return 'elemental';
+  return division;
+}
+
 export function getYearDisplayString(hash: string): string {
   const year = getYearFromHash(hash);
   return year ? `GRumble ${year}` : "GRumble 2026";

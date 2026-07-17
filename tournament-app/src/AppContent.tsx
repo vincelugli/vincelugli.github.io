@@ -20,6 +20,7 @@ import SubstitutesPage from './components/Players/SubstitutePlayersPage';
 import AdminPage from './components/Admin/AdminPage';
 import AdminAuthGate from './components/Admin/AdminAuthGate';
 import RouteChangeTracker from './components/Common/RouteChangeTracker';
+import DivisionSync from './components/Common/DivisionSync';
 import AllPlayersPage from './components/Players/AllPlayersPage';
 import { useAuth } from './components/Common/AuthContext';
 import { useGameMatches } from './context/MatchesContext';
@@ -46,6 +47,7 @@ const AppContent: React.FC = () => {
   return (
     <Router basename={basename}>
       <RouteChangeTracker />
+      <DivisionSync />
       <AppContainer>
           <Header />
           <MainContent>

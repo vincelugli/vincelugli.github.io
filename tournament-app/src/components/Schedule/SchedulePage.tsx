@@ -191,7 +191,7 @@ const tournamentStages2026 = [
 ];
 
 const SchedulePage: React.FC = () => {
-  const { division } = useDivision();
+  const { division, urlDivision } = useDivision();
   const year = getYearFromHash(window.location.hash) || '2026';
   const is2026 = year === '2026';
 
@@ -381,7 +381,7 @@ const SchedulePage: React.FC = () => {
                           <MatchTeams>
                             <TeamNameContainer align="right">
                               {team1 ? (
-                                <ScheduleTeamNameLink to={`/teams/${team1.id}`}>{team1Name}</ScheduleTeamNameLink>
+                                <ScheduleTeamNameLink to={`/teams/${team1.id}?division=${urlDivision}`}>{team1Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team1Name}</TeamNameSpan>
                               )}
@@ -389,7 +389,7 @@ const SchedulePage: React.FC = () => {
                             <VersusSpan>vs</VersusSpan>
                             <TeamNameContainer align="left">
                               {team2 ? (
-                                <ScheduleTeamNameLink to={`/teams/${team2.id}`}>{team2Name}</ScheduleTeamNameLink>
+                                <ScheduleTeamNameLink to={`/teams/${team2.id}?division=${urlDivision}`}>{team2Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team2Name}</TeamNameSpan>
                               )}

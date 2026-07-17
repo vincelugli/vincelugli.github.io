@@ -39,7 +39,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { tournamentCodes } = useGameMatches();
   const { teams, bracket } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
-  const { division } = useDivision();
+  const { division, urlDivision } = useDivision();
 
   const team = teams.find(t => t.id === Number(teamId));
 
@@ -102,7 +102,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
           <TeamPageHeaderTitle>{team.name}</TeamPageHeaderTitle>
           <TeamPageActionButtonGroup>
             {bracket && bracket.length > 0 && (
-              <TeamPageActionButton to={`/teams/${teamId}/knockout`}>
+              <TeamPageActionButton to={`/teams/${teamId}/knockout?division=${urlDivision}`}>
                 View Knockout Matches
               </TeamPageActionButton>
             )}
