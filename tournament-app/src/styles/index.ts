@@ -4230,3 +4230,34 @@ export const MatchResultColumn = styled.div`
   flex-direction: column;
 `;
 
+const pulseLive = keyframes`
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+`;
+
+export const LiveBadge = styled.span`
+  background-color: #dc3545; /* Bootstrap danger / red */
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.75rem;
+  animation: ${pulseLive} 2s infinite;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+`;
+
