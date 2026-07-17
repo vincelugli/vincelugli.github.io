@@ -255,6 +255,12 @@ const SwissBracket: React.FC = () => {
                           data-team-id={match.team1Id !== -1 ? match.team1Id : undefined}
                           onMouseEnter={() => match.team1Id !== -1 && setHoveredTeamId(match.team1Id)}
                           onMouseLeave={() => setHoveredTeamId(null)}
+                          onClick={(e) => {
+                            if (match.team1Id !== -1) {
+                              e.stopPropagation();
+                              navigate(`/teams/${match.team1Id}`);
+                            }
+                          }}
                           style={{
                             cursor: match.team1Id !== -1 ? 'pointer' : 'default',
                             transition: 'all 0.15s ease-in-out',
@@ -271,6 +277,12 @@ const SwissBracket: React.FC = () => {
                           data-team-id={match.team2Id !== -1 ? match.team2Id : undefined}
                           onMouseEnter={() => match.team2Id !== -1 && setHoveredTeamId(match.team2Id)}
                           onMouseLeave={() => setHoveredTeamId(null)}
+                          onClick={(e) => {
+                            if (match.team2Id !== -1) {
+                              e.stopPropagation();
+                              navigate(`/teams/${match.team2Id}`);
+                            }
+                          }}
                           style={{
                             cursor: match.team2Id !== -1 ? 'pointer' : 'default',
                             transition: 'all 0.15s ease-in-out',
