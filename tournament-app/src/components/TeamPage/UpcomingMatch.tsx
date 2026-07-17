@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Match, Team } from '../../types';
 import { OpponentInfo, UpcomingMatchCard, TournamentCodeContainer, CodeBox, Code, CopyButton, MatchNavLink, UpcomingMatchGameSelect } from '../../styles';
+import { useDivision } from '../../context/DivisionContext';
 
 interface UpcomingMatchProps {
   match: Match;
@@ -11,6 +12,7 @@ interface UpcomingMatchProps {
 const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeamId }) => {
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const [copiedCode, setCopiedCode] = useState('');
+  const { urlDivision } = useDivision();
 
   const opponentId = match.team1Id === currentTeamId ? match.team2Id : match.team1Id;
   const opponent = teams.find(t => t.id === opponentId);
@@ -31,7 +33,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
     <UpcomingMatchCard>
       {match.isKnockout ? match.stage : "WEEK " + match.weekPlayed}
       <OpponentInfo>
-        {!!opponent && "vs"} <span>{opponent ? <MatchNavLink to={`/teams/${opponent?.id}`}>{opponent.name}</MatchNavLink> : 'Bye'}</span>
+        {!!opponent && "vs"} <span>{opponent ? <MatchNavLink to={`/teams/${opponent?.id}?division=${urlDivision}`}>{opponent.name}</MatchNavLink> : 'Bye'}</span>
       </OpponentInfo>
       {!!opponent && isUserTeamCaptain && <TournamentCodeContainer>
         <label>TOURNAMENT CODE</label>

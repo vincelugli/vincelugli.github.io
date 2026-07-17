@@ -84,7 +84,7 @@ const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams<{ playerId: string }>();
   const [searchParams] = useSearchParams();
   const isSub = searchParams.get('isSub') === 'true';
-  const { division } = useDivision();
+  const { division, urlDivision } = useDivision();
   const { getPlayerById } = usePlayers();
   const { teams } = useTournament();
   const navigate = useNavigate();
@@ -282,7 +282,7 @@ const PlayerProfilePage: React.FC = () => {
           })()}
           <div style={{display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.25rem'}}>
             {playerTeam ? (
-              <ProfileTeamLink to={`/teams/${playerTeam.id}?division=${division}`}>
+              <ProfileTeamLink to={`/teams/${playerTeam.id}?division=${urlDivision}`}>
                 {playerTeam.name}
               </ProfileTeamLink>
             ) : (
@@ -498,7 +498,7 @@ const PlayerProfilePage: React.FC = () => {
               const didWinSeries = match.playerMatchPerf.map((perf: any) => perf.gameWinner).filter((_: any) => _).length === 2;
 
               return opponent?.name ? (
-                <ProfileMatchItem key={match.id} onClick={() => navigate(`/match/${match.id}`)}>
+                <ProfileMatchItem key={match.id} onClick={() => navigate(`/match/${match.id}?division=${urlDivision}`)}>
                   <ProfileMatchHeader win={didWinSeries}>
                     <MatchInfo>vs <span>{opponent.name}</span></MatchInfo>
                     <MatchResult>

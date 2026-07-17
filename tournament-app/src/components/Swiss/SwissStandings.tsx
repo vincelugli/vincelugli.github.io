@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTournament } from '../../context/TournamentContext';
 import { compareTeams } from '../../utils';
+import { useDivision } from '../../context/DivisionContext';
 import {
   TeamName,
   SwissStandingsContainer,
@@ -12,6 +13,7 @@ import {
 
 const SwissStandings: React.FC = () => {
   const { teams, loading } = useTournament();
+  const { urlDivision } = useDivision();
 
   if (loading) {
     return <p>Loading Swiss standings...</p>;
@@ -33,7 +35,7 @@ const SwissStandings: React.FC = () => {
           <SwissStandingTeamList>
             {advancedTeams.map(t => (
               <SwissStandingTeamItem key={t.id}>
-                <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
+                <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
                 <span>{t.record || `${t.wins}-${t.losses}`}</span>
               </SwissStandingTeamItem>
             ))}
@@ -46,7 +48,7 @@ const SwissStandings: React.FC = () => {
         <SwissStandingTeamList>
           {activeTeams.map(t => (
             <SwissStandingTeamItem key={t.id}>
-              <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
+              <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
               <span>{t.record || `${t.wins}-${t.losses}`}</span>
             </SwissStandingTeamItem>
           ))}
@@ -59,7 +61,7 @@ const SwissStandings: React.FC = () => {
           <SwissStandingTeamList>
             {eliminatedTeams.map(t => (
               <SwissStandingTeamItem key={t.id}>
-                <TeamName to={`/teams/${t.id}`}>{t.name}</TeamName>
+                <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
                 <span>{t.record || `${t.wins}-${t.losses}`}</span>
               </SwissStandingTeamItem>
             ))}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
+import { useDivision } from '../../context/DivisionContext';
 import {
   SwissBracketContainer,
   SwissRoundColumn,
@@ -20,6 +21,7 @@ import {
 const SwissBracket: React.FC = () => {
   const { teams, loading: teamsLoading } = useTournament();
   const { matches, loading: matchesLoading } = useGameMatches();
+  const { urlDivision } = useDivision();
   const navigate = useNavigate();
 
   const [hoveredTeamId, setHoveredTeamId] = React.useState<number | null>(null);
@@ -240,7 +242,7 @@ const SwissBracket: React.FC = () => {
                     return (
                       <SwissMatchupCard 
                         key={match.id} 
-                        onClick={() => navigate(`/match/${match.id}`)}
+                        onClick={() => navigate(`/match/${match.id}?division=${urlDivision}`)}
                         style={{
                           position: 'relative',
                           zIndex: 1, // Stay on top of SVG path
@@ -258,7 +260,7 @@ const SwissBracket: React.FC = () => {
                           onClick={(e) => {
                             if (match.team1Id !== -1) {
                               e.stopPropagation();
-                              navigate(`/teams/${match.team1Id}`);
+                              navigate(`/teams/${match.team1Id}?division=${urlDivision}`);
                             }
                           }}
                           style={{
@@ -280,7 +282,7 @@ const SwissBracket: React.FC = () => {
                           onClick={(e) => {
                             if (match.team2Id !== -1) {
                               e.stopPropagation();
-                              navigate(`/teams/${match.team2Id}`);
+                              navigate(`/teams/${match.team2Id}?division=${urlDivision}`);
                             }
                           }}
                           style={{

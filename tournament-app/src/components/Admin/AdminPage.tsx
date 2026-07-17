@@ -154,6 +154,7 @@ const AdminPage: React.FC = () => {
   // Loaded database arrays
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [substitutes, setSubstitutes] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [bracket, setBracket] = useState<BracketRound[]>([]);
@@ -161,6 +162,8 @@ const AdminPage: React.FC = () => {
   // Local component states
   const [playerSearch, setPlayerSearch] = useState('');
   const [confirmResetDraft, setConfirmResetDraft] = useState(false);
+  const [activePlayerListSubTab, setActivePlayerListSubTab] = useState<'draft' | 'subs'>('draft');
+  const [isEditingSub, setIsEditingSub] = useState(false);
 
   // Form states for creating/editing
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -177,7 +180,8 @@ const AdminPage: React.FC = () => {
     isCaptain: false,
     timezone: 'EST',
     addToPool: true,
-    addToDraft: true
+    addToDraft: true,
+    isSub: false
   });
 
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -239,9 +243,12 @@ const AdminPage: React.FC = () => {
     const playersRef = doc(db, 'players', `${prefix}_${division}`);
     const unsubscribePlayers = onSnapshot(playersRef, (snapshot) => {
       if (snapshot.exists()) {
-        setPlayers(snapshot.data().players || []);
+        const data = snapshot.data();
+        setPlayers(data.players || []);
+        setSubstitutes(data.subs || []);
       } else {
         setPlayers([]);
+        setSubstitutes([]);
       }
     });
 
@@ -638,7 +645,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setStatus('loading');
-      const nextId = players.length > 0 ? Math.max(...players.map(p => p.id)) + 1 : 101;
+      const nextId = Math.max(100, ...players.map(p => p.id), ...substitutes.map(s => s.id)) + 1;
       const elo = Math.max(
         convertRankToElo(newPlayerForm.peakRankTier, newPlayerForm.peakRankDivision),
         convertRankToElo(newPlayerForm.soloRankTier, newPlayerForm.soloRankDivision),
@@ -656,34 +663,42 @@ const AdminPage: React.FC = () => {
         soloRankDivision: newPlayerForm.soloRankDivision,
         flexRankTier: newPlayerForm.flexRankTier,
         flexRankDivision: newPlayerForm.flexRankDivision,
-        isCaptain: newPlayerForm.isCaptain,
+        isCaptain: newPlayerForm.isSub ? false : newPlayerForm.isCaptain,
         timezone: newPlayerForm.timezone,
         elo: elo
       };
 
       const batch = writeBatch(db);
 
-      if (newPlayerForm.addToPool) {
+      if (newPlayerForm.isSub) {
         const playersRef = doc(db, 'players', `${prefix}_${division}`);
         batch.update(playersRef, {
-          players: arrayUnion(player)
+          subs: arrayUnion(player)
         });
-      }
+      } else {
+        if (newPlayerForm.addToPool) {
+          const playersRef = doc(db, 'players', `${prefix}_${division}`);
+          batch.update(playersRef, {
+            players: arrayUnion(player)
+          });
+        }
 
-      if (newPlayerForm.addToDraft && draftState) {
-        const draftRef = doc(db, 'drafts', `${prefix}_${division}`);
-        batch.update(draftRef, {
-          availablePlayers: arrayUnion(player)
-        });
+        if (newPlayerForm.addToDraft && draftState) {
+          const draftRef = doc(db, 'drafts', `${prefix}_${division}`);
+          batch.update(draftRef, {
+            availablePlayers: arrayUnion(player)
+          });
+        }
       }
 
       await batch.commit();
-      showStatus('success', `Created player ${player.name} (ID: ${player.id})`);
+      showStatus('success', `Created ${newPlayerForm.isSub ? 'substitute' : 'player'} ${player.name} (ID: ${player.id})`);
       setNewPlayerForm({
         ...newPlayerForm,
         name: '',
         secondaryRoles: [],
-        isCaptain: false
+        isCaptain: false,
+        isSub: false
       });
     } catch (err: any) {
       console.error(err);
@@ -706,23 +721,29 @@ const AdminPage: React.FC = () => {
       const updatedPlayer = { ...editingPlayer, elo };
       const batch = writeBatch(db);
 
-      // Save in player list doc
-      const newPool = players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
-      batch.update(doc(db, 'players', `${prefix}_${division}`), { players: newPool });
+      if (isEditingSub) {
+        // Save in substitutes list doc
+        const newSubs = substitutes.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+        batch.update(doc(db, 'players', `${prefix}_${division}`), { subs: newSubs });
+      } else {
+        // Save in player list doc
+        const newPool = players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+        batch.update(doc(db, 'players', `${prefix}_${division}`), { players: newPool });
 
-      // Save in draft pool if present
-      if (draftState) {
-        if (draftState.availablePlayers.some(p => p.id === updatedPlayer.id)) {
-          const newDraftAvail = draftState.availablePlayers.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
-          batch.update(doc(db, 'drafts', `${prefix}_${division}`), { availablePlayers: newDraftAvail });
+        // Save in draft pool if present
+        if (draftState) {
+          if (draftState.availablePlayers.some(p => p.id === updatedPlayer.id)) {
+            const newDraftAvail = draftState.availablePlayers.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+            batch.update(doc(db, 'drafts', `${prefix}_${division}`), { availablePlayers: newDraftAvail });
+          }
+
+          // Also update roster inside teams if player was already picked
+          const newDraftTeams = draftState.teams.map(t => ({
+            ...t,
+            players: t.players ? t.players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p) : []
+          }));
+          batch.update(doc(db, 'drafts', `${prefix}_${division}`), { teams: newDraftTeams });
         }
-
-        // Also update roster inside teams if player was already picked
-        const newDraftTeams = draftState.teams.map(t => ({
-          ...t,
-          players: t.players ? t.players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p) : []
-        }));
-        batch.update(doc(db, 'drafts', `${prefix}_${division}`), { teams: newDraftTeams });
       }
 
       await batch.commit();
@@ -735,23 +756,31 @@ const AdminPage: React.FC = () => {
   };
 
   // Remove player from pool or draft pool
-  const handleDeletePlayer = async (playerId: number, deleteFromPool: boolean, deleteFromDraft: boolean) => {
-    const player = players.find(p => p.id === playerId);
+  const handleDeletePlayer = async (playerId: number, deleteFromPool: boolean, deleteFromDraft: boolean, isSub: boolean = false) => {
+    const player = isSub 
+      ? substitutes.find(p => p.id === playerId)
+      : players.find(p => p.id === playerId);
+
     if (!player) return;
-    if (!window.confirm(`Are you sure you want to remove ${player.name} from the selected tables?`)) return;
+    if (!window.confirm(`Are you sure you want to remove ${player.name} from the selected pools?`)) return;
 
     try {
       setStatus('loading');
       const batch = writeBatch(db);
 
-      if (deleteFromPool) {
-        const filtered = players.filter(p => p.id !== playerId);
-        batch.update(doc(db, 'players', `${prefix}_${division}`), { players: filtered });
-      }
+      if (isSub) {
+        const filtered = substitutes.filter(p => p.id !== playerId);
+        batch.update(doc(db, 'players', `${prefix}_${division}`), { subs: filtered });
+      } else {
+        if (deleteFromPool) {
+          const filtered = players.filter(p => p.id !== playerId);
+          batch.update(doc(db, 'players', `${prefix}_${division}`), { players: filtered });
+        }
 
-      if (deleteFromDraft && draftState) {
-        const filteredDraft = draftState.availablePlayers.filter(p => p.id !== playerId);
-        batch.update(doc(db, 'drafts', `${prefix}_${division}`), { availablePlayers: filteredDraft });
+        if (deleteFromDraft && draftState) {
+          const filteredDraft = draftState.availablePlayers.filter(p => p.id !== playerId);
+          batch.update(doc(db, 'drafts', `${prefix}_${division}`), { availablePlayers: filteredDraft });
+        }
       }
 
       await batch.commit();
@@ -1195,6 +1224,16 @@ const AdminPage: React.FC = () => {
     );
   }, [players, playerSearch]);
 
+  const filteredSubstitutes = useMemo(() => {
+    if (!playerSearch) return substitutes;
+    const query = playerSearch.toLowerCase();
+    return substitutes.filter(p =>
+      p.name.toLowerCase().includes(query) ||
+      p.role.toLowerCase().includes(query) ||
+      (p.secondaryRoles && p.secondaryRoles.some(r => r.toLowerCase().includes(query)))
+    );
+  }, [substitutes, playerSearch]);
+
   return (
     <AdminPageContainer>
       <AdminTitle>Admin Dashboard</AdminTitle>
@@ -1556,36 +1595,53 @@ const AdminPage: React.FC = () => {
                       </div>
                     </AdminFormGroup>
 
-                    <AdminFormGroup>
-                      <AdminCheckboxLabel>
-                        <input
-                          type="checkbox"
-                          checked={newPlayerForm.isCaptain}
-                          onChange={(e) => setNewPlayerForm({ ...newPlayerForm, isCaptain: e.target.checked })}
-                        />
-                        Is Captain?
-                      </AdminCheckboxLabel>
-                    </AdminFormGroup>
-
-                    <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0.5rem 0' }} />
-
-                    <AdminCheckboxLabel>
+                    <AdminCheckboxLabel style={{ fontWeight: 'bold', color: '#007bff', marginTop: '0.5rem' }}>
                       <input
                         type="checkbox"
-                        checked={newPlayerForm.addToPool}
-                        onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToPool: e.target.checked })}
+                        checked={newPlayerForm.isSub}
+                        onChange={(e) => setNewPlayerForm({ ...newPlayerForm, isSub: e.target.checked })}
                       />
-                      Add to Player Pool
+                      Add as Substitute Player (Sub)
                     </AdminCheckboxLabel>
 
-                    <AdminCheckboxLabel>
-                      <input
-                        type="checkbox"
-                        checked={newPlayerForm.addToDraft}
-                        onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToDraft: e.target.checked })}
-                      />
-                      Add to Draft Available List
-                    </AdminCheckboxLabel>
+                    {!newPlayerForm.isSub ? (
+                      <>
+                        <AdminFormGroup>
+                          <AdminCheckboxLabel>
+                            <input
+                              type="checkbox"
+                              checked={newPlayerForm.isCaptain}
+                              onChange={(e) => setNewPlayerForm({ ...newPlayerForm, isCaptain: e.target.checked })}
+                            />
+                            Is Captain?
+                          </AdminCheckboxLabel>
+                        </AdminFormGroup>
+
+                        <hr style={{ border: 'none', borderTop: '1px solid #ccc', margin: '0.5rem 0' }} />
+
+                        <AdminCheckboxLabel>
+                          <input
+                            type="checkbox"
+                            checked={newPlayerForm.addToPool}
+                            onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToPool: e.target.checked })}
+                          />
+                          Add to Player Pool
+                        </AdminCheckboxLabel>
+
+                        <AdminCheckboxLabel>
+                          <input
+                            type="checkbox"
+                            checked={newPlayerForm.addToDraft}
+                            onChange={(e) => setNewPlayerForm({ ...newPlayerForm, addToDraft: e.target.checked })}
+                          />
+                          Add to Draft Available List
+                        </AdminCheckboxLabel>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic', marginTop: '0.5rem' }}>
+                        This player will be added to the division substitutes list.
+                      </div>
+                    )}
 
                     <AdminActionButton type="submit" variant="primary" style={{ marginTop: '0.5rem' }}>
                       <FaPlus /> Add Player
@@ -1596,61 +1652,114 @@ const AdminPage: React.FC = () => {
 
               {/* Player Pool List */}
               <AdminCard>
-                <AdminCardTitle>Player list ({filteredPlayers.length})</AdminCardTitle>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '0.5rem' }}>
+                  <AdminCardTitle style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>Players & Substitutes</AdminCardTitle>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <AdminTabButton 
+                      active={activePlayerListSubTab === 'draft'} 
+                      onClick={() => setActivePlayerListSubTab('draft')}
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem' }}
+                    >
+                      Draft Pool ({filteredPlayers.length})
+                    </AdminTabButton>
+                    <AdminTabButton 
+                      active={activePlayerListSubTab === 'subs'} 
+                      onClick={() => setActivePlayerListSubTab('subs')}
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem' }}
+                    >
+                      Substitutes ({filteredSubstitutes.length})
+                    </AdminTabButton>
+                  </div>
+                </div>
                 <AdminSearchInput
                   type="text"
-                  placeholder="Filter players by name/role..."
+                  placeholder="Filter players/subs by name/role..."
                   value={playerSearch}
                   onChange={(e) => setPlayerSearch(e.target.value)}
                 />
-                <AdminTableContainer>
-                  <AdminStyledTable>
-                    <thead>
-                      <tr>
-                        <AdminStyledTh>Name</AdminStyledTh>
-                        <AdminStyledTh>Role</AdminStyledTh>
-                        <AdminStyledTh>Peak</AdminStyledTh>
-                        <AdminStyledTh>Cap</AdminStyledTh>
-                        <AdminStyledTh>Draft Pool</AdminStyledTh>
-                        <AdminStyledTh>Actions</AdminStyledTh>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPlayers.map(p => {
-                        const inDraftAvail = draftState?.availablePlayers?.some(dp => dp.id === p.id);
-                        const isDrafted = draftState?.teams?.some(t => t.players?.some(tp => tp.id === p.id));
-                        return (
+                
+                {activePlayerListSubTab === 'draft' ? (
+                  <AdminTableContainer>
+                    <AdminStyledTable>
+                      <thead>
+                        <tr>
+                          <AdminStyledTh>Name</AdminStyledTh>
+                          <AdminStyledTh>Role</AdminStyledTh>
+                          <AdminStyledTh>Peak</AdminStyledTh>
+                          <AdminStyledTh>Cap</AdminStyledTh>
+                          <AdminStyledTh>Draft Pool</AdminStyledTh>
+                          <AdminStyledTh>Actions</AdminStyledTh>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPlayers.map(p => {
+                          const inDraftAvail = draftState?.availablePlayers?.some(dp => dp.id === p.id);
+                          const isDrafted = draftState?.teams?.some(t => t.players?.some(tp => tp.id === p.id));
+                          return (
+                            <tr key={p.id}>
+                              <AdminStyledTd><strong>{p.name.split('#')[0]}</strong> <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>#{p.name.split('#')[1] || 'NA1'}</span></AdminStyledTd>
+                              <AdminStyledTd>{p.role}</AdminStyledTd>
+                              <AdminStyledTd>{rankTierToShortName(p.peakRankTier)}{p.peakRankDivision !== -1 ? p.peakRankDivision : ''}</AdminStyledTd>
+                              <AdminStyledTd>{p.isCaptain ? <AdminBadge variant="danger">Yes</AdminBadge> : 'No'}</AdminStyledTd>
+                              <AdminStyledTd>
+                                {isDrafted ? (
+                                  <AdminBadge variant="success">Drafted</AdminBadge>
+                                ) : inDraftAvail ? (
+                                  <AdminBadge variant="primary">Available</AdminBadge>
+                                ) : (
+                                  <AdminBadge variant="warning">Missing</AdminBadge>
+                                )}
+                              </AdminStyledTd>
+                              <AdminStyledTd>
+                                <AdminButtonGroup>
+                                  <AdminActionButton onClick={() => { setIsEditingSub(false); setEditingPlayer(p); }}><FaEdit /></AdminActionButton>
+                                  {!inDraftAvail && !isDrafted && (
+                                    <AdminActionButton variant="primary" onClick={() => handleAddPlayerToDraftPool(p)} title="Add to draft pool">
+                                      <FaPlus /> Pool
+                                    </AdminActionButton>
+                                  )}
+                                  <AdminClearButton onClick={() => handleDeletePlayer(p.id, true, true)} title="Delete completely"><FaTrash /></AdminClearButton>
+                                </AdminButtonGroup>
+                              </AdminStyledTd>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </AdminStyledTable>
+                  </AdminTableContainer>
+                ) : (
+                  <AdminTableContainer>
+                    <AdminStyledTable>
+                      <thead>
+                        <tr>
+                          <AdminStyledTh>Name</AdminStyledTh>
+                          <AdminStyledTh>Role</AdminStyledTh>
+                          <AdminStyledTh>Peak</AdminStyledTh>
+                          <AdminStyledTh>Solo</AdminStyledTh>
+                          <AdminStyledTh>Flex</AdminStyledTh>
+                          <AdminStyledTh>Actions</AdminStyledTh>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSubstitutes.map(p => (
                           <tr key={p.id}>
                             <AdminStyledTd><strong>{p.name.split('#')[0]}</strong> <span style={{ opacity: 0.5, fontSize: '0.8rem' }}>#{p.name.split('#')[1] || 'NA1'}</span></AdminStyledTd>
                             <AdminStyledTd>{p.role}</AdminStyledTd>
                             <AdminStyledTd>{rankTierToShortName(p.peakRankTier)}{p.peakRankDivision !== -1 ? p.peakRankDivision : ''}</AdminStyledTd>
-                            <AdminStyledTd>{p.isCaptain ? <AdminBadge variant="danger">Yes</AdminBadge> : 'No'}</AdminStyledTd>
-                            <AdminStyledTd>
-                              {isDrafted ? (
-                                <AdminBadge variant="success">Drafted</AdminBadge>
-                              ) : inDraftAvail ? (
-                                <AdminBadge variant="primary">Available</AdminBadge>
-                              ) : (
-                                <AdminBadge variant="warning">Missing</AdminBadge>
-                              )}
-                            </AdminStyledTd>
+                            <AdminStyledTd>{rankTierToShortName(p.soloRankTier)}{p.soloRankDivision !== -1 ? p.soloRankDivision : ''}</AdminStyledTd>
+                            <AdminStyledTd>{rankTierToShortName(p.flexRankTier)}{p.flexRankDivision !== -1 ? p.flexRankDivision : ''}</AdminStyledTd>
                             <AdminStyledTd>
                               <AdminButtonGroup>
-                                <AdminActionButton onClick={() => setEditingPlayer(p)}><FaEdit /></AdminActionButton>
-                                {!inDraftAvail && !isDrafted && (
-                                  <AdminActionButton variant="primary" onClick={() => handleAddPlayerToDraftPool(p)} title="Add to draft pool">
-                                    <FaPlus /> Pool
-                                  </AdminActionButton>
-                                )}
-                                <AdminClearButton onClick={() => handleDeletePlayer(p.id, true, true)} title="Delete completely"><FaTrash /></AdminClearButton>
+                                <AdminActionButton onClick={() => { setIsEditingSub(true); setEditingPlayer(p); }}><FaEdit /></AdminActionButton>
+                                <AdminClearButton onClick={() => handleDeletePlayer(p.id, false, false, true)} title="Delete completely"><FaTrash /></AdminClearButton>
                               </AdminButtonGroup>
                             </AdminStyledTd>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </AdminStyledTable>
-                </AdminTableContainer>
+                        ))}
+                      </tbody>
+                    </AdminStyledTable>
+                  </AdminTableContainer>
+                )}
               </AdminCard>
             </AdminGrid>
           )}

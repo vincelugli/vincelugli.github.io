@@ -4,6 +4,7 @@ import { BracketContainer } from '../../styles';
 import { useTournament } from '../../context/TournamentContext';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useDivision } from '../../context/DivisionContext';
 
 const TeamNameLink = styled.div`
   font-size: 0.85rem;
@@ -36,6 +37,7 @@ const ScrollHint = styled.div`
 const DoubleEliminationBracket: React.FC = () => {
   const { bracket } = useTournament();
   const navigate = useNavigate();
+  const { urlDivision } = useDivision();
 
   if (!bracket || bracket.length === 0) {
     return <p>Bracket not yet finalized.</p>;
@@ -43,7 +45,7 @@ const DoubleEliminationBracket: React.FC = () => {
 
   const handleTeamClick = (e: React.MouseEvent, teamId: number) => {
     e.stopPropagation();
-    navigate(`/teams/${teamId}`);
+    navigate(`/teams/${teamId}?division=${urlDivision}`);
   };
 
   return (
