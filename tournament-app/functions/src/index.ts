@@ -900,10 +900,9 @@ Winner: ${allTeams[winnerIndex].gameRecord},
 Loser: ${allTeams[loserIndex].gameRecord}`);
 
     // check if winner has enough games
-
-    logger.debug(`Checking if enough wins
- ${(winnerId === team1Id ? team1Wins : team2Wins)}`);
-    if ((winnerId === team1Id ? team1Wins : team2Wins) >=
+    const newTotalWins = (winnerId === team1Id ? team1Wins : team2Wins);
+    logger.debug(`Checking if enough wins ${newTotalWins}`);
+    if (newTotalWins >=
          WINS_NEEDED_FOR_MATCH) {
       logger.info(
         `Match win condition met for Team ${winnerId} in match ${matchId}!`);

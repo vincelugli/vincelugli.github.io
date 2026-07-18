@@ -85,7 +85,7 @@ const PlayerProfilePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isSub = searchParams.get('isSub') === 'true';
   const { division, urlDivision } = useDivision();
-  const { getPlayerById } = usePlayers();
+  const { getPlayerById, players } = usePlayers();
   const { teams } = useTournament();
   const navigate = useNavigate();
 
@@ -170,80 +170,135 @@ const PlayerProfilePage: React.FC = () => {
         setPlayer(enriched);
 
         // 3. Find Team
-        const team = teams.find((t) => t.id === enriched.teamId);
+        const team = teams.find((t) => t.players && t.players.includes(enriched.id));
         setPlayerTeam(team || null);
 
-        // 4. Fetch Matches & calculate tournament stats if team exists
-        if (team) {
-          const dbPrefix = getFirebasePrefix(division);
-          const docRef = doc(db, `${dbPrefix}_matches`, 'matchesData');
-          const docSnap = await getDoc(docRef);
+        // 4. Fetch all matches in the division
+        const prefix = getFirebasePrefix();
+        const docRef = doc(db, 'matches', `${prefix}_${division}`);
+        const docSnap = await getDoc(docRef);
 
-          const matches: Match[] = [];
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.rounds) {
-              data.rounds.forEach((round: any) => {
-                const seedsList = round.seeds || round.matches || [];
-                seedsList.forEach((match: any) => {
-                  // Match has either team1Id or team2Id equal to player's team id
-                  if (match.team1Id === team.id || match.team2Id === team.id) {
-                    matches.push(match);
-                  }
-                });
-              });
-            }
-          }
+        const allMatches: Match[] = [];
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const matchesList = data.matches || [];
+          allMatches.push(...matchesList);
+        }
 
-          // 5. Gather Match Performance Details from firebase results
-          const champStatsMap = new Map<string, { games: number; wins: number }>();
+        // Filter only completed matches
+        const completedMatches = allMatches.filter(m => m.status === 'completed');
 
-          const enrichedHistory = await Promise.all(matches.map(async (match) => {
-            const resultRef = doc(db, `${dbPrefix}_match_results`, String(match.id));
-            const resultSnap = await getDoc(resultRef);
-            
-            const resultsData = resultSnap.exists() 
-              ? resultSnap.data() as any
-              : { matchId: String(match.id), games: [] };
+        const cleanPlayerName = (name: string) =>
+          name.toLowerCase().replace(/\s+/g, '').split('#')[0];
+        const playerClean = cleanPlayerName(enriched.name);
+        const isNameMatch = (pName: string) =>
+          cleanPlayerName(pName) === playerClean;
 
-            const resultSnaps = resultsData.games || [];
+        const resolveTeamIdAndName = (names: string[]): Team | null => {
+          if (!names || names.length === 0) return null;
+          const cleanNames = names.map(n => cleanPlayerName(n));
+          let bestTeam: Team | null = null;
+          let maxMatches = 0;
 
-            function processResult(gameResult: any) {
-              const playerPerfBlue = gameResult.blueTeamPlayers?.find((p: any) => p.playerId === enriched.id);
-              const playerPerfRed = gameResult.redTeamPlayers?.find((p: any) => p.playerId === enriched.id);
-
-              if (playerPerfBlue) {
-                const champName = playerPerfBlue.championName;
-                const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
-                stats.games++;
-                let gameWinner = false;
-                if (gameResult.winner === 'blue') {
-                  stats.wins++;
-                  gameWinner = true;
+          for (const t of teams) {
+            if (!t.players) continue;
+            let matchCount = 0;
+            for (const pId of t.players) {
+              const pObj = players.find(p => p.id === pId);
+              if (pObj) {
+                if (cleanNames.includes(cleanPlayerName(pObj.name))) {
+                  matchCount++;
                 }
-                champStatsMap.set(champName, stats);
-                return {...playerPerfBlue, gameWinner};
-              } else if (playerPerfRed) {
-                const champName = playerPerfRed.championName;
-                const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
-                stats.games++;
-                let gameWinner = false;
-                if (gameResult.winner === 'red') {
-                  stats.wins++;
-                  gameWinner = true;
-                }
-                champStatsMap.set(champName, stats);
-                return {...playerPerfRed, gameWinner};
               }
             }
+            if (matchCount > maxMatches) {
+              maxMatches = matchCount;
+              bestTeam = t;
+            }
+          }
+          return maxMatches > 0 ? bestTeam : null;
+        };
 
-            const playerMatchPerf = resultSnaps.map(processResult).filter((p: any) => p);
-            return {...match, playerMatchPerf};
+        const champStatsMap = new Map<string, { games: number; wins: number }>();
+        const enrichedHistory: any[] = [];
+
+        // For each completed match, fetch the results of its tournament codes
+        await Promise.all(completedMatches.map(async (match) => {
+          const codes = match.tournamentCodes || [];
+          if (codes.length === 0) return;
+
+          const gameResults = await Promise.all(codes.map(async (code) => {
+            const resultRef = doc(db, 'match_results', code);
+            const resultSnap = await getDoc(resultRef);
+            if (resultSnap.exists()) {
+              return resultSnap.data() as MatchResultData;
+            }
+            return null;
           }));
 
-          setMatchHistory(enrichedHistory);
-          setTournamentChampStats(Array.from(champStatsMap.entries()).map(([name, data]) => ({name, ...data})).sort((a, b) => b.games - a.games));
-        }
+          const validGameResults = gameResults.filter((g): g is MatchResultData => g !== null);
+
+          // Find player performance in each game of this match
+          const playerMatchPerf = validGameResults.map((gameResult) => {
+            const playerPerfBlue = gameResult.blueTeam?.players?.find((p) => isNameMatch(p.playerName));
+            const playerPerfRed = gameResult.redTeam?.players?.find((p) => isNameMatch(p.playerName));
+
+            const blueTeamInfo = resolveTeamIdAndName(gameResult.blueTeam?.players?.map(p => p.playerName) || []);
+            const redTeamInfo = resolveTeamIdAndName(gameResult.redTeam?.players?.map(p => p.playerName) || []);
+
+            if (playerPerfBlue) {
+              const champName = playerPerfBlue.championName;
+              const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
+              stats.games++;
+              let gameWinner = false;
+              if (gameResult.winner === 100) {
+                stats.wins++;
+                gameWinner = true;
+              }
+              champStatsMap.set(champName, stats);
+              return {
+                ...playerPerfBlue,
+                gameWinner,
+                teamId: blueTeamInfo?.id || match.team1Id,
+                opponentTeamId: redTeamInfo?.id || match.team2Id,
+              };
+            } else if (playerPerfRed) {
+              const champName = playerPerfRed.championName;
+              const stats = champStatsMap.get(champName) || { games: 0, wins: 0 };
+              stats.games++;
+              let gameWinner = false;
+              if (gameResult.winner === 200) {
+                stats.wins++;
+                gameWinner = true;
+              }
+              champStatsMap.set(champName, stats);
+              return {
+                ...playerPerfRed,
+                gameWinner,
+                teamId: redTeamInfo?.id || match.team2Id,
+                opponentTeamId: blueTeamInfo?.id || match.team1Id,
+              };
+            }
+            return null;
+          }).filter((perf) => perf !== null);
+
+          if (playerMatchPerf.length > 0) {
+            enrichedHistory.push({
+              ...match,
+              playerMatchPerf
+            });
+          }
+        }));
+
+        // Sort match history by weekPlayed desc
+        enrichedHistory.sort((a, b) => b.weekPlayed - a.weekPlayed);
+
+        setMatchHistory(enrichedHistory);
+        setTournamentChampStats(
+          Array.from(champStatsMap.entries())
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.games - a.games)
+        );
       } catch (err) {
         console.error("Error fetching match history:", err);
       } finally {
@@ -252,7 +307,7 @@ const PlayerProfilePage: React.FC = () => {
     };
 
     fetchData();
-  }, [playerId, division, getPlayerById, teams]);
+  }, [playerId, division, getPlayerById, teams, players]);
 
   if (loading) return <ProfileLoadingText>Loading player profile...</ProfileLoadingText>;
   if (!player) return <ProfilePageContainer><h1>Player Not Found</h1></ProfilePageContainer>;
@@ -465,7 +520,7 @@ const PlayerProfilePage: React.FC = () => {
       </ProfileStatsGrid>
 
       {/* Tournament Stats & Match History */}
-      {playerTeam && matchHistory.length > 0 && (
+      {matchHistory.length > 0 && (
         <div style={{marginTop: '3rem'}}>
           <ProfileSectionTitle>Live Tournament Champions Played</ProfileSectionTitle>
           <ProfileStatsGrid style={{marginBottom: '2.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'}}>
@@ -473,7 +528,7 @@ const PlayerProfilePage: React.FC = () => {
               tournamentChampStats.map(stat => (
                 <ProfileStatCard key={stat.name} style={{display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem'}}>
                   <ProfileChampIcon
-                    src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(stat.name)}.png`}
+                     src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(stat.name)}.png`}
                     alt={stat.name}
                   />
                   <ProfileChampInfo>
@@ -493,9 +548,12 @@ const PlayerProfilePage: React.FC = () => {
           <ProfileSectionTitle>Tournament Match History</ProfileSectionTitle>
           <ProfileMatchHistoryList>
             {matchHistory.map(match => {
-              const opponentId = match.team1Id === playerTeam.id ? match.team2Id : match.team1Id;
+              const firstGame = match.playerMatchPerf[0];
+              const opponentId = firstGame?.opponentTeamId;
               const opponent = teams.find(t => t.id === opponentId);
-              const didWinSeries = match.playerMatchPerf.map((perf: any) => perf.gameWinner).filter((_: any) => _).length === 2;
+              const gamesWon = match.playerMatchPerf.filter((perf: any) => perf.gameWinner).length;
+              const gamesLost = match.playerMatchPerf.length - gamesWon;
+              const didWinSeries = gamesWon > gamesLost;
 
               return opponent?.name ? (
                 <ProfileMatchItem key={match.id} onClick={() => navigate(`/match/${match.id}?division=${urlDivision}`)}>
