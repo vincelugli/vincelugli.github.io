@@ -648,6 +648,21 @@ export const gameNotificationEndpoint = onRequest(
         `Received valid notification for match: ${notificationData.shortCode}`
       );
 
+      if (notificationData.shortCode) {
+        const resultRef = db
+          .collection("match_results")
+          .doc(notificationData.shortCode);
+        const resultDoc = await resultRef.get();
+        if (resultDoc.exists) {
+          logger.info(
+            `Match result for shortCode ${notificationData.shortCode} ` +
+              "already exists. Skipping duplicate processing."
+          );
+          res.status(200).send({message: "Match result already processed."});
+          return;
+        }
+      }
+
       logger.info(
         `Processing request for game with Riot gameId 
 ${notificationData.gameId}`
@@ -680,6 +695,73 @@ ${notificationData.gameId}`
         logger.error(`Failed with error ${e}`);
       }
 
+      // Fetch match metadata to determine division
+      const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
+      const shortCodeDoc = await shortCodeDocRef.get();
+      if (!shortCodeDoc.exists) {
+        throw new Error(
+          `Document for shortCode '${notificationData.shortCode}' not found.`
+        );
+      }
+      const {division, matchId} = shortCodeDoc.data()!;
+      if (!division || !matchId) {
+        throw new Error(
+          `Document '${notificationData.shortCode}' ` +
+            "is missing 'division' or 'matchId' field."
+        );
+      }
+
+      // Fetch teams and players once
+      const teamsDocRef = db.doc(`teams/grumble2026_${division}`);
+      const playersDocRef = db.doc(`players/grumble2026_${division}`);
+      const [teamsDocSnap, playersDocSnap] = await Promise.all([
+        teamsDocRef.get(),
+        playersDocRef.get(),
+      ]);
+
+      if (!teamsDocSnap.exists) {
+        throw new Error(`Teams document 'grumble2026_${division}' not found.`);
+      }
+      if (!playersDocSnap.exists) {
+        throw new Error(
+          `Players document 'grumble2026_${division}' not found.`
+        );
+      }
+
+      const allTeams = teamsDocSnap.data()!.teams || [];
+      const allPlayers = playersDocSnap.data()!.players || [];
+
+      // Resolve side team names
+      const blueTeamInfo = resolveTeamIdAndName(
+        matchResultData.blueTeam.players.map((p) => p.playerName),
+        allTeams,
+        allPlayers
+      );
+      const redTeamInfo = resolveTeamIdAndName(
+        matchResultData.redTeam.players.map((p) => p.playerName),
+        allTeams,
+        allPlayers
+      );
+
+      if (blueTeamInfo) {
+        matchResultData.blueTeam = {
+          ...matchResultData.blueTeam,
+          teamId: blueTeamInfo.id,
+          teamName: blueTeamInfo.name,
+        } as any;
+      }
+      if (redTeamInfo) {
+        matchResultData.redTeam = {
+          ...matchResultData.redTeam,
+          teamId: redTeamInfo.id,
+          teamName: redTeamInfo.name,
+        } as any;
+      }
+
+      const winnerId = matchResultData.winner === 100 ?
+        blueTeamInfo?.id :
+        redTeamInfo?.id;
+
       const matchRef = db
         .collection("matches")
         .doc(notificationData.shortCode ?? "grumble2026_unknown");
@@ -702,7 +784,7 @@ ${notificationData.gameId}`
       batch.set(resultRef, resultPayload);
       batch.update(matchRef, {
         status: "completed",
-        winnerId: matchResultData.winner,
+        winnerId: winnerId || -1,
       });
 
       await batch.commit();
@@ -710,25 +792,6 @@ ${notificationData.gameId}`
       // ////////////////////
       // Update Standings //
       // ////////////////////
-      const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
-      const shortCodeDoc = await shortCodeDocRef.get();
-      if (!shortCodeDoc.exists) {
-        throw new Error(
-          `Document for shortCode '${notificationData.shortCode}' not found.`
-        );
-      }
-      const {division, matchId} = shortCodeDoc.data()!;
-      logger.info(`Found division ${division} and matchId ${matchId}`);
-      if (!division || !matchId) {
-        throw new Error(
-          `Document '${notificationData.shortCode}'
-is missing 'division' or 'matchId' field.`);
-      }
-      const winnerId = await findTeamIdByPlayerNames(
-        matchResultData.winner === 100 ?
-          matchResultData.blueTeam.players.map((p) => p.playerName) :
-          matchResultData.redTeam.players.map((p) => p.playerName),
-        division);
       await updateStandings(
         notificationData.shortCode || "grumble2026_unknown",
         winnerId || -1,
@@ -860,6 +923,73 @@ Loser: ${allTeams[loserIndex].gameRecord}`);
 
 
 /**
+ * Resolves the team ID and name for a list of player names by finding the team
+ * with the majority of players in the list.
+ *
+ * @param {string[]} playerNames - An array of player names to check.
+ * @param {any[]} teams - All teams in the division.
+ * @param {any[]} players - All players in the division.
+ * @return {{id: number, name: string} | null} The resolved team, or null.
+ */
+export function resolveTeamIdAndName(
+  playerNames: string[],
+  teams: any[],
+  players: any[]
+): {id: number; name: string} | null {
+  if (!playerNames || playerNames.length === 0) {
+    return null;
+  }
+
+  const playerNamesToFindSet = new Set(
+    playerNames.map((p) => p.split("#")[0].trim().toLowerCase())
+  );
+  const playerIdsToFindSet = new Set<number>();
+
+  for (const player of players) {
+    const cleanPlayerName = player.name.split("#")[0].trim().toLowerCase();
+    if (playerNamesToFindSet.has(cleanPlayerName)) {
+      playerIdsToFindSet.add(player.id);
+    }
+  }
+
+  if (playerIdsToFindSet.size === 0) {
+    return null;
+  }
+
+  const teamMatchCounts = new Map<number, number>();
+  for (const team of teams) {
+    let matchCount = 0;
+    for (const playerIdOnTeam of team.players) {
+      if (playerIdsToFindSet.has(playerIdOnTeam)) {
+        matchCount++;
+      }
+    }
+    if (matchCount > 0) {
+      teamMatchCounts.set(team.id, matchCount);
+    }
+  }
+
+  let bestTeamId: number | null = null;
+  let maxMatches = 0;
+  for (const [teamId, count] of teamMatchCounts.entries()) {
+    if (count > maxMatches) {
+      maxMatches = count;
+      bestTeamId = teamId;
+    }
+  }
+
+  if (bestTeamId !== null) {
+    const bestTeam = teams.find((t) => t.id === bestTeamId);
+    if (bestTeam) {
+      return {id: bestTeam.id, name: bestTeam.name};
+    }
+  }
+
+  return null;
+}
+
+
+/**
  * Finds the team ID that a given list of player names belongs to.
  * Returns a match if even one player from the list is found on a team.
  *
@@ -906,41 +1036,19 @@ export async function findTeamIdByPlayerNames(
       );
     }
 
-    const playerNamesToFindSet =
-      new Set(playerNames.map((p: any) => p.split("#")[0]));
-    const playerIdsToFindSet = new Set<number>();
-
-    logger.info(`Searching for ${playerNames}`);
-
-    for (const player of allPlayers) {
-      if (playerNamesToFindSet.has(player.name.split("#")[0])) {
-        playerIdsToFindSet.add(player.id);
-      }
-    }
-
-    if (playerIdsToFindSet.size === 0) {
+    const resolved = resolveTeamIdAndName(playerNames, allTeams, allPlayers);
+    if (resolved) {
       logger.info(
-        "None of the player names were found in the master player list."
+        `Found match!
+Majority of players belong to Team ID ${resolved.id} (${resolved.name}).`
       );
-      return null;
-    }
-
-    for (const team of allTeams) {
-      for (const playerIdOnTeam of team.players) {
-        if (playerIdsToFindSet.has(playerIdOnTeam)) {
-          logger.info(
-            `Found match!
-Player ID ${playerIdOnTeam} is on
-Team ID ${team.id} (${team.name}).`);
-          return team.id;
-        }
-      }
+      return resolved.id;
     }
 
     logger.info("No team found containing any of the specified players.");
     return null;
   } catch (error) {
-    logger.info("Error finding team by player names:", error);
+    logger.error("Error finding team by player names:", error);
     // In case of an error, we should not return a team ID.
     return null;
   }
