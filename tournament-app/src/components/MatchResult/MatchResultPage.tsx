@@ -71,6 +71,15 @@ const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: 
   const getSideNames = (result: MatchResultData | undefined) => {
     if (!result) return { blueTeamName: 'Blue Team', redTeamName: 'Red Team' };
 
+    const blueTeamNameStored = (result.blueTeam as any).teamName;
+    const redTeamNameStored = (result.redTeam as any).teamName;
+    if (blueTeamNameStored && redTeamNameStored) {
+      return {
+        blueTeamName: blueTeamNameStored,
+        redTeamName: redTeamNameStored,
+      };
+    }
+
     const isNameMatch = (n1: string, n2: string) => {
       const clean1 = n1.toLowerCase().replace(/\s+/g, '').split('#')[0];
       const clean2 = n2.toLowerCase().replace(/\s+/g, '').split('#')[0];
@@ -78,14 +87,18 @@ const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: 
     };
 
     const getTeamForSide = (teamPlayers: { playerName: string }[]) => {
+      let team1Matches = 0;
+      let team2Matches = 0;
       for (const pResult of teamPlayers) {
         const found = players.find(p => isNameMatch(p.name, pResult.playerName))
           || substitutes.find(p => isNameMatch(p.name, pResult.playerName));
         if (found && found.teamId) {
-          if (team1 && found.teamId === team1.id) return team1;
-          if (team2 && found.teamId === team2.id) return team2;
+          if (team1 && found.teamId === team1.id) team1Matches++;
+          if (team2 && found.teamId === team2.id) team2Matches++;
         }
       }
+      if (team1Matches > team2Matches && team1Matches > 0) return team1;
+      if (team2Matches > team1Matches && team2Matches > 0) return team2;
       return undefined;
     };
 

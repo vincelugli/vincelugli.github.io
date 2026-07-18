@@ -847,6 +847,41 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleSyncPlayerTeamIds = async () => {
+    if (!teams || teams.length === 0) {
+      showStatus('error', 'No teams found. Please create or load teams first.');
+      return;
+    }
+    if (!players || players.length === 0) {
+      showStatus('error', 'No players found in the player pool.');
+      return;
+    }
+
+    if (!window.confirm('Sync team IDs for all players in the pool based on current team rosters?')) return;
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Syncing player team IDs...');
+
+      const updatedPlayers = players.map(player => {
+        const matchingTeam = teams.find(team => team.players && team.players.includes(player.id));
+        return {
+          ...player,
+          teamId: matchingTeam ? matchingTeam.id : null
+        };
+      });
+
+      await updateDoc(doc(db, 'players', `${prefix}_${division}`), {
+        players: updatedPlayers
+      });
+
+      showStatus('success', 'Successfully synced team IDs with player objects.');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to sync player team IDs.');
+    }
+  };
+
   const handleSaveTeamDetails = async () => {
     if (!editingTeam) return;
 
@@ -1835,9 +1870,14 @@ const AdminPage: React.FC = () => {
             <AdminCard>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <AdminCardTitle style={{ border: 'none', margin: 0 }}>Tournament Teams List ({teams.length})</AdminCardTitle>
-                <AdminActionButton variant="primary" onClick={handleCreateTeamsFromDraft}>
-                  Create/Sync Teams from Draft Pool
-                </AdminActionButton>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <AdminActionButton variant="primary" onClick={handleCreateTeamsFromDraft}>
+                    Create/Sync Teams from Draft Pool
+                  </AdminActionButton>
+                  <AdminActionButton variant="secondary" onClick={handleSyncPlayerTeamIds}>
+                    <FaSync /> Sync Player Team IDs
+                  </AdminActionButton>
+                </div>
               </div>
 
               <AdminTableContainer>
