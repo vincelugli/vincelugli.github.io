@@ -3323,7 +3323,7 @@ export const TeamPagePlayerInfo = styled.div`
   gap: 0.2rem;
 `;
 
-export const TeamPagePlayerNameLink = styled.a`
+export const TeamPagePlayerNameLink = styled(Link)`
   font-weight: 700;
   color: ${({ theme }) => theme.text};
   text-decoration: none;
@@ -3332,6 +3332,19 @@ export const TeamPagePlayerNameLink = styled.a`
   &:hover {
     color: ${({ theme }) => theme.primary};
     text-decoration: underline;
+  }
+`;
+
+export const TeamPagePlayerOpGgLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  color: ${({ theme }) => theme.textAlt};
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.primary};
+    opacity: 1;
   }
 `;
 

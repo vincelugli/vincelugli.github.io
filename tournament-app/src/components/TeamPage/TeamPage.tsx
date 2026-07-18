@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import {useParams, Link} from 'react-router-dom';
 import { BracketRound, BracketSeed, Match, Player } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { FaExternalLinkAlt } from 'react-icons/fa';
@@ -21,6 +21,7 @@ import {
   TeamPagePlayerCard,
   TeamPagePlayerInfo,
   TeamPagePlayerNameLink,
+  TeamPagePlayerOpGgLink,
   TeamPagePlayerRole,
   TeamPageCaptainIndicator,
   TeamPageSection,
@@ -123,9 +124,11 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
             <TeamPagePlayerCard key={player.id}>
               {isPlayerCaptain(player, division) && <TeamPageCaptainIndicator title="Team Captain" />}
               <TeamPagePlayerInfo>
-                <TeamPagePlayerNameLink href={createOpGgUrl(player.name)} target="_blank" rel="noopener noreferrer">
-                  {player.name}
-                </TeamPagePlayerNameLink>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
+                  <TeamPagePlayerNameLink to={`/players/${player.id}?division=${urlDivision}`}>
+                    {player.name}
+                  </TeamPagePlayerNameLink>
+                </div>
                 <TeamPagePlayerRole>{player.role}</TeamPagePlayerRole>
               </TeamPagePlayerInfo>
             </TeamPagePlayerCard>
