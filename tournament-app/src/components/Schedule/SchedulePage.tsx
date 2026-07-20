@@ -305,20 +305,44 @@ const SchedulePage: React.FC = () => {
     return groups;
   }
 
+  function getStagePrecedence(name: string): number {
+    const lower = name.toLowerCase();
+    if (lower.includes('grand final') || lower === 'finals' || lower.includes('final')) {
+      return 100;
+    }
+    if (lower.includes('semifinal') || lower.includes('semi')) {
+      return 90;
+    }
+    if (lower.includes('quarterfinal') || lower.includes('quarter')) {
+      return 80;
+    }
+    if (lower.includes('knockout') || lower.includes('bracket')) {
+      return 70;
+    }
+    if (lower.startsWith('swiss round')) {
+      const match = lower.match(/swiss round\s+(\d+)/);
+      if (match) {
+        return 10 + parseInt(match[1], 10);
+      }
+      return 10;
+    }
+    const numMatch = lower.match(/\d+/);
+    if (numMatch) {
+      return parseInt(numMatch[0], 10);
+    }
+    return 0;
+  }
+
   function getSortedGroupKeys(groups: { [key: string]: Match[] }) {
     return Object.keys(groups).sort((a, b) => {
-      const aIsSwiss = a.startsWith('Swiss Round');
-      const bIsSwiss = b.startsWith('Swiss Round');
+      const precA = getStagePrecedence(a);
+      const precB = getStagePrecedence(b);
 
-      if (aIsSwiss && bIsSwiss) {
-        const aNum = parseInt(a.replace('Swiss Round ', ''), 10);
-        const bNum = parseInt(b.replace('Swiss Round ', ''), 10);
-        return aNum - bNum;
+      if (precA !== precB) {
+        return precB - precA;
       }
-      if (aIsSwiss && !bIsSwiss) return -1;
-      if (!aIsSwiss && bIsSwiss) return 1;
 
-      return a.localeCompare(b);
+      return b.localeCompare(a);
     });
   }
 
