@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import { getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain } from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -159,6 +159,16 @@ const AdminPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [bracket, setBracket] = useState<BracketRound[]>([]);
 
+  const swissMatches = useMemo(() => matches.filter(m => !m.isKnockout), [matches]);
+  const hasIncompleteSwissMatches = useMemo(() => swissMatches.some(m => m.status !== 'completed'), [swissMatches]);
+  const nextRoundNum = useMemo(() => {
+    const roundNums = swissMatches.map(m => {
+      const mRound = m.stage ? parseInt(m.stage.replace('Round ', ''), 10) : m.weekPlayed;
+      return mRound || 0;
+    });
+    return roundNums.length > 0 ? Math.max(...roundNums) + 1 : 1;
+  }, [swissMatches]);
+
   // Local component states
   const [playerSearch, setPlayerSearch] = useState('');
   const [confirmResetDraft, setConfirmResetDraft] = useState(false);
@@ -210,6 +220,9 @@ const AdminPage: React.FC = () => {
   const [codesIsKnockout, setCodesIsKnockout] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [manualCodeForStandings, setManualCodeForStandings] = useState('');
+  const [manualProcessShortCode, setManualProcessShortCode] = useState('');
+  const [manualProcessGameId, setManualProcessGameId] = useState('');
+  const [manualProcessRegion, setManualProcessRegion] = useState('NA');
 
   const prefix = getFirebasePrefix();
 
@@ -1004,6 +1017,246 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleGenerateNextSwissRound = async () => {
+    if (swissMatches.length === 0) {
+      showStatus('error', 'No Swiss Round 1 matches found. Please generate Round 1 first.');
+      return;
+    }
+
+    if (hasIncompleteSwissMatches) {
+      const proceed = window.confirm(
+        'Some previous Swiss matches are not completed. Pairings will be generated using placeholders (e.g., "Winner of Match X" / "Loser of Match X"). Do you want to proceed?'
+      );
+      if (!proceed) return;
+    }
+
+    const confirmMsg = `Are you sure you want to generate Swiss Stage Round ${nextRoundNum} matches?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setStatus('loading');
+
+      // Helper to extract numeric index from swiss match ID
+      const getMatchIndex = (matchId: string | number): number => {
+        const match = String(matchId).match(/swiss_(\d+)/);
+        return match ? parseInt(match[1], 10) : Number(matchId);
+      };
+
+      // Helper to get round number of a match
+      const getRoundOfMatch = (m: Match): number => {
+        return m.stage ? parseInt(m.stage.replace('Round ', ''), 10) : m.weekPlayed;
+      };
+
+      interface Participant {
+        id: number;
+        name: string;
+        wins: number;
+        losses: number;
+        hadBye: boolean;
+      }
+
+      // Initialize participants as all real teams with 0-0 record
+      let participants: Participant[] = teams.map(t => ({
+        id: t.id,
+        name: t.name,
+        wins: 0,
+        losses: 0,
+        hadBye: false
+      }));
+
+      // Sort existing Swiss matches by round number so we process them chronologically
+      const sortedSwissMatches = [...swissMatches].sort((a, b) => getRoundOfMatch(a) - getRoundOfMatch(b));
+
+      // Process each match chronologically to update records or create placeholder teams
+      for (const m of sortedSwissMatches) {
+        const p1 = participants.find(p => p.id === m.team1Id);
+        const p2 = participants.find(p => p.id === m.team2Id);
+
+        if (m.status === 'completed') {
+          if (m.team1Id === m.team2Id && m.score === 'BYE') {
+            if (p1) {
+              p1.wins += 1;
+              p1.hadBye = true;
+            }
+          } else {
+            if (p1 && m.team1Wins! > m.team2Wins! && m.team1Wins! === 2) {
+              p1.wins += 1;
+            } else if (p1) {
+              p1.losses += 1;
+            }
+
+            if (p2 && m.team2Wins! > m.team1Wins! && m.team2Wins! === 2) {
+              p2.wins += 1;
+            } else if (p2) {
+              p2.losses += 1;
+            }
+          }
+        } else {
+          // Incomplete match - create Winner and Loser placeholder teams
+          const matchIdx = getMatchIndex(m.id);
+          const winnerId = -(matchIdx * 100);
+          const loserId = -(matchIdx * 100 + 1);
+
+          const p1Wins = p1 ? p1.wins : 0;
+          const p1Losses = p1 ? p1.losses : 0;
+          const p1Name = p1 ? p1.name : `Team ${m.team1Id}`;
+          const p1HadBye = p1 ? p1.hadBye : false;
+
+          const p2Wins = p2 ? p2.wins : 0;
+          const p2Losses = p2 ? p2.losses : 0;
+          const p2Name = p2 ? p2.name : `Team ${m.team2Id}`;
+          const p2HadBye = p2 ? p2.hadBye : false;
+
+          // Remove constituent participants from active list
+          participants = participants.filter(p => p.id !== m.team1Id && p.id !== m.team2Id);
+
+          // Add Winner placeholder
+          participants.push({
+            id: winnerId,
+            name: `Winner of ${p1Name} vs ${p2Name}`,
+            wins: Math.max(p1Wins, p2Wins) + 1,
+            losses: Math.min(p1Losses, p2Losses),
+            hadBye: p1HadBye && p2HadBye
+          });
+
+          // Add Loser placeholder
+          participants.push({
+            id: loserId,
+            name: `Loser of ${p1Name} vs ${p2Name}`,
+            wins: Math.min(p1Wins, p2Wins),
+            losses: Math.max(p1Losses, p2Losses) + 1,
+            hadBye: p1HadBye || p2HadBye
+          });
+        }
+      }
+
+      const havePlayedEachOther = (id1: number, id2: number) => {
+        if (id1 < 0 || id2 < 0) return false; // Placeholders haven't played anyone yet
+        return swissMatches.some(
+          m => (m.team1Id === id1 && m.team2Id === id2) || (m.team1Id === id2 && m.team2Id === id1)
+        );
+      };
+
+      let activeTeams = [...participants];
+      let byeTeamId: number | null = null;
+
+      // Select BYE team if odd number of teams
+      if (activeTeams.length % 2 !== 0) {
+        const byeCandidates = activeTeams.filter(tr => !tr.hadBye);
+        const candidates = byeCandidates.length > 0 ? byeCandidates : activeTeams;
+
+        // Sort candidates: lowest wins first, highest losses first, lowest ID first
+        candidates.sort((a, b) => {
+          if (a.wins !== b.wins) return a.wins - b.wins;
+          if (a.losses !== b.losses) return b.losses - a.losses;
+          return a.id - b.id;
+        });
+
+        const chosen = candidates[0];
+        byeTeamId = chosen.id;
+        activeTeams = activeTeams.filter(tr => tr.id !== chosen.id);
+      }
+
+      // Sort remaining active teams by record descending (most wins first, then least losses first)
+      activeTeams.sort((a, b) => {
+        if (a.wins !== b.wins) return b.wins - a.wins;
+        return a.losses - b.losses;
+      });
+
+      // Find pairings using backtracking
+      const pairings: [number, number][] = [];
+
+      const findPairings = (teamsList: typeof activeTeams): boolean => {
+        if (teamsList.length === 0) return true;
+
+        const first = teamsList[0];
+        for (let i = 1; i < teamsList.length; i++) {
+          const candidate = teamsList[i];
+          if (!havePlayedEachOther(first.id, candidate.id)) {
+            pairings.push([first.id, candidate.id]);
+            const remaining = teamsList.filter((_, idx) => idx !== 0 && idx !== i);
+            if (findPairings(remaining)) {
+              return true;
+            }
+            pairings.pop();
+          }
+        }
+        return false;
+      };
+
+      const findPairingsRelaxed = (teamsList: typeof activeTeams): boolean => {
+        if (teamsList.length === 0) return true;
+
+        const first = teamsList[0];
+        for (let i = 1; i < teamsList.length; i++) {
+          const candidate = teamsList[i];
+          pairings.push([first.id, candidate.id]);
+          const remaining = teamsList.filter((_, idx) => idx !== 0 && idx !== i);
+          if (findPairingsRelaxed(remaining)) {
+            return true;
+          }
+          pairings.pop();
+        }
+        return false;
+      };
+
+      const success = findPairings(activeTeams);
+      if (!success) {
+        console.warn("Could not find pairings without repeat matchups. Relaxing constraint.");
+        findPairingsRelaxed(activeTeams);
+      }
+
+      // Generate match objects
+      const newMatches: Match[] = [];
+      const swissMatchIds = swissMatches.map(m => {
+        const match = String(m.id).match(/swiss_(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      let currentMatchIdx = swissMatchIds.length > 0 ? Math.max(...swissMatchIds) + 1 : 1;
+
+      // Add normal matchups
+      for (const [t1Id, t2Id] of pairings) {
+        newMatches.push({
+          id: `swiss_${currentMatchIdx++}`,
+          team1Id: t1Id,
+          team2Id: t2Id,
+          status: 'upcoming',
+          tournamentCodes: [],
+          weekPlayed: nextRoundNum,
+          isKnockout: false,
+          stage: `Round ${nextRoundNum}`
+        });
+      }
+
+      // Add BYE matchup if applicable
+      if (byeTeamId !== null) {
+        newMatches.push({
+          id: `swiss_${currentMatchIdx++}`,
+          team1Id: byeTeamId,
+          team2Id: byeTeamId,
+          status: 'completed',
+          winnerId: byeTeamId,
+          score: 'BYE',
+          tournamentCodes: [],
+          weekPlayed: nextRoundNum,
+          isKnockout: false,
+          stage: `Round ${nextRoundNum}`
+        });
+      }
+
+      // Save back to database
+      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+      const updatedMatches = [...matches, ...newMatches];
+      debugger;
+      await setDoc(matchesRef, {matches: updatedMatches});
+
+      showStatus('success', `Successfully generated Swiss Round ${nextRoundNum} matches.`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to generate next Swiss round.');
+    }
+  };
+
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
@@ -1098,6 +1351,46 @@ const AdminPage: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to update standings.');
+    }
+  };
+
+  const handleProcessGameFromNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualProcessShortCode || !manualProcessGameId || !manualProcessRegion) {
+      showStatus('error', 'Please fill in all fields (Tournament Code, Game ID, and Region).');
+      return;
+    }
+
+    const gameIdNum = parseInt(manualProcessGameId, 10);
+    if (isNaN(gameIdNum)) {
+      showStatus('error', 'Game ID must be a number.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg(`Processing game ${gameIdNum} for code ${manualProcessShortCode}...`);
+
+      const functions = getFunctions();
+      const processGameFn = httpsCallable(functions, 'processGameFromNotification');
+
+      const response = await processGameFn({
+        shortCode: manualProcessShortCode.trim(),
+        gameId: gameIdNum,
+        region: manualProcessRegion.trim()
+      });
+
+      const data = response.data as {success: boolean, message: string};
+      if (data.success) {
+        showStatus('success', data.message || 'Game processed successfully.');
+        setManualProcessShortCode('');
+        setManualProcessGameId('');
+      } else {
+        showStatus('error', data.message || 'Failed to process game.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to process game.');
     }
   };
 
@@ -2190,9 +2483,29 @@ const AdminPage: React.FC = () => {
               <AdminCard style={{ marginTop: '1.5rem' }}>
                 <AdminCardTitle>Generate Swiss Stage</AdminCardTitle>
                 <p>Automatically generate Round 1 Swiss matchup pairings based on the first-round draft pick order.</p>
-                <AdminActionButton variant="primary" onClick={handleGenerateSwissStage}>
-                  Generate Swiss Stage (Round 1)
-                </AdminActionButton>
+                    <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem'}}>
+                      <AdminActionButton variant="primary" onClick={handleGenerateSwissStage}>
+                        Generate Swiss Stage (Round 1)
+                      </AdminActionButton>
+
+                      {swissMatches.length > 0 && (
+                        <AdminActionButton
+                          variant="primary"
+                          onClick={handleGenerateNextSwissRound}
+                        >
+                          {hasIncompleteSwissMatches ? (
+                            `Generate Swiss Round ${nextRoundNum} (with placeholders)`
+                          ) : (
+                            `Generate Swiss Round ${nextRoundNum}`
+                          )}
+                        </AdminActionButton>
+                      )}
+                    </div>
+                    {hasIncompleteSwissMatches && (
+                      <p style={{color: '#f59e0b', fontSize: '0.875rem', marginTop: '0.5rem', fontWeight: 500}}>
+                        * Some previous matches are incomplete. Generating the next round will create placeholder pairings (e.g. 'Winner of A vs B').
+                      </p>
+                    )}
               </AdminCard>
             </div>
 
@@ -2214,8 +2527,8 @@ const AdminPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {matches.map(m => {
-                        const t1 = teams.find(t => t.id === m.team1Id);
-                        const t2 = teams.find(t => t.id === m.team2Id);
+                        const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
+                        const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
                         const winnerTeam = m.winnerId ? (m.winnerId === m.team1Id ? t1 : t2) : null;
                         return (
                           <tr key={m.id}>
@@ -2266,8 +2579,8 @@ const AdminPage: React.FC = () => {
                   >
                     <option value="">-- Select Match --</option>
                     {matches.map(m => {
-                      const t1 = teams.find(t => t.id === m.team1Id);
-                      const t2 = teams.find(t => t.id === m.team2Id);
+                      const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
+                      const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
                       const stageLabel = m.stage ? ` (${m.stage})` : ` (Week ${m.weekPlayed})`;
                       return (
                         <option key={m.id} value={m.id}>
@@ -2345,6 +2658,51 @@ const AdminPage: React.FC = () => {
             </form>
           </AdminCard>
 
+          {/* Manually Process Completed Game Card */}
+          <AdminCard style={{marginTop: '1.5rem'}}>
+            <AdminCardTitle>Manually Process Completed Game</AdminCardTitle>
+            <p>If a game was played using a tournament code already registered/completed, or needs reprocessing, manually submit the notification data here.</p>
+            <form onSubmit={handleProcessGameFromNotification}>
+              <AdminFormLayout>
+                <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                  <AdminFormGroup style={{flex: '1 1 300px'}}>
+                    <AdminFormLabel>Tournament Code (shortCode)</AdminFormLabel>
+                    <AdminTextInput
+                      type="text"
+                      placeholder="e.g. NA04f69-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                      value={manualProcessShortCode}
+                      onChange={(e) => setManualProcessShortCode(e.target.value)}
+                      required
+                    />
+                  </AdminFormGroup>
+                  <AdminFormGroup style={{flex: '1 1 150px'}}>
+                    <AdminFormLabel>Riot Game ID</AdminFormLabel>
+                    <AdminTextInput
+                      type="text"
+                      placeholder="e.g. 5234567890"
+                      value={manualProcessGameId}
+                      onChange={(e) => setManualProcessGameId(e.target.value)}
+                      required
+                    />
+                  </AdminFormGroup>
+                  <AdminFormGroup style={{flex: '1 1 100px'}}>
+                    <AdminFormLabel>Region</AdminFormLabel>
+                    <AdminTextInput
+                      type="text"
+                      placeholder="e.g. NA"
+                      value={manualProcessRegion}
+                      onChange={(e) => setManualProcessRegion(e.target.value)}
+                      required
+                    />
+                  </AdminFormGroup>
+                </div>
+                <AdminActionButton type="submit" variant="primary" style={{marginTop: '0.5rem', width: 'auto'}} disabled={status === 'loading'}>
+                  {status === 'loading' ? <FaSpinner className="spin" /> : <FaSync />} Process Game
+                </AdminActionButton>
+              </AdminFormLayout>
+            </form>
+          </AdminCard>
+
           {/* Current codes listing */}
           <AdminCard>
             <AdminCardTitle>Generated Tournament Codes Matrix</AdminCardTitle>
@@ -2360,8 +2718,8 @@ const AdminPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {matches.map(m => {
-                    const t1 = teams.find(t => t.id === m.team1Id);
-                    const t2 = teams.find(t => t.id === m.team2Id);
+                    const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
+                    const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
                     const codes = m.tournamentCodes || [];
                     return (
                       <tr key={m.id}>
