@@ -86,7 +86,7 @@ jest.mock("../riotApiTransformer", () => ({
   })),
 }));
 
-import {gameNotificationEndpoint} from "../index";
+import {gameNotificationEndpoint, processGameFromNotification} from "../index";
 
 describe("gameNotificationEndpoint Cloud Function", () => {
   beforeEach(() => {
@@ -226,3 +226,128 @@ describe("gameNotificationEndpoint Cloud Function", () => {
     expect(mockCommit).not.toHaveBeenCalled();
   });
 });
+
+describe("processGameFromNotification Cloud Function", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const validPayload = {
+    startTime: 12345678,
+    shortCode: "test-shortcode",
+    gameId: 987654321,
+    region: "NA",
+  };
+
+  it("should fail if request is not authenticated as admin", async () => {
+    await expect(
+      (processGameFromNotification as any)({
+        auth: undefined,
+        data: validPayload,
+      })
+    ).rejects.toThrow("Must be an administrator to perform this action.");
+  });
+
+  it("should fail if request data is missing required fields", async () => {
+    await expect(
+      (processGameFromNotification as any)({
+        auth: {token: {adminId: "admin-1"}},
+        data: {
+          gameId: 987654321,
+          region: "NA",
+        },
+      })
+    ).rejects.toThrow(
+      "The notificationData must contain 'shortCode', 'gameId', and 'region'."
+    );
+  });
+
+  it(
+    "should process the game notification successfully when admin",
+    async () => {
+    // Mock axios get response for Riot API
+      mockedAxios.get.mockResolvedValueOnce({data: {}});
+
+      // Mock match doc exists
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({division: "gold", matchId: 101}),
+      });
+
+      // Mock division teams doc snap for findTeamIdByPlayerNames
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          teams: [
+            {id: 1, name: "Team 1", players: [10]},
+            {id: 2, name: "Team 2", players: [20]},
+          ],
+        }),
+      });
+      // Mock players doc snap for findTeamIdByPlayerNames
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          players: [
+            {id: 10, name: "Player1"},
+            {id: 20, name: "Player2"},
+          ],
+        }),
+      });
+
+      // Mock updateStandings transaction execution
+      mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+        const mockTx = {
+          getAll: jest.fn().mockResolvedValueOnce([
+            {
+              exists: true,
+              data: () => ({
+                matches: [{id: 101, team1Id: 1, team2Id: 2, status: "active"}],
+              }),
+            },
+            {
+              exists: true,
+              data: () => ({
+                teams: [
+                  {
+                    id: 1,
+                    gameWins: 0,
+                    gameLosses: 0,
+                    wins: 0,
+                    losses: 0,
+                    record: "0-0",
+                    gameRecord: "0-0",
+                  },
+                  {
+                    id: 2,
+                    gameWins: 0,
+                    gameLosses: 0,
+                    wins: 0,
+                    losses: 0,
+                    record: "0-0",
+                    gameRecord: "0-0",
+                  },
+                ],
+              }),
+            },
+          ]),
+          update: jest.fn(),
+        };
+        await updateFn(mockTx);
+      });
+
+      const response = await (processGameFromNotification as any)({
+        auth: {token: {adminId: "admin-1"}},
+        data: validPayload,
+      });
+
+      expect(response).toEqual({
+        success: true,
+        message: "Game processed successfully.",
+      });
+
+      expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+      expect(mockCommit).toHaveBeenCalledTimes(1);
+    });
+});
+

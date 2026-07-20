@@ -4,6 +4,7 @@ import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useDivision } from '../../context/DivisionContext';
+import { getTeamOrPlaceholder } from '../../utils';
 import {
   SwissBracketContainer,
   SwissRoundColumn,
@@ -103,10 +104,20 @@ const SwissBracket: React.FC = () => {
 
       const teamMatch = roundMatches.find(m => m.team1Id === teamId || m.team2Id === teamId);
       if (teamMatch && teamMatch.status === 'completed') {
-        if (teamMatch.winnerId === teamId) {
+        if (teamMatch.score === 'BYE') {
           wins++;
-        } else {
-          losses++;
+        } else if (teamId === teamMatch.team1Id) {
+          if (teamMatch.team1Wins! > teamMatch.team2Wins! && teamMatch.team1Wins! === 2) {
+            wins++;
+          } else {
+            losses++;
+          }
+        } else if (teamId === teamMatch.team2Id) {
+          if (teamMatch.team2Wins! > teamMatch.team1Wins! && teamMatch.team2Wins! === 2) {
+            wins++;
+          } else {
+            losses++;
+          }
         }
       }
     }
@@ -224,8 +235,8 @@ const SwissBracket: React.FC = () => {
                 <SwissRecordGroup key={record}>
                   <SwissRecordGroupTitle>{getRecordGroupLabel(record)}</SwissRecordGroupTitle>
                   {groupedMatches[record].map((match: Match) => {
-                    const team1 = teams.find(t => t.id === match.team1Id);
-                    const team2 = teams.find(t => t.id === match.team2Id);
+                    const team1 = getTeamOrPlaceholder(match.team1Id, teams, matches);
+                    const team2 = getTeamOrPlaceholder(match.team2Id, teams, matches);
                     const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : 'Unknown Team');
                     const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 

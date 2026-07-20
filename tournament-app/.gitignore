@@ -12,6 +12,17 @@
 # production
 /build
 
+# scripts
+/python
+/cache
+seeded_players_opgg.json
+seeded_subs_opgg.json
+functions/.localstorage
+functions/jest-storage
+
+# logs
+/logs
+
 # misc
 .DS_Store
 .env.local

@@ -1,4 +1,4 @@
-import { Player, Team, PlayerAchievement } from "../types";
+import { Player, Team, PlayerAchievement, Match } from "../types";
 
 export function compareTeams(t1: Team , t2: Team): number {
     let result = t2.wins - t1.wins;
@@ -264,6 +264,40 @@ export function formatToLocal(date: Date | string): string {
     minute: '2-digit',
     hour12: true
   });
+}
+
+export function getTeamOrPlaceholder(
+  teamId: number,
+  teams: Team[],
+  matches: Match[]
+): { id: number; name: string } | undefined {
+  if (teamId >= 0) {
+    return teams.find(t => t.id === teamId);
+  }
+  const matchIdx = Math.floor(Math.abs(teamId) / 100);
+  const isWinner = Math.abs(teamId) % 100 === 0;
+  const sourceMatchId = `swiss_${matchIdx}`;
+  const sourceMatch = matches.find(m => String(m.id) === sourceMatchId);
+  if (!sourceMatch) {
+    return { id: teamId, name: `Placeholder Match ${matchIdx}` };
+  }
+  
+  if (sourceMatch.status === 'completed' && sourceMatch.winnerId) {
+    const winnerId = sourceMatch.winnerId;
+    const loserId = sourceMatch.winnerId === sourceMatch.team1Id ? sourceMatch.team2Id : sourceMatch.team1Id;
+    const resolvedId = isWinner ? winnerId : loserId;
+    return getTeamOrPlaceholder(resolvedId, teams, matches);
+  }
+  
+  const t1 = getTeamOrPlaceholder(sourceMatch.team1Id, teams, matches);
+  const t2 = getTeamOrPlaceholder(sourceMatch.team2Id, teams, matches);
+  const t1Name = t1 ? t1.name : `Team ${sourceMatch.team1Id}`;
+  const t2Name = t2 ? t2.name : `Team ${sourceMatch.team2Id}`;
+  
+  return {
+    id: teamId,
+    name: `${isWinner ? 'Winner' : 'Loser'} of ${t1Name} vs ${t2Name}`
+  };
 }
 
 

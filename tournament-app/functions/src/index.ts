@@ -56,6 +56,9 @@ const GameNotificationSchema = z.object({
   region: z.optional(z.string()),
 });
 
+type GameNotification = z.infer<typeof GameNotificationSchema>;
+
+
 const DRAFT_PICK_TIME_LIMIT_IN_SECONDS = 40 * 60;
 const PROJECT = "grumble-5885f";
 const LOCATION = "us-central1"; // Or your function"s location
@@ -631,6 +634,152 @@ export const executeAutoPick = onTaskDispatched({
 /** ****************** **
  *  POST-GAME ENDPOINTS *
  ** ****************** **/
+/**
+ * Processes a completed game using the provided notification data by fetching
+ * match details from the Riot API, resolving teams, and updating standings.
+ *
+ * @param {GameNotification} notificationData - The game notification data.
+ * @return {Promise<void>} A promise that resolves when processing is complete.
+ */
+async function executeGameNotificationProcessing(
+  notificationData: GameNotification
+): Promise<void> {
+  logger.info(
+    `Processing request for game with Riot gameId ${notificationData.gameId}`
+  );
+
+  let matchResultData = {
+    winner: -1,
+    blueTeam: {
+      players: [{playerName: ""}],
+    },
+    redTeam: {
+      players: [{playerName: ""}],
+    },
+  };
+
+  try {
+    const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
+    const riotApiResponse = await axios.get(riotApiUrl, {
+      headers: {"X-Riot-Token": riotApiKey.value()},
+    });
+
+    matchResultData =
+      await transformRiotDataToMatchResult(riotApiResponse.data);
+
+    logger.info(
+      `Fetched match result data ${JSON.stringify(matchResultData)}`);
+  } catch (e) {
+    logger.error(
+      `Failed to fetch match data for ${notificationData.gameId}.`);
+    logger.error(`Failed with error ${e}`);
+    throw e;
+  }
+
+  // Fetch match metadata to determine division
+  const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
+  const shortCodeDoc = await shortCodeDocRef.get();
+  if (!shortCodeDoc.exists) {
+    throw new Error(
+      `Document for shortCode '${notificationData.shortCode}' not found.`
+    );
+  }
+  const {division, matchId} = shortCodeDoc.data()!;
+  if (!division || !matchId) {
+    throw new Error(
+      `Document '${notificationData.shortCode}' ` +
+        "is missing 'division' or 'matchId' field."
+    );
+  }
+
+  // Fetch teams and players once
+  const teamsDocRef = db.doc(`teams/grumble2026_${division}`);
+  const playersDocRef = db.doc(`players/grumble2026_${division}`);
+  const [teamsDocSnap, playersDocSnap] = await Promise.all([
+    teamsDocRef.get(),
+    playersDocRef.get(),
+  ]);
+
+  if (!teamsDocSnap.exists) {
+    throw new Error(`Teams document 'grumble2026_${division}' not found.`);
+  }
+  if (!playersDocSnap.exists) {
+    throw new Error(
+      `Players document 'grumble2026_${division}' not found.`
+    );
+  }
+
+  const allTeams = teamsDocSnap.data()!.teams || [];
+  const allPlayers = playersDocSnap.data()!.players || [];
+
+  // Resolve side team names
+  const blueTeamInfo = resolveTeamIdAndName(
+    matchResultData.blueTeam.players.map((p) => p.playerName),
+    allTeams,
+    allPlayers
+  );
+  const redTeamInfo = resolveTeamIdAndName(
+    matchResultData.redTeam.players.map((p) => p.playerName),
+    allTeams,
+    allPlayers
+  );
+
+  if (blueTeamInfo) {
+    matchResultData.blueTeam = {
+      ...matchResultData.blueTeam,
+      teamId: blueTeamInfo.id,
+      teamName: blueTeamInfo.name,
+    } as any;
+  }
+  if (redTeamInfo) {
+    matchResultData.redTeam = {
+      ...matchResultData.redTeam,
+      teamId: redTeamInfo.id,
+      teamName: redTeamInfo.name,
+    } as any;
+  }
+
+  const winnerId = matchResultData.winner === 100 ?
+    blueTeamInfo?.id :
+    redTeamInfo?.id;
+
+  const matchRef = db
+    .collection("matches")
+    .doc(notificationData.shortCode ?? "grumble2026_unknown");
+  const resultRef = db
+    .collection("match_results")
+    .doc(notificationData.shortCode ?? "grumble2026_unknown");
+
+  const batch = db.batch();
+
+  const resultPayload = {
+    ...notificationData,
+    ...matchResultData,
+    submittedAt: Timestamp.now(),
+  };
+
+  logger.info(
+    `Attempting to update results with ${JSON.stringify(resultPayload)}`
+  );
+
+  batch.set(resultRef, resultPayload);
+  batch.update(matchRef, {
+    status: "completed",
+    winnerId: winnerId || -1,
+  });
+
+  await batch.commit();
+
+  // ////////////////////
+  // Update Standings //
+  // ////////////////////
+  await updateStandings(
+    notificationData.shortCode || "grumble2026_unknown",
+    winnerId || -1,
+    division,
+    matchId);
+}
+
 export const gameNotificationEndpoint = onRequest(
   {secrets: [riotApiKey]},
   async (req, res) => {
@@ -663,140 +812,7 @@ export const gameNotificationEndpoint = onRequest(
         }
       }
 
-      logger.info(
-        `Processing request for game with Riot gameId 
-${notificationData.gameId}`
-      );
-
-      let matchResultData = {
-        winner: -1,
-        blueTeam: {
-          players: [{playerName: ""}],
-        },
-        redTeam: {
-          players: [{playerName: ""}],
-        },
-      };
-
-      try {
-        const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
-        const riotApiResponse = await axios.get(riotApiUrl, {
-          headers: {"X-Riot-Token": riotApiKey.value()},
-        });
-
-        matchResultData =
-          await transformRiotDataToMatchResult(riotApiResponse.data);
-
-        logger.info(
-          `Fetched match result data ${JSON.stringify(matchResultData)}`);
-      } catch (e) {
-        logger.error(
-          `Failed to fetch match data for ${notificationData.gameId}.`);
-        logger.error(`Failed with error ${e}`);
-      }
-
-      // Fetch match metadata to determine division
-      const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
-      const shortCodeDoc = await shortCodeDocRef.get();
-      if (!shortCodeDoc.exists) {
-        throw new Error(
-          `Document for shortCode '${notificationData.shortCode}' not found.`
-        );
-      }
-      const {division, matchId} = shortCodeDoc.data()!;
-      if (!division || !matchId) {
-        throw new Error(
-          `Document '${notificationData.shortCode}' ` +
-            "is missing 'division' or 'matchId' field."
-        );
-      }
-
-      // Fetch teams and players once
-      const teamsDocRef = db.doc(`teams/grumble2026_${division}`);
-      const playersDocRef = db.doc(`players/grumble2026_${division}`);
-      const [teamsDocSnap, playersDocSnap] = await Promise.all([
-        teamsDocRef.get(),
-        playersDocRef.get(),
-      ]);
-
-      if (!teamsDocSnap.exists) {
-        throw new Error(`Teams document 'grumble2026_${division}' not found.`);
-      }
-      if (!playersDocSnap.exists) {
-        throw new Error(
-          `Players document 'grumble2026_${division}' not found.`
-        );
-      }
-
-      const allTeams = teamsDocSnap.data()!.teams || [];
-      const allPlayers = playersDocSnap.data()!.players || [];
-
-      // Resolve side team names
-      const blueTeamInfo = resolveTeamIdAndName(
-        matchResultData.blueTeam.players.map((p) => p.playerName),
-        allTeams,
-        allPlayers
-      );
-      const redTeamInfo = resolveTeamIdAndName(
-        matchResultData.redTeam.players.map((p) => p.playerName),
-        allTeams,
-        allPlayers
-      );
-
-      if (blueTeamInfo) {
-        matchResultData.blueTeam = {
-          ...matchResultData.blueTeam,
-          teamId: blueTeamInfo.id,
-          teamName: blueTeamInfo.name,
-        } as any;
-      }
-      if (redTeamInfo) {
-        matchResultData.redTeam = {
-          ...matchResultData.redTeam,
-          teamId: redTeamInfo.id,
-          teamName: redTeamInfo.name,
-        } as any;
-      }
-
-      const winnerId = matchResultData.winner === 100 ?
-        blueTeamInfo?.id :
-        redTeamInfo?.id;
-
-      const matchRef = db
-        .collection("matches")
-        .doc(notificationData.shortCode ?? "grumble2026_unknown");
-      const resultRef = db
-        .collection("match_results")
-        .doc(notificationData.shortCode ?? "grumble2026_unknown");
-
-      const batch = db.batch();
-
-      const resultPayload = {
-        ...notificationData,
-        ...matchResultData,
-        submittedAt: Timestamp.now(),
-      };
-
-      logger.info(
-        `Attempting to update results with ${JSON.stringify(resultPayload)}`
-      );
-
-      batch.set(resultRef, resultPayload);
-      batch.update(matchRef, {
-        status: "completed",
-        winnerId: winnerId || -1,
-      });
-
-      await batch.commit();
-
-      // ////////////////////
-      // Update Standings //
-      // ////////////////////
-      await updateStandings(
-        notificationData.shortCode || "grumble2026_unknown",
-        winnerId || -1,
-        division,
-        matchId);
+      await executeGameNotificationProcessing(notificationData);
 
       logger.info(`Successfully created result for match 
         ${notificationData.shortCode} and updated match status.`);
@@ -814,6 +830,42 @@ ${notificationData.gameId}`
     }
   }
 );
+
+export const processGameFromNotification = onCall(
+  {secrets: [riotApiKey]},
+  async (request) => {
+    if (!request.auth || !request.auth.token.adminId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Must be an administrator to perform this action."
+      );
+    }
+
+    const notificationData = GameNotificationSchema.parse(request.data);
+    if (
+      !notificationData.shortCode ||
+      !notificationData.gameId ||
+      !notificationData.region
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "The notificationData must contain 'shortCode', 'gameId', and 'region'."
+      );
+    }
+
+    try {
+      await executeGameNotificationProcessing(notificationData);
+      return {success: true, message: "Game processed successfully."};
+    } catch (e: any) {
+      logger.error(`Failed to process game from notification: ${e}`);
+      throw new HttpsError(
+        "internal",
+        e.message || "An internal error occurred."
+      );
+    }
+  }
+);
+
 
 const updateStandings = async (
   shortCode: string,

@@ -52,7 +52,7 @@ import { useGameMatches } from '../../context/MatchesContext';
 import { useTournament } from '../../context/TournamentContext';
 import { useAuth } from '../Common/AuthContext';
 import { Match } from '../../types';
-import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal } from '../../utils';
+import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal, getTeamOrPlaceholder } from '../../utils';
 
 const tournamentStagesMaster = [
   {
@@ -370,8 +370,8 @@ const SchedulePage: React.FC = () => {
                 <RoundTitle>{groupName}</RoundTitle>
                 <ScheduleMatchList>
                   {groupedMatches[groupName].map(match => {
-                    const team1 = teams.find(t => t.id === match.team1Id);
-                    const team2 = teams.find(t => t.id === match.team2Id);
+                    const team1 = getTeamOrPlaceholder(match.team1Id, teams, matches);
+                    const team2 = getTeamOrPlaceholder(match.team2Id, teams, matches);
                     const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : 'Unknown Team');
                     const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 
