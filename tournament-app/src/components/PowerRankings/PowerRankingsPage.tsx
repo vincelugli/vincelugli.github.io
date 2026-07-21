@@ -148,7 +148,7 @@ const PowerRankingsPage: React.FC = () => {
       <PowerRankingsHeader>
         <PowerRankingsTitle>Team Power Rankings</PowerRankingsTitle>
         <PowerRankingsSubtitle>
-          Official standings and rankings for the {(division === 'gold' ? 'elemental' : 'elder').toUpperCase()} Division
+          Slippy's (probably biased) unofficial power rankings for the {(division === 'gold' ? 'elemental' : 'elder').toUpperCase()} Division
         </PowerRankingsSubtitle>
       </PowerRankingsHeader>
 
