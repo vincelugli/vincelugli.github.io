@@ -50,7 +50,7 @@ const RANK_TIERS = ["Challenger", "Grandmaster", "Master", "Diamond", "Emerald",
 const ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
 const DIVISIONS = [1, 2, 3, 4, -1];
 
-type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'casters' | 'bulk';
+type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'casters' | 'bulk' | 'powerrankings';
 type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes' | 'matchResults';
 
 // Placeholder definitions for bulk JSON
@@ -58,6 +58,52 @@ const PLAYER_JSON_PLACEHOLDER = `[{"id": 101, "name": "PlayerName#NA1", "soloRan
 const TEAM_JSON_PLACEHOLDER = `[{"id": 1, "name": "TEAM 1", "captainId": 1, "players": [], "wins": 0, "losses": 0, "gameWins": 0, "gameLosses": 0}]`;
 const BRACKET_JSON_PLACEHOLDER = `[{"title": "Round 1", "seeds": [{"id": 1, "status": "upcoming", "teams": [{"id": 1, "name": "Team A"}, {"id": 2, "name": "Team B"}], "team1Id": 1, "team2Id": 2, "tournamentCodes": [], "weekPlayed": 1, "isKnockout": true}]}]`;
 const MATCHES_JSON_PLACEHOLDER = `[{"id": 1, "team1Id": 1, "team2Id": 2, "status": "upcoming", "tournamentCodes": [], "weekPlayed": 1}]`;
+
+// Helper to parse CSV string with double quote support
+const parseCSV = (text: string): string[][] => {
+  const lines: string[][] = [];
+  let row: string[] = [];
+  let inQuotes = false;
+  let entry = '';
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const nextChar = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        entry += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(entry.trim());
+      entry = '';
+    } else if ((char === '\r' || char === '\n') && !inQuotes) {
+      if (char === '\r' && nextChar === '\n') {
+        i++;
+      }
+      row.push(entry.trim());
+      if (row.some(r => r !== '')) {
+        lines.push(row);
+      }
+      row = [];
+      entry = '';
+    } else {
+      entry += char;
+    }
+  }
+
+  if (entry || row.length > 0) {
+    row.push(entry.trim());
+    if (row.some(r => r !== '')) {
+      lines.push(row);
+    }
+  }
+
+  return lines;
+};
 
 // Helper function to build snake draft pick order (identical to DraftPage.tsx logic)
 const buildDraftPickOrder = (allPlayers: Player[], division: string): DraftState => {
@@ -213,6 +259,11 @@ const AdminPage: React.FC = () => {
   // Legacy Bulk imports
   const [selectedBulkType, setSelectedBulkType] = useState<DataType>('players');
   const [bulkJsonString, setBulkJsonString] = useState('');
+
+  // Power rankings state
+  const [csvPasteText, setCsvPasteText] = useState('');
+  const [rankingWeekNum, setRankingWeekNum] = useState(1);
+  const [skipRowsCount, setSkipRowsCount] = useState(3);
 
   // Tournament codes generation state
   const [selectedMatchForCodes, setSelectedMatchForCodes] = useState<string | number>('');
@@ -1540,6 +1591,149 @@ const AdminPage: React.FC = () => {
     }
   }, [bulkJsonString, selectedBulkType, prefix, division]);
 
+  const handlePowerRankingsCSVSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvPasteText.trim()) {
+      showStatus('error', 'Please paste some CSV data first.');
+      return;
+    }
+
+    setStatus('loading');
+    setStatusMsg('Parsing CSV and preparing power rankings...');
+
+    try {
+      const parsedLines = parseCSV(csvPasteText);
+
+      if (parsedLines.length <= skipRowsCount) {
+        throw new Error(`CSV file doesn't have enough rows to skip ${skipRowsCount} lines.`);
+      }
+
+      const contentLines = parsedLines.slice(skipRowsCount);
+      if (contentLines.length === 0) {
+        throw new Error('CSV is empty after skipping lines.');
+      }
+
+      const headers = contentLines[0].map(h => h.toLowerCase().trim());
+      const rows = contentLines.slice(1);
+
+      const requiredCols = ['rank', 'team', 'roster', 'comments'];
+      const optionalCols = ['change'];
+
+      const colIndices: {[key: string]: number} = {};
+
+      for (const col of requiredCols) {
+        let idx = headers.indexOf(col);
+        if (idx === -1) {
+          idx = headers.findIndex(h => h.includes(col));
+        }
+        if (idx === -1) {
+          throw new Error(`Missing required CSV column: "${col}". Found columns: ${headers.join(', ')}`);
+        }
+        colIndices[col] = idx;
+      }
+
+      for (const col of optionalCols) {
+        let idx = headers.indexOf(col);
+        if (idx === -1) {
+          idx = headers.findIndex(h => h.includes(col));
+        }
+        if (idx !== -1) {
+          colIndices[col] = idx;
+        }
+      }
+
+      const rankingsList: any[] = [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.length < requiredCols.length) continue;
+
+        const rankStr = row[colIndices['rank']];
+        if (!rankStr) continue;
+
+        const rank = parseInt(rankStr, 10);
+        if (isNaN(rank)) {
+          console.warn(`Row ${i + 2}: Rank "${rankStr}" is not a valid integer. Skipping.`);
+          continue;
+        }
+
+        const teamName = row[colIndices['team']] || '';
+        const roster = row[colIndices['roster']] || '';
+        const comments = row[colIndices['comments']] || '';
+
+        let change = '0';
+        if (colIndices['change'] !== undefined && row[colIndices['change']]) {
+          change = row[colIndices['change']].trim();
+        }
+
+        const matchedTeam = teams.find(t => t.name.toLowerCase().trim() === teamName.toLowerCase().trim());
+        const teamId = matchedTeam ? matchedTeam.id : null;
+
+        rankingsList.push({
+          rank,
+          change,
+          team: teamName,
+          teamId,
+          roster,
+          comments
+        });
+      }
+
+      if (rankingsList.length === 0) {
+        throw new Error('No valid ranking rows were successfully parsed.');
+      }
+
+      setStatusMsg('Updating Firestore document...');
+
+      const rankingsRef = doc(db, 'powerRankings', `${prefix}_${division}`);
+      const rankingsSnap = await getDoc(rankingsRef);
+
+      let existingWeeks: any[] = [];
+      if (rankingsSnap.exists()) {
+        const data = rankingsSnap.data();
+        if (data.weeks) {
+          existingWeeks = data.weeks;
+        } else if (data.rankings) {
+          existingWeeks = [{
+            week: 1,
+            updatedAt: data.updatedAt || Date.now(),
+            rankings: data.rankings
+          }];
+        }
+      }
+
+      const newWeekData = {
+        week: rankingWeekNum,
+        updatedAt: Date.now(),
+        rankings: rankingsList
+      };
+
+      const updatedWeeks: any[] = [];
+      let replaced = false;
+      for (const wk of existingWeeks) {
+        if (wk.week === rankingWeekNum) {
+          updatedWeeks.push(newWeekData);
+          replaced = true;
+        } else {
+          updatedWeeks.push(wk);
+        }
+      }
+
+      if (!replaced) {
+        updatedWeeks.push(newWeekData);
+      }
+
+      updatedWeeks.sort((a, b) => a.week - b.week);
+
+      await setDoc(rankingsRef, {weeks: updatedWeeks});
+
+      showStatus('success', `Successfully uploaded power rankings for Week ${rankingWeekNum}!`);
+      setCsvPasteText('');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'An error occurred during CSV parsing or DB upload.');
+    }
+  }, [csvPasteText, skipRowsCount, rankingWeekNum, teams, prefix, division]);
+
   // Filtering players list
   const filteredPlayers = useMemo(() => {
     if (!playerSearch) return players;
@@ -1597,6 +1791,9 @@ const AdminPage: React.FC = () => {
         </AdminTabButton>
         <AdminTabButton active={activeTab === 'bulk'} onClick={() => setActiveTab('bulk')}>
           <FaTools /> Bulk JSON
+        </AdminTabButton>
+        <AdminTabButton active={activeTab === 'powerrankings'} onClick={() => setActiveTab('powerrankings')}>
+          <FaTrophy /> Power Rankings
         </AdminTabButton>
       </AdminTabBar>
 
@@ -2896,6 +3093,55 @@ const AdminPage: React.FC = () => {
             <Button type="submit" disabled={status === 'loading'}>
               {status === 'loading' ? 'Committing bulk updates...' : 'Submit Bulk Changes'}
             </Button>
+          </Form>
+        </AdminCard>
+      )}
+
+      {/* --- TAB: POWER RANKINGS --- */}
+      {activeTab === 'powerrankings' && (
+        <AdminCard>
+          <AdminCardTitle>Upload Power Rankings CSV</AdminCardTitle>
+          <p>Upload or paste a CSV string to update the Power Rankings list for a specific week.</p>
+
+          <AdminFormLayout style={{marginBottom: '2rem'}}>
+            <AdminFormGroup>
+              <AdminFormLabel htmlFor="ranking-week-input">Week Number</AdminFormLabel>
+              <AdminTextInput
+                id="ranking-week-input"
+                type="number"
+                min={1}
+                value={rankingWeekNum}
+                onChange={(e) => setRankingWeekNum(Number(e.target.value))}
+              />
+            </AdminFormGroup>
+
+            <AdminFormGroup>
+              <AdminFormLabel htmlFor="skip-rows-input">Skip Rows (before headers)</AdminFormLabel>
+              <AdminTextInput
+                id="skip-rows-input"
+                type="number"
+                min={0}
+                value={skipRowsCount}
+                onChange={(e) => setSkipRowsCount(Number(e.target.value))}
+                placeholder="e.g. 3 rows to skip metadata"
+              />
+            </AdminFormGroup>
+          </AdminFormLayout>
+
+          <Form onSubmit={handlePowerRankingsCSVSubmit}>
+            <TextArea
+              value={csvPasteText}
+              onChange={(e) => setCsvPasteText(e.target.value)}
+              placeholder={`Rank,Change,Team,Roster,Comments\n1,0,Team A,Player1 #NA1,Very strong roster...\n2,+1,Team B,Player2 #NA1,Upward trend this week...`}
+              required
+              rows={15}
+              style={{minHeight: '300px', fontFamily: 'monospace'}}
+            />
+            <AdminButtonGroup style={{marginTop: '1rem'}}>
+              <Button type="submit" disabled={status === 'loading'}>
+                {status === 'loading' ? 'Processing CSV & seeding...' : 'Parse & Update Power Rankings'}
+              </Button>
+            </AdminButtonGroup>
           </Form>
         </AdminCard>
       )}
