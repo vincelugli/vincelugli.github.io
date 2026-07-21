@@ -1247,7 +1247,6 @@ const AdminPage: React.FC = () => {
       // Save back to database
       const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
       const updatedMatches = [...matches, ...newMatches];
-      debugger;
       await setDoc(matchesRef, {matches: updatedMatches});
 
       showStatus('success', `Successfully generated Swiss Round ${nextRoundNum} matches.`);
