@@ -4274,3 +4274,225 @@ export const LiveBadge = styled.span`
   vertical-align: middle;
 `;
 
+export const PowerRankingsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+`;
+
+export const PowerRankingsHeader = styled.div`
+  text-align: center;
+  margin-bottom: 1.5rem;
+`;
+
+export const PowerRankingsTitle = styled.h1`
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: ${({ theme }) => theme.text};
+  margin-bottom: 0.5rem;
+`;
+
+export const PowerRankingsSubtitle = styled.p`
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.secondaryText};
+  margin: 0;
+`;
+
+export const PowerRankingsUpdateInfo = styled.p`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textAlt};
+  text-align: right;
+  margin: 0;
+  font-style: italic;
+`;
+
+export const PowerRankingsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+export const PowerRankingCard = styled.div`
+  display: flex;
+  background-color: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px ${({ theme }) => theme.boxShadow};
+  align-items: center;
+  gap: 1.5rem;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px ${({ theme }) => theme.boxShadow};
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.2rem;
+  }
+`;
+
+export const PowerRankingRankSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  text-align: center;
+
+  @media (max-width: 600px) {
+    flex-direction: row;
+    gap: 1rem;
+    min-width: unset;
+    align-items: center;
+  }
+`;
+
+export const PowerRankingRankNumber = styled.div`
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: ${({ theme }) => theme.primary};
+  line-height: 1;
+`;
+
+export const PowerRankingChange = styled.div<{ changeType: 'up' | 'down' | 'neutral' | 'new' }>`
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-top: 0.25rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  
+  background-color: ${({ changeType }) => 
+    changeType === 'up' ? 'rgba(40, 167, 69, 0.15)' :
+    changeType === 'down' ? 'rgba(220, 53, 69, 0.15)' :
+    changeType === 'new' ? 'rgba(0, 123, 255, 0.15)' :
+    'rgba(108, 117, 125, 0.15)'
+  };
+  
+  color: ${({ theme, changeType }) => 
+    changeType === 'up' ? theme.success :
+    changeType === 'down' ? theme.danger :
+    changeType === 'new' ? theme.primary :
+    theme.textAlt
+  };
+`;
+
+export const PowerRankingInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
+`;
+
+export const PowerRankingTeamName = styled.h3`
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const PowerRankingTeamLink = styled(Link)`
+  color: ${({ theme }) => theme.primary};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+export const PowerRankingRoster = styled.div`
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.secondaryText};
+  font-weight: 500;
+`;
+
+export const PowerRankingComments = styled.div`
+  font-size: 1rem;
+  color: ${({ theme }) => theme.text};
+  line-height: 1.5;
+  border-left: 3px solid ${({ theme }) => theme.borderColor};
+  padding-left: 0.75rem;
+  margin-top: 0.25rem;
+`;
+
+export const PowerRankingsLoading = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.2rem;
+  color: ${({ theme }) => theme.secondaryText};
+`;
+
+export const PowerRankingsError = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  font-size: 1.2rem;
+  color: ${({ theme }) => theme.danger};
+`;
+
+export const PowerRankingsEmpty = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 40vh;
+  text-align: center;
+  gap: 1rem;
+  color: ${({ theme }) => theme.secondaryText};
+`;
+
+export const PowerRankingsControlsRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    justify-content: flex-start;
+  }
+`;
+
+export const PowerRankingsDropdownContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+export const PowerRankingsDropdownLabel = styled.label`
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textAlt};
+`;
+
+export const PowerRankingsDropdownSelect = styled.select`
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primary};
+    outline: none;
+  }
+`;
+
+
+

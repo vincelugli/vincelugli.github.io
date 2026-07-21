@@ -136,6 +136,7 @@ const Header: React.FC = () => {
               <SubMenuItem to="/schedule">Schedule</SubMenuItem>
               <SubMenuItem to="/availability">Availability</SubMenuItem>
               <SubMenuItem to="/players">Players</SubMenuItem>
+              <SubMenuItem to="/power-rankings">Power Rankings</SubMenuItem>
             </SubMenu>
           </NavItem>
 
@@ -208,6 +209,7 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Schedule</MobileSubMenuItem>
             <MobileSubMenuItem to="/availability" onClick={closeAllMenus}>Availability</MobileSubMenuItem>
             <MobileSubMenuItem to="/players" onClick={closeAllMenus}>Players</MobileSubMenuItem>
+            <MobileSubMenuItem to="/power-rankings" onClick={closeAllMenus}>Power Rankings</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
 

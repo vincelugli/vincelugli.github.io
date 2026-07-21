@@ -758,6 +758,20 @@ async function executeGameNotificationProcessing(
     submittedAt: Timestamp.now(),
   };
 
+  if (notificationData.shortCode) {
+    const resultRef = db
+      .collection("match_results")
+      .doc(notificationData.shortCode);
+    const resultDoc = await resultRef.get();
+    if (resultDoc.exists) {
+      logger.info(
+        `Match result for shortCode ${notificationData.shortCode} ` +
+        "already exists. Skipping duplicate processing."
+      );
+      return;
+    }
+  }
+
   logger.info(
     `Attempting to update results with ${JSON.stringify(resultPayload)}`
   );
