@@ -28,6 +28,8 @@ import MatchResultPage from './components/MatchResult/MatchResultPage';
 import TeamKnockoutPage from './components/TeamPage/TeamKnockoutPage';
 import PlayerProfilePage from './components/Players/PlayerProfilePage';
 import { getYearFromHash } from './utils';
+import PowerRankingsPage from './components/PowerRankings/PowerRankingsPage';
+
 
 const AppContent: React.FC = () => {
   const { currentUser: user } = useAuth();
@@ -89,6 +91,7 @@ const AppContent: React.FC = () => {
                 <Route path="/match/:matchId" element={<MatchResultPage />} />
 
                 <Route path="/players/:playerId" element={<PlayerProfilePage />} />
+                <Route path="/power-rankings" element={<PowerRankingsPage />} />
             </Routes>
           </MainContent>
           <Footer />

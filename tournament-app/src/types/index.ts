@@ -193,3 +193,19 @@ export interface TeamAvailability {
   slots: { [key: string]: number[] };
 }
 
+export interface PowerRankingItem {
+  rank: number;
+  change: string;
+  team: string;
+  teamId?: number | null;
+  roster: string;
+  comments: string;
+}
+
+export interface WeeklyPowerRanking {
+  week: number;
+  updatedAt: number;
+  rankings: PowerRankingItem[];
+}
+
+
