@@ -5,6 +5,7 @@ const mockGet = jest.fn();
 const mockSet = jest.fn();
 const mockCommit = jest.fn();
 const mockRunTransaction = jest.fn();
+const mockDelete = jest.fn();
 
 const mockBatch = jest.fn(() => ({
   set: mockSet,
@@ -20,12 +21,14 @@ jest.mock("firebase-admin", () => ({
         get: mockGet,
         set: mockSet,
         update: mockUpdate,
+        delete: mockDelete,
       })),
     })),
     doc: jest.fn(() => ({
       get: mockGet,
       set: mockSet,
       update: mockUpdate,
+      delete: mockDelete,
     })),
     batch: mockBatch,
     runTransaction: mockRunTransaction,
@@ -113,7 +116,12 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       region: "NA",
     };
 
-    // 1. Check if match_results/test-shortcode exists
+    // 1. Check if match_lock/test-shortcode exists
+    // -> returns false (does not exist)
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    // 2. Check if match_results/test-shortcode exists
+    // (duplicate check in endpoint)
     // -> returns false (does not exist)
     mockGet.mockResolvedValueOnce({exists: false});
 
@@ -146,6 +154,11 @@ describe("gameNotificationEndpoint Cloud Function", () => {
         ],
       }),
     });
+
+    // 6. Check if match_results/test-shortcode exists
+    // (duplicate check in executeGameNotificationProcessing)
+    // -> returns false (does not exist)
+    mockGet.mockResolvedValueOnce({exists: false});
 
     // Mock updateStandings transaction execution
     mockRunTransaction.mockImplementationOnce(async (updateFn) => {
@@ -209,7 +222,11 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       region: "NA",
     };
 
-    // 1. Check if match_results/duplicate-shortcode exists
+    // 1. Check if match_lock/duplicate-shortcode exists (lock check)
+    // -> returns false (does not exist)
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    // 2. Check if match_results/duplicate-shortcode exists
     // -> returns true (exists)
     mockGet.mockResolvedValueOnce({exists: true});
 
@@ -221,6 +238,31 @@ describe("gameNotificationEndpoint Cloud Function", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.send).toHaveBeenCalledWith({
       message: "Match result already processed.",
+    });
+    expect(mockedAxios.get).not.toHaveBeenCalled();
+    expect(mockCommit).not.toHaveBeenCalled();
+  });
+
+  it("should return 200 OK if match lock already exists", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "locked-shortcode",
+      gameId: 987654321,
+      region: "NA",
+    };
+
+    // 1. Check if match_lock/locked-shortcode exists (lock check)
+    // -> returns true (exists, meaning already being processed)
+    mockGet.mockResolvedValueOnce({exists: true});
+
+    const {req, res} = createMockReqRes(notificationPayload);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await gameNotificationEndpoint(req as any, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith({
+      message: "Match is already being processed.",
     });
     expect(mockedAxios.get).not.toHaveBeenCalled();
     expect(mockCommit).not.toHaveBeenCalled();
@@ -294,6 +336,9 @@ describe("processGameFromNotification Cloud Function", () => {
           ],
         }),
       });
+
+      // Mock duplicate check in executeGameNotificationProcessing
+      mockGet.mockResolvedValueOnce({exists: false});
 
       // Mock updateStandings transaction execution
       mockRunTransaction.mockImplementationOnce(async (updateFn) => {

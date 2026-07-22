@@ -4494,5 +4494,66 @@ export const PowerRankingsDropdownSelect = styled.select`
   }
 `;
 
+export const CoinFlipContainer = styled.div`
+  background-color: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+export const CoinFlipButton = styled.button`
+  background-color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.background};
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    background-color: ${({ theme }) => theme.border};
+    color: ${({ theme }) => theme.textAlt};
+    cursor: not-allowed;
+  }
+`;
+
+export const SideSelectContainer = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+`;
+
+export const SideSelectButton = styled.button<{ selected?: boolean; side: 'blue' | 'red' }>`
+  background-color: ${props => props.selected 
+    ? (props.side === 'blue' ? '#0070f3' : '#e00000') 
+    : 'transparent'};
+  color: ${props => props.selected ? 'white' : (props.side === 'blue' ? '#0070f3' : '#e00000')};
+  border: 2px solid ${props => props.side === 'blue' ? '#0070f3' : '#e00000'};
+  border-radius: 4px;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => props.side === 'blue' ? 'rgba(0, 112, 243, 0.1)' : 'rgba(224, 0, 0, 0.1)'};
+  }
+`;
+
+
 
 

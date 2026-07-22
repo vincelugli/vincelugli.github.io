@@ -16,6 +16,8 @@ export interface Match {
   scheduledTime?: string;
   isCasted?: boolean;
   twitchChannel?: string;
+  coinFlipResult?: 'heads' | 'tails' | null;
+  firstGameSideSelection?: 'blue' | 'red' | null;
 }
 
 export interface Team {

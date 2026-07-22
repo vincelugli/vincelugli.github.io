@@ -155,9 +155,9 @@ const AvailabilityPage: React.FC = () => {
   const [use30MinIncrements, setUse30MinIncrements] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const { teams } = useTournament();
-  const { currentUser, captainTeamId, isTeamMember, isAdmin, isSub, subName } = useAuth();
+  const { currentUser, captainTeamId, authDivision, isTeamMember, isAdmin, isSub, subName } = useAuth();
   const { division } = useDivision();
-  const { getPlayerById } = usePlayers();
+  const { getPlayerById, substitutes } = usePlayers();
   
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [compareTeamAId, setCompareTeamAId] = useState<number | null>(null);
@@ -220,6 +220,15 @@ const AvailabilityPage: React.FC = () => {
   }, [captainTeamId]);
 
   const handleSave = async () => {
+    if (isSub && !substitutes.some(sub => sub.name === subName)) {
+      alert("You are not registered as a substitute in this division.");
+      return;
+    }
+    if (!isSub && authDivision !== division) {
+      alert("You are not authorized to save availability for this division.");
+      return;
+    }
+
     setSaving(true);
     try {
       const docRef = doc(db, 'availability', docId);
@@ -239,7 +248,7 @@ const AvailabilityPage: React.FC = () => {
 
   const toggleSlot = (teamId: number, day: string, time: string, playerId: number) => {
     if (!currentUser) return; // Must be logged in
-    const isAuthorized = isTeamMember && parseInt(captainTeamId, 10) === teamId;
+    const isAuthorized = isTeamMember && parseInt(captainTeamId, 10) === teamId && authDivision === division;
     if (!isAuthorized) return; // Only authorized users can edit their team
 
     const key = `${day}-${time}`;
@@ -268,7 +277,7 @@ const AvailabilityPage: React.FC = () => {
   };
 
   const toggleSubSlot = (day: string, time: string) => {
-    if (!currentUser || !isSub) return;
+    if (!currentUser || !isSub || !substitutes.some(sub => sub.name === subName)) return;
     const key = `${day}-${time}`;
     setSubAvailabilityData(prev => {
       const myAvail = prev[subName] || { slots: {} };
@@ -324,7 +333,8 @@ const AvailabilityPage: React.FC = () => {
       .slice(0, 5); // Top 5
   };
 
-  const isAuthorized = isTeamMember && selectedTeamId === parseInt(captainTeamId, 10);
+  const isAuthorized = isTeamMember && selectedTeamId === parseInt(captainTeamId, 10) && authDivision === division;
+  const isSubAuthorized = isSub && substitutes.some(sub => sub.name === subName);
   const currentTeam = teams.find(t => t.id === selectedTeamId);
 
   const teamPlayers = currentTeam?.players || [];
@@ -514,7 +524,7 @@ const AvailabilityPage: React.FC = () => {
           </div>
         )}
 
-        {(isAuthorized || isSub) && (
+        {(isAuthorized || isSubAuthorized) && (
           <Button onClick={handleSave} disabled={saving} variant="primary">
             {saving ? 'Saving...' : 'Save Availability'}
           </Button>
@@ -553,7 +563,7 @@ const AvailabilityPage: React.FC = () => {
                           key={key} 
                           isSelected={isSelected}
                           count={avail.length}
-                          isEditable={isSub || (!!isAuthorized && !!activePlayerId)}
+                          isEditable={isSubAuthorized || (!!isAuthorized && !!activePlayerId)}
                           onClick={() => {
                             if (isSub) {
                               toggleSubSlot(day, time);
