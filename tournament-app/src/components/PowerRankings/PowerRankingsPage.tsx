@@ -6,6 +6,7 @@ import { useDivision } from '../../context/DivisionContext';
 import { useTournament } from '../../context/TournamentContext';
 import { getFirebasePrefix } from '../../utils';
 import { FaArrowUp, FaArrowDown, FaMinus, FaAward } from 'react-icons/fa';
+import PowerRankingsTrendChart from './PowerRankingsTrendChart';
 import {
   PowerRankingsContainer,
   PowerRankingsHeader,
@@ -220,6 +221,10 @@ const PowerRankingsPage: React.FC = () => {
             );
           })}
         </PowerRankingsList>
+      )}
+
+      {weeks.length > 1 && (
+        <PowerRankingsTrendChart weeks={weeks} />
       )}
     </PowerRankingsContainer>
   );

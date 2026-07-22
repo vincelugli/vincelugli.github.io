@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import MatchResult from './MatchResult';
 import { Match, MatchResultData, Team } from '../../types';
+import { TournamentCodeContainer, CodeBox, Code, CopyButton } from '../../styles';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useParams } from 'react-router-dom';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useTournament } from '../../context/TournamentContext';
 import { usePlayers } from '../../context/PlayerContext';
+import { CoinFlipSection } from '../Common/CoinFlipSection';
 
 interface MatchResultProps {
     match?: Match;
@@ -15,7 +17,7 @@ interface MatchResultProps {
 
 const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: propTeams }) => {
   const { matchId } = useParams<{ matchId: string }>();
-  const { matches } = useGameMatches();
+  const { matches, updateMatch } = useGameMatches();
   const { teams: contextTeams } = useTournament();
   const { players, substitutes } = usePlayers();
 
@@ -23,6 +25,13 @@ const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: 
   const teams = propTeams || contextTeams;
 
   const [matchResults, setMatchResults] = useState(new Map<string, MatchResultData|undefined>());
+  const [copiedCode, setCopiedCode] = useState('');
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(''), 2000);
+  };
 
   useEffect(() => {
     if (!match) return;
@@ -127,20 +136,41 @@ const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: 
   return (
       <>
           <h1>{team1?.name + " vs " + team2?.name}</h1>
+          <CoinFlipSection
+            match={match}
+            teams={teams}
+            onUpdateMatch={updateMatch}
+          />
           {
             matchesList.map(([key, result]: [string, MatchResultData|undefined], game: number) => {
               const { blueTeamName, redTeamName } = getSideNames(result);
-              return <>
-                <h2>{!!result && `Game ${game + 1}`}</h2>
-                {!!result && (
-                  <MatchResult
-                    key={key}
-                    result={result}
-                    blueTeamName={blueTeamName}
-                    redTeamName={redTeamName}
-                  />
-                )}
-              </>;
+              return (
+                <div key={key} style={{ marginBottom: '2.5rem' }}>
+                  <h2>Game {game + 1}</h2>
+                  {!result && (
+                    <TournamentCodeContainer style={{ marginTop: '0.5rem', marginBottom: '1rem' }}>
+                      <label>TOURNAMENT CODE</label>
+                      <CodeBox>
+                        <Code>{key}</Code>
+                        <CopyButton onClick={() => handleCopyCode(key)}>
+                          {copiedCode === key ? 'Copied!' : 'Copy'}
+                        </CopyButton>
+                      </CodeBox>
+                    </TournamentCodeContainer>
+                  )}
+                  {result ? (
+                    <MatchResult
+                      result={result}
+                      blueTeamName={blueTeamName}
+                      redTeamName={redTeamName}
+                    />
+                  ) : (
+                    <p style={{ padding: '0.5rem 1rem', fontStyle: 'italic', color: '#888' }}>
+                      This game has not been played yet.
+                    </p>
+                  )}
+                </div>
+              );
             })
           }
       </>

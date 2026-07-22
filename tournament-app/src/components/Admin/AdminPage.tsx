@@ -1648,6 +1648,18 @@ const AdminPage: React.FC = () => {
         if (row.length < requiredCols.length) continue;
 
         const rankStr = row[colIndices['rank']];
+        const teamName = row[colIndices['team']] || '';
+        const rosterItem = row[colIndices['roster']] || '';
+        const comments = row[colIndices['comments']] || '';
+
+        // Continuation row: empty rank and team name, but has roster name
+        if (!rankStr && !teamName && rosterItem) {
+          if (rankingsList.length > 0) {
+            rankingsList[rankingsList.length - 1].roster_list.push(rosterItem);
+          }
+          continue;
+        }
+
         if (!rankStr) continue;
 
         const rank = parseInt(rankStr, 10);
@@ -1655,10 +1667,6 @@ const AdminPage: React.FC = () => {
           console.warn(`Row ${i + 2}: Rank "${rankStr}" is not a valid integer. Skipping.`);
           continue;
         }
-
-        const teamName = row[colIndices['team']] || '';
-        const roster = row[colIndices['roster']] || '';
-        const comments = row[colIndices['comments']] || '';
 
         let change = '0';
         if (colIndices['change'] !== undefined && row[colIndices['change']]) {
@@ -1673,9 +1681,15 @@ const AdminPage: React.FC = () => {
           change,
           team: teamName,
           teamId,
-          roster,
+          roster_list: rosterItem ? [rosterItem] : [],
           comments
         });
+      }
+
+      // Merge roster lists to form comma-separated string for each team
+      for (const r of rankingsList) {
+        r.roster = r.roster_list.join(', ');
+        delete r.roster_list;
       }
 
       if (rankingsList.length === 0) {

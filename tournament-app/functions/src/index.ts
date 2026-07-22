@@ -811,26 +811,51 @@ export const gameNotificationEndpoint = onRequest(
         `Received valid notification for match: ${notificationData.shortCode}`
       );
 
+      let lockRef: admin.firestore.DocumentReference | null = null;
       if (notificationData.shortCode) {
-        const resultRef = db
-          .collection("match_results")
+        lockRef = db
+          .collection("match_lock")
           .doc(notificationData.shortCode);
-        const resultDoc = await resultRef.get();
-        if (resultDoc.exists) {
+        const lockDoc = await lockRef.get();
+        if (lockDoc.exists) {
           logger.info(
-            `Match result for shortCode ${notificationData.shortCode} ` +
-              "already exists. Skipping duplicate processing."
+            `Match lock for shortCode ${notificationData.shortCode} ` +
+            "already exists. Skipping duplicate processing."
           );
-          res.status(200).send({message: "Match result already processed."});
+          res.status(200).send({message: "Match is already being processed."});
           return;
         }
+        await lockRef.set({
+          createdAt: Timestamp.now(),
+        });
       }
 
-      await executeGameNotificationProcessing(notificationData);
+      try {
+        if (notificationData.shortCode) {
+          const resultRef = db
+            .collection("match_results")
+            .doc(notificationData.shortCode);
+          const resultDoc = await resultRef.get();
+          if (resultDoc.exists) {
+            logger.info(
+              `Match result for shortCode ${notificationData.shortCode} ` +
+                "already exists. Skipping duplicate processing."
+            );
+            res.status(200).send({message: "Match result already processed."});
+            return;
+          }
+        }
 
-      logger.info(`Successfully created result for match 
-        ${notificationData.shortCode} and updated match status.`);
-      res.status(201).send({message: "Match result created successfully."});
+        await executeGameNotificationProcessing(notificationData);
+
+        logger.info(`Successfully created result for match 
+          ${notificationData.shortCode} and updated match status.`);
+        res.status(201).send({message: "Match result created successfully."});
+      } finally {
+        if (lockRef) {
+          await lockRef.delete();
+        }
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         logger.error("Validation failed:", error.message);
