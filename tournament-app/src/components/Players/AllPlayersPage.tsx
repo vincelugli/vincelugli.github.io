@@ -46,7 +46,6 @@ import {
   PlayersRolesContainer,
   PlayersRoleBadge,
   PlayersLoadingContainer,
-  PlayersNoPlayersMessage,
   PlayersFilterToggleBtn,
   PlayersFilterPanel,
   PlayersFilterGrid,

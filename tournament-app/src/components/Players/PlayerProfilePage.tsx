@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 
@@ -10,7 +10,7 @@ import { useTournament } from '../../context/TournamentContext';
 import { useAuth } from '../Common/AuthContext';
 
 // --- TYPES & UTILS ---
-import { Player, Team, Match, MatchResultData, BracketRound } from '../../types';
+import { Player, Team, Match, MatchResultData } from '../../types';
 import { createOpGgUrl, getFirebasePrefix, getPlayerAchievements, isPlayerCaptain } from '../../utils';
 import {enrichPlayerDetails} from '../../utils/playerHelper';
 import {
@@ -140,16 +140,6 @@ const PlayerProfilePage: React.FC = () => {
     return `${tier} ${divisionVal}`;
   };
 
-  const getPreferenceText = (pref: number): string => {
-    switch (pref) {
-      case 5: return 'Primary';
-      case 4: return 'Secondary';
-      case 3: return 'Comfortable';
-      case 2: return 'Can Play';
-      case 1: return 'Avoid';
-      default: return 'Can Play';
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -307,7 +297,7 @@ const PlayerProfilePage: React.FC = () => {
     };
 
     fetchData();
-  }, [playerId, division, getPlayerById, teams, players]);
+  }, [playerId, division, getPlayerById, teams, players, isSub]);
 
   if (loading) return <ProfileLoadingText>Loading player profile...</ProfileLoadingText>;
   if (!player) return <ProfilePageContainer><h1>Player Not Found</h1></ProfilePageContainer>;

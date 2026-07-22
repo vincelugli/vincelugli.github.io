@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useTournament } from '../../context/TournamentContext';
@@ -6,7 +6,6 @@ import { useAuth } from '../Common/AuthContext';
 import { usePlayers } from '../../context/PlayerContext';
 import { useDivision } from '../../context/DivisionContext';
 import { getFirebasePrefix } from '../../utils';
-import { Team, Player } from '../../types';
 import Button from '../Common/Button';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -138,7 +137,7 @@ const convertTimeAndDay = (day: string, timeStr: string, offset: number) => {
 const convertCombinedTime = (combinedTime: string, offset: number, targetTimezone: string) => {
   const match = combinedTime.match(/^(\w+) (\d{2}:\d{2}) - (\d{2}:\d{2})$/);
   if (!match) return combinedTime;
-  const [_, day, start, end] = match;
+  const [, day, start, end] = match;
   
   const convertedStart = convertTimeAndDay(day, start, offset);
   const convertedEnd = convertTimeAndDay(day, end, offset);
@@ -172,19 +171,21 @@ const AvailabilityPage: React.FC = () => {
   const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
-    if (use30MinIncrements) {
-      const newVisible: string[] = [];
-      visibleTimes.forEach(t => {
-        if (t.endsWith(':00')) {
-          newVisible.push(t);
-          const hour = t.split(':')[0];
-          newVisible.push(`${hour}:30`);
-        }
-      });
-      setVisibleTimes(newVisible);
-    } else {
-      setVisibleTimes(visibleTimes.filter(t => t.endsWith(':00')));
-    }
+    setVisibleTimes(prev => {
+      if (use30MinIncrements) {
+        const newVisible: string[] = [];
+        prev.forEach(t => {
+          if (t.endsWith(':00')) {
+            newVisible.push(t);
+            const hour = t.split(':')[0];
+            newVisible.push(`${hour}:30`);
+          }
+        });
+        return newVisible;
+      } else {
+        return prev.filter(t => t.endsWith(':00'));
+      }
+    });
   }, [use30MinIncrements]);
 
   const prefix = getFirebasePrefix();
@@ -337,7 +338,7 @@ const AvailabilityPage: React.FC = () => {
   const isSubAuthorized = isSub && substitutes.some(sub => sub.name === subName);
   const currentTeam = teams.find(t => t.id === selectedTeamId);
 
-  const teamPlayers = currentTeam?.players || [];
+  const teamPlayers = useMemo(() => currentTeam?.players || [], [currentTeam]);
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -440,6 +441,14 @@ const AvailabilityPage: React.FC = () => {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <AvailabilityPageContainer>
+        <AvailabilityStatusMessage>Loading availability...</AvailabilityStatusMessage>
+      </AvailabilityPageContainer>
+    );
+  }
 
   return (
     <AvailabilityPageContainer>

@@ -68,7 +68,7 @@ const PriorityListPage: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [allPlayers, authTeamId]);
+  }, [allPlayers, authTeamId, division]);
 
   const onDragEnd = (result: DropResult) => {
     const {source, destination} = result;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Player, DraftTeam, DraftState } from '../../types';
 import PickOrderDisplay from './PickOrderDisplay';
@@ -381,11 +381,7 @@ const DraftPage: React.FC = () => {
     // --- Atomically write the entire update back to Firestore ---
     await updateDoc(draftDocRef, updatedDraft);
 
-  }, [draftState, draftDocRef, canDraftNow]);
-
-  const currentTeamPicking = useMemo(() => {
-    return draftState.teams?.find(t => t.id === currentTeamIdPicking);
-  }, [draftState.teams, currentTeamIdPicking]);
+  }, [draftState, draftDocRef, canDraftNow, allPlayers, currentUser, division]);
 
   if (loadingAuth) {
     return <div>Verifying Access...</div>;

@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import {useParams, Link} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import { BracketRound, BracketSeed, Match, Player } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { FaExternalLinkAlt } from 'react-icons/fa';
-import { createOpGgUrl, createOpGgMultiSearchUrl, isPlayerCaptain } from '../../utils';
+import { createOpGgMultiSearchUrl, isPlayerCaptain } from '../../utils';
 import { usePlayers } from '../../context/PlayerContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
@@ -21,7 +21,6 @@ import {
   TeamPagePlayerCard,
   TeamPagePlayerInfo,
   TeamPagePlayerNameLink,
-  TeamPagePlayerOpGgLink,
   TeamPagePlayerRole,
   TeamPageCaptainIndicator,
   TeamPageSection,

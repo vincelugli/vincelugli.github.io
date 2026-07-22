@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { WeeklyPowerRanking } from '../../types';
 import { FaArrowUp, FaArrowDown, FaMinus, FaAward } from 'react-icons/fa';
@@ -257,19 +257,19 @@ const PowerRankingsTrendChart: React.FC<PowerRankingsTrendChartProps> = ({ weeks
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
 
-  const getX = (index: number) => {
+  const getX = useCallback((index: number) => {
     if (sortedWeeks.length <= 1) {
       return paddingLeft + chartWidth / 2;
     }
     return paddingLeft + (index / (sortedWeeks.length - 1)) * chartWidth;
-  };
+  }, [sortedWeeks.length, chartWidth]);
 
-  const getY = (rank: number) => {
+  const getY = useCallback((rank: number) => {
     if (maxRank <= 1) {
       return paddingTop + chartHeight / 2;
     }
     return paddingTop + ((rank - 1) / (maxRank - 1)) * chartHeight;
-  };
+  }, [maxRank, chartHeight]);
 
   const horizontalGridLines = useMemo(() => {
     const lines = [];
@@ -305,7 +305,7 @@ const PowerRankingsTrendChart: React.FC<PowerRankingsTrendChartProps> = ({ weeks
         points,
       };
     });
-  }, [uniqueTeams, sortedWeeks, maxRank]);
+  }, [uniqueTeams, sortedWeeks, getX, getY]);
 
   const getPathD = (points: { x: number; y: number }[]) => {
     if (points.length === 0) return '';

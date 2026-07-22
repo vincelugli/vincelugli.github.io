@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaCalendarAlt, FaEdit, FaTimes, FaSave, FaClock, FaTwitch } from 'react-icons/fa';
+import { FaCalendarAlt, FaEdit, FaTimes, FaClock, FaTwitch } from 'react-icons/fa';
 import {
   SchedulePageContainer,
   ScheduleTitle,
@@ -197,7 +197,7 @@ const SchedulePage: React.FC = () => {
 
   const { matches, loading: matchesLoading, updateMatch } = useGameMatches();
   const { teams, loading: teamsLoading } = useTournament();
-  const { currentUser, isAdmin, captainTeamId, authDivision, isCaster, casterName } = useAuth();
+  const { currentUser, isAdmin, captainTeamId, authDivision, isCaster } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'matches' | 'timeline'>('matches');
   const [selectedMatchForEdit, setSelectedMatchForEdit] = useState<Match | null>(null);
