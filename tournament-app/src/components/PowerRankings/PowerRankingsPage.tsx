@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { WeeklyPowerRanking, PowerRankingItem } from '../../types';
+import { WeeklyPowerRanking } from '../../types';
 import { useDivision } from '../../context/DivisionContext';
 import { useTournament } from '../../context/TournamentContext';
 import { getFirebasePrefix } from '../../utils';

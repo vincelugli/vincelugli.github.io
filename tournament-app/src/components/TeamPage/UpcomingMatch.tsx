@@ -42,7 +42,6 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
         <CoinFlipSection
           match={match}
           teams={teams}
-          onUpdateMatch={updateMatch}
         />
       )}
       {!!opponent && isUserTeamCaptain && <TournamentCodeContainer>

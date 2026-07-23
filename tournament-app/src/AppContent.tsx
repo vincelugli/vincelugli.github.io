@@ -26,6 +26,7 @@ import { useAuth } from './components/Common/AuthContext';
 import { useGameMatches } from './context/MatchesContext';
 import MatchResultPage from './components/MatchResult/MatchResultPage';
 import TeamKnockoutPage from './components/TeamPage/TeamKnockoutPage';
+import EditTeamPage from './components/TeamPage/EditTeamPage';
 import PlayerProfilePage from './components/Players/PlayerProfilePage';
 import { getYearFromHash } from './utils';
 import PowerRankingsPage from './components/PowerRankings/PowerRankingsPage';
@@ -75,6 +76,10 @@ const AppContent: React.FC = () => {
                 <Route 
                 path="/teams/:teamId" 
                 element={<TeamPage matches={matches} />} 
+                />
+                <Route 
+                path="/teams/:teamId/edit" 
+                element={<EditTeamPage />} 
                 />
                 <Route 
                 path="/teams/:teamId/knockout" 

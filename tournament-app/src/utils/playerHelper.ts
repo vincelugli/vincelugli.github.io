@@ -113,6 +113,7 @@ export function enrichPlayerDetails(player: Player): Required<Player> {
     rolePreferences: player.rolePreferences || preferences,
     additionalStats: player.additionalStats || additionalStats,
     teamId: player.teamId !== undefined ? player.teamId : null,
-    previousSeasons: player.previousSeasons || []
+    previousSeasons: player.previousSeasons || [],
+    contact: player.contact || ''
   };
 }

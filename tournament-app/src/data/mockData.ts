@@ -1,4 +1,4 @@
-import { Player, Team, Match, Group, BracketRound } from '../types';
+import { Team, Group } from '../types';
 
 export const mockTeams: Team[] = [
   { id: 1, name: 'Team Viper', captainId: 1, players: [], record: '2-0', wins: 2, losses: 0, gameWins: 4, gameLosses: 1, gameRecord: "4-1" },

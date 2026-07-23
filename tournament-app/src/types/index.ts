@@ -20,6 +20,13 @@ export interface Match {
   firstGameSideSelection?: 'blue' | 'red' | null;
 }
 
+export interface TeamLogoConfig {
+  backgroundShape: string;
+  backgroundColor: string;
+  foregroundShape: string;
+  foregroundColor: string;
+}
+
 export interface Team {
   id: number;
   name: string;
@@ -32,6 +39,7 @@ export interface Team {
   record?: string;
   gameRecord?: string;
   matchHistory?: Match[];
+  logo?: TeamLogoConfig;
 }
 
 export interface DraftTeam {
@@ -71,6 +79,8 @@ export interface BracketSeed {
   score?: string;
   isKnockout: boolean;
   stage?: string;
+  coinFlipResult?: 'heads' | 'tails' | null;
+  firstGameSideSelection?: 'blue' | 'red' | null;
 }
 
 export interface BracketRound {
@@ -111,6 +121,7 @@ export interface Player {
   role: string;
   secondaryRoles: string[];
   teamId?: number | null;
+  contact?: string;
   mostPlayedChampions?: (string | ChampionStat)[];
   rankedWinrate?: string;
   rolePreferences?: {
