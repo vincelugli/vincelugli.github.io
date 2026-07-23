@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useDivision } from './DivisionContext';
@@ -11,6 +11,7 @@ interface TournamentContextType {
   groups: Group[];
   bracket: BracketRound[];
   loading: boolean;
+  refreshData: () => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | undefined>(undefined);
@@ -30,6 +31,11 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
   const [groups, setGroups] = useState<Group[]>([]);
   const [bracket, setBracket] = useState<BracketRound[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trigger, setTrigger] = useState(0);
+
+  const refreshData = useCallback(() => {
+    setTrigger(prev => prev + 1);
+  }, []);
 
   // This effect will run whenever the component mounts OR whenever the `division` or year prefix changes
   useEffect(() => {
@@ -88,9 +94,9 @@ export const TournamentProvider: React.FC<{ children: ReactNode }> = ({ children
     };
 
     fetchData();
-  }, [division, GRUMBLE_YEAR_PREFIX]); 
+  }, [division, GRUMBLE_YEAR_PREFIX, trigger]); 
 
-  const value = { players, teams, groups, bracket, loading };
+  const value = { players, teams, groups, bracket, loading, refreshData };
 
   return (
     <TournamentContext.Provider value={value}>

@@ -3,6 +3,7 @@ import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, 
 import { compareTeams } from '../../utils';
 import { useTournament } from '../../context/TournamentContext';
 import { useDivision } from '../../context/DivisionContext';
+import TeamLogo from '../Common/TeamLogo';
 
 const AllTeamsPage: React.FC = () => {
   let { teams } = useTournament();
@@ -27,10 +28,13 @@ const AllTeamsPage: React.FC = () => {
             {teams.map(team => (
               <tr key={team.id}>
                 <td>
-                  {/* Each team name links to their detailed match history */}
-                  <TeamNameLink to={`/teams/${team.id}?division=${urlDivision}`}>
-                    {team.name}
-                  </TeamNameLink>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {team.logo && <TeamLogo logo={team.logo} size={28} />}
+                    {/* Each team name links to their detailed match history */}
+                    <TeamNameLink to={`/teams/${team.id}?division=${urlDivision}`}>
+                      {team.name}
+                    </TeamNameLink>
+                  </div>
                 </td>
                 <td>
                   <Record>{team.record}</Record>

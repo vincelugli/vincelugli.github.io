@@ -9,6 +9,8 @@ import { useGameMatches } from '../../context/MatchesContext';
 import UpcomingMatch from './UpcomingMatch';
 import MatchResultPage from '../MatchResult/MatchResultPage';
 import { useDivision } from '../../context/DivisionContext';
+import { useAuth } from '../Common/AuthContext';
+import TeamLogo from '../Common/TeamLogo';
 import {
   TeamPageContainer,
   TeamPageHeaderCard,
@@ -40,8 +42,11 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const { teams, bracket } = useTournament();
   const { teamId } = useParams<{ teamId: string }>();
   const { division, urlDivision } = useDivision();
+  const { captainTeamId, authDivision, isTeamMember, isAdmin } = useAuth();
 
   const team = teams.find(t => t.id === Number(teamId));
+
+  const isAuthorized = isAdmin || (isTeamMember && Number(captainTeamId) === Number(teamId) && authDivision === division);
 
   for (const m of matches) {
     const maybeCodes = tournamentCodes.filter(tc => tc.matchId === m.id);
@@ -99,8 +104,16 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     <TeamPageContainer>
       <TeamPageHeaderCard>
         <TeamPageTitleContainer>
-          <TeamPageHeaderTitle>{team.name}</TeamPageHeaderTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            {team.logo && <TeamLogo logo={team.logo} size={56} />}
+            <TeamPageHeaderTitle>{team.name}</TeamPageHeaderTitle>
+          </div>
           <TeamPageActionButtonGroup>
+            {isAuthorized && (
+              <TeamPageActionButton to={`/teams/${teamId}/edit?division=${urlDivision}`}>
+                Edit Team
+              </TeamPageActionButton>
+            )}
             {bracket && bracket.length > 0 && (
               <TeamPageActionButton to={`/teams/${teamId}/knockout?division=${urlDivision}`}>
                 View Knockout Matches

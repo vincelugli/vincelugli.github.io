@@ -9,7 +9,7 @@ import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder} from '../../utils';
-import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync} from 'react-icons/fa';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins} from 'react-icons/fa';
 import {
   AdminPageContainer,
   AdminTitle,
@@ -237,7 +237,8 @@ const AdminPage: React.FC = () => {
     timezone: 'EST',
     addToPool: true,
     addToDraft: true,
-    isSub: false
+    isSub: false,
+    contact: ''
   });
 
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -709,7 +710,26 @@ const AdminPage: React.FC = () => {
 
     try {
       setStatus('loading');
-      const nextId = Math.max(100, ...players.map(p => p.id), ...substitutes.map(s => s.id)) + 1;
+      let nextId = Math.max(100, ...players.map(p => p.id), ...substitutes.map(s => s.id));
+      const divisionsToWrite = (newPlayerForm.isSub && (division === 'gold' || division === 'master'))
+        ? ['gold', 'master']
+        : [division];
+
+      if (newPlayerForm.isSub && divisionsToWrite.length > 1) {
+        const otherDivision = division === 'gold' ? 'master' : 'gold';
+        const otherPlayersRef = doc(db, 'players', `${prefix}_${otherDivision}`);
+        const otherPlayersSnap = await getDoc(otherPlayersRef);
+        if (otherPlayersSnap.exists()) {
+          const otherData = otherPlayersSnap.data();
+          const otherPlayers: Player[] = otherData.players || [];
+          const otherSubs: Player[] = otherData.subs || [];
+          const otherMaxId = Math.max(100, ...otherPlayers.map(p => p.id), ...otherSubs.map(s => s.id));
+          nextId = Math.max(nextId, otherMaxId);
+        }
+      }
+
+      nextId = nextId + 1;
+
       const elo = Math.max(
         convertRankToElo(newPlayerForm.peakRankTier, newPlayerForm.peakRankDivision),
         convertRankToElo(newPlayerForm.soloRankTier, newPlayerForm.soloRankDivision),
@@ -729,15 +749,18 @@ const AdminPage: React.FC = () => {
         flexRankDivision: newPlayerForm.flexRankDivision,
         isCaptain: newPlayerForm.isSub ? false : newPlayerForm.isCaptain,
         timezone: newPlayerForm.timezone,
-        elo: elo
+        elo: elo,
+        ...(newPlayerForm.isSub ? { contact: newPlayerForm.contact } : {})
       };
 
       const batch = writeBatch(db);
 
       if (newPlayerForm.isSub) {
-        const playersRef = doc(db, 'players', `${prefix}_${division}`);
-        batch.update(playersRef, {
-          subs: arrayUnion(player)
+        divisionsToWrite.forEach((div) => {
+          const playersRef = doc(db, 'players', `${prefix}_${div}`);
+          batch.update(playersRef, {
+            subs: arrayUnion(player)
+          });
         });
       } else {
         if (newPlayerForm.addToPool) {
@@ -757,13 +780,6 @@ const AdminPage: React.FC = () => {
 
       await batch.commit();
       showStatus('success', `Created ${newPlayerForm.isSub ? 'substitute' : 'player'} ${player.name} (ID: ${player.id})`);
-      setNewPlayerForm({
-        ...newPlayerForm,
-        name: '',
-        secondaryRoles: [],
-        isCaptain: false,
-        isSub: false
-      });
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to create player.');
@@ -1473,6 +1489,32 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleAdminFlipCoin = async (match: Match) => {
+    try {
+      setStatus('loading');
+      const result = Math.random() < 0.5 ? 'heads' : 'tails';
+      const updatedMatch: Match = {
+        ...match,
+        coinFlipResult: result,
+        firstGameSideSelection: 'blue',
+      };
+      const updatedList = matches.map(m => m.id === match.id ? updatedMatch : m);
+      await updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedList });
+      showStatus('success', 'Coin flipped successfully.');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', 'Failed to flip coin.');
+    }
+  };
+
+  const handleAdminFlipBracketCoin = async (roundIndex: number, seedIndex: number) => {
+    const result = Math.random() < 0.5 ? 'heads' : 'tails';
+    await handleUpdateBracketSeed(roundIndex, seedIndex, {
+      coinFlipResult: result,
+      firstGameSideSelection: 'blue',
+    });
+  };
+
   // Bracket updates
   const handleUpdateBracketSeed = async (roundIndex: number, seedIndex: number, fields: any) => {
     try {
@@ -2012,7 +2054,7 @@ const AdminPage: React.FC = () => {
                   </AdminFormGroup>
                 </AdminGrid>
 
-                <AdminGrid columns="1fr 1fr 1fr">
+                <AdminGrid columns={isEditingSub ? "1fr 1fr 1fr" : "1fr"}>
                   <AdminFormGroup>
                     <AdminFormLabel>Peak Rank</AdminFormLabel>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -2030,41 +2072,60 @@ const AdminPage: React.FC = () => {
                       </AdminSelectInput>
                     </div>
                   </AdminFormGroup>
-                  <AdminFormGroup>
-                    <AdminFormLabel>Solo Rank</AdminFormLabel>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <AdminSelectInput
-                        value={editingPlayer.soloRankTier}
-                        onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankTier: e.target.value })}
-                      >
-                        {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </AdminSelectInput>
-                      <AdminSelectInput
-                        value={editingPlayer.soloRankDivision}
-                        onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankDivision: Number(e.target.value) })}
-                      >
-                        {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                      </AdminSelectInput>
-                    </div>
-                  </AdminFormGroup>
-                  <AdminFormGroup>
-                    <AdminFormLabel>Flex Rank</AdminFormLabel>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <AdminSelectInput
-                        value={editingPlayer.flexRankTier}
-                        onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankTier: e.target.value })}
-                      >
-                        {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </AdminSelectInput>
-                      <AdminSelectInput
-                        value={editingPlayer.flexRankDivision}
-                        onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankDivision: Number(e.target.value) })}
-                      >
-                        {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
-                      </AdminSelectInput>
-                    </div>
-                  </AdminFormGroup>
+                  {isEditingSub && (
+                    <>
+                      <AdminFormGroup>
+                        <AdminFormLabel>Solo Rank</AdminFormLabel>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <AdminSelectInput
+                            value={editingPlayer.soloRankTier}
+                            onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankTier: e.target.value })}
+                          >
+                            {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </AdminSelectInput>
+                          <AdminSelectInput
+                            value={editingPlayer.soloRankDivision}
+                            onChange={(e) => setEditingPlayer({ ...editingPlayer, soloRankDivision: Number(e.target.value) })}
+                          >
+                            {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
+                          </AdminSelectInput>
+                        </div>
+                      </AdminFormGroup>
+                      <AdminFormGroup>
+                        <AdminFormLabel>Flex Rank</AdminFormLabel>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <AdminSelectInput
+                            value={editingPlayer.flexRankTier}
+                            onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankTier: e.target.value })}
+                          >
+                            {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </AdminSelectInput>
+                          <AdminSelectInput
+                            value={editingPlayer.flexRankDivision}
+                            onChange={(e) => setEditingPlayer({ ...editingPlayer, flexRankDivision: Number(e.target.value) })}
+                          >
+                            {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
+                          </AdminSelectInput>
+                        </div>
+                      </AdminFormGroup>
+                    </>
+                  )}
                 </AdminGrid>
+
+                {isEditingSub && (
+                  <AdminGrid columns="1fr">
+                    <AdminFormGroup>
+                      <AdminFormLabel>Discord/Contact Info</AdminFormLabel>
+                      <AdminTextInput
+                        type="text"
+                        placeholder="Discord Name or Discord ID"
+                        value={editingPlayer.contact || ''}
+                        onChange={(e) => setEditingPlayer({ ...editingPlayer, contact: e.target.value })}
+                        required
+                      />
+                    </AdminFormGroup>
+                  </AdminGrid>
+                )}
 
                 <AdminFormGroup>
                   <AdminCheckboxLabel>
@@ -2141,6 +2202,57 @@ const AdminPage: React.FC = () => {
                       />
                       Add as Substitute Player (Sub)
                     </AdminCheckboxLabel>
+
+                    {newPlayerForm.isSub && (
+                      <>
+                        <AdminFormGroup>
+                          <AdminFormLabel>Discord/Contact Info</AdminFormLabel>
+                          <AdminTextInput
+                            type="text"
+                            placeholder="Discord Name or Discord ID"
+                            value={newPlayerForm.contact}
+                            onChange={(e) => setNewPlayerForm({ ...newPlayerForm, contact: e.target.value })}
+                            required
+                          />
+                        </AdminFormGroup>
+
+                        <AdminFormGroup>
+                          <AdminFormLabel>Solo Rank</AdminFormLabel>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <AdminSelectInput
+                              value={newPlayerForm.soloRankTier}
+                              onChange={(e) => setNewPlayerForm({ ...newPlayerForm, soloRankTier: e.target.value })}
+                            >
+                              {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </AdminSelectInput>
+                            <AdminSelectInput
+                              value={newPlayerForm.soloRankDivision}
+                              onChange={(e) => setNewPlayerForm({ ...newPlayerForm, soloRankDivision: Number(e.target.value) })}
+                            >
+                              {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
+                            </AdminSelectInput>
+                          </div>
+                        </AdminFormGroup>
+
+                        <AdminFormGroup>
+                          <AdminFormLabel>Flex Rank</AdminFormLabel>
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
+                            <AdminSelectInput
+                              value={newPlayerForm.flexRankTier}
+                              onChange={(e) => setNewPlayerForm({ ...newPlayerForm, flexRankTier: e.target.value })}
+                            >
+                              {RANK_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </AdminSelectInput>
+                            <AdminSelectInput
+                              value={newPlayerForm.flexRankDivision}
+                              onChange={(e) => setNewPlayerForm({ ...newPlayerForm, flexRankDivision: Number(e.target.value) })}
+                            >
+                              {DIVISIONS.map(d => <option key={d} value={d}>{d === -1 ? 'N/A' : d}</option>)}
+                            </AdminSelectInput>
+                          </div>
+                        </AdminFormGroup>
+                      </>
+                    )}
 
                     {!newPlayerForm.isSub ? (
                       <>
@@ -2437,78 +2549,108 @@ const AdminPage: React.FC = () => {
                         <AdminStyledTh>Team 2</AdminStyledTh>
                         <AdminStyledTh>Week</AdminStyledTh>
                         <AdminStyledTh>Status</AdminStyledTh>
+                        <AdminStyledTh>Coin Flip</AdminStyledTh>
                         <AdminStyledTh>Score</AdminStyledTh>
                         <AdminStyledTh>Winner</AdminStyledTh>
                         <AdminStyledTh>Knockout?</AdminStyledTh>
                       </tr>
                     </thead>
                     <tbody>
-                      {round.seeds?.map((seed, sIdx) => (
-                        <tr key={seed.id}>
-                          <AdminStyledTd>{seed.id}</AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminSelectInput
-                              value={seed.team1Id || 0}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team1Id: Number(e.target.value) })}
-                            >
-                              <option value={0}>TBD</option>
-                              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </AdminSelectInput>
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminSelectInput
-                              value={seed.team2Id || 0}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team2Id: Number(e.target.value) })}
-                            >
-                              <option value={0}>TBD</option>
-                              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </AdminSelectInput>
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminTextInput
-                              type="number"
-                              style={{ width: '60px' }}
-                              value={seed.weekPlayed || 1}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { weekPlayed: Number(e.target.value) })}
-                            />
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminSelectInput
-                              value={seed.status}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { status: e.target.value })}
-                            >
-                              <option value="upcoming">Upcoming</option>
-                              <option value="completed">Completed</option>
-                            </AdminSelectInput>
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminTextInput
-                              type="text"
-                              style={{ width: '80px' }}
-                              placeholder="0-0"
-                              value={seed.score || ''}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { score: e.target.value })}
-                            />
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <AdminSelectInput
-                              value={seed.winnerId || 0}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { winnerId: Number(e.target.value) || null })}
-                            >
-                              <option value={0}>None</option>
-                              {seed.team1Id && <option value={seed.team1Id}>Team 1 (ID: {seed.team1Id})</option>}
-                              {seed.team2Id && <option value={seed.team2Id}>Team 2 (ID: {seed.team2Id})</option>}
-                            </AdminSelectInput>
-                          </AdminStyledTd>
-                          <AdminStyledTd>
-                            <input
-                              type="checkbox"
-                              checked={seed.isKnockout}
-                              onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { isKnockout: e.target.checked })}
-                            />
-                          </AdminStyledTd>
-                        </tr>
-                      ))}
+                      {round.seeds?.map((seed, sIdx) => {
+                        const t1 = teams.find(t => t.id === seed.team1Id);
+                        const t2 = teams.find(t => t.id === seed.team2Id);
+                        const lowerIdTeam = seed.team1Id && seed.team2Id ? (seed.team1Id < seed.team2Id ? t1 : t2) : null;
+                        const higherIdTeam = seed.team1Id && seed.team2Id ? (seed.team1Id < seed.team2Id ? t2 : t1) : null;
+                        const coinFlipWinner = seed.coinFlipResult === 'heads' ? lowerIdTeam : (seed.coinFlipResult === 'tails' ? higherIdTeam : null);
+
+                        return (
+                          <tr key={seed.id}>
+                            <AdminStyledTd>{seed.id}</AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminSelectInput
+                                value={seed.team1Id || 0}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team1Id: Number(e.target.value) })}
+                              >
+                                <option value={0}>TBD</option>
+                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                              </AdminSelectInput>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminSelectInput
+                                value={seed.team2Id || 0}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team2Id: Number(e.target.value) })}
+                              >
+                                <option value={0}>TBD</option>
+                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                              </AdminSelectInput>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminTextInput
+                                type="number"
+                                style={{ width: '60px' }}
+                                value={seed.weekPlayed || 1}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { weekPlayed: Number(e.target.value) })}
+                              />
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminSelectInput
+                                value={seed.status}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { status: e.target.value })}
+                              >
+                                <option value="upcoming">Upcoming</option>
+                                <option value="completed">Completed</option>
+                              </AdminSelectInput>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                {coinFlipWinner ? (
+                                  <span style={{ fontSize: '0.85rem' }}>
+                                    {seed.coinFlipResult?.toUpperCase()}: <strong>{coinFlipWinner.name}</strong>
+                                  </span>
+                                ) : (
+                                  <span style={{ fontStyle: 'italic', opacity: 0.5, fontSize: '0.85rem' }}>Not Flipped</span>
+                                )}
+                                {seed.team1Id && seed.team2Id && (
+                                  <AdminActionButton 
+                                    title="Flip Coin" 
+                                    onClick={() => handleAdminFlipBracketCoin(rIdx, sIdx)}
+                                    disabled={seed.status === 'completed'}
+                                    style={{ padding: '2px 6px', fontSize: '0.8rem' }}
+                                  >
+                                    <FaCoins />
+                                  </AdminActionButton>
+                                )}
+                              </div>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminTextInput
+                                type="text"
+                                style={{ width: '80px' }}
+                                placeholder="0-0"
+                                value={seed.score || ''}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { score: e.target.value })}
+                              />
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminSelectInput
+                                value={seed.winnerId || 0}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { winnerId: Number(e.target.value) || null })}
+                              >
+                                <option value={0}>None</option>
+                                {seed.team1Id && <option value={seed.team1Id}>Team 1 (ID: {seed.team1Id})</option>}
+                                {seed.team2Id && <option value={seed.team2Id}>Team 2 (ID: {seed.team2Id})</option>}
+                              </AdminSelectInput>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <input
+                                type="checkbox"
+                                checked={seed.isKnockout}
+                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { isKnockout: e.target.checked })}
+                              />
+                            </AdminStyledTd>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </AdminStyledTable>
                 </AdminTableContainer>
@@ -2730,6 +2872,7 @@ const AdminPage: React.FC = () => {
                         <AdminStyledTh>Week</AdminStyledTh>
                         <AdminStyledTh>Teams Matchup</AdminStyledTh>
                         <AdminStyledTh>Status</AdminStyledTh>
+                        <AdminStyledTh>Coin Flip</AdminStyledTh>
                         <AdminStyledTh>Winner</AdminStyledTh>
                         <AdminStyledTh>Score</AdminStyledTh>
                         <AdminStyledTh>Actions</AdminStyledTh>
@@ -2740,6 +2883,11 @@ const AdminPage: React.FC = () => {
                         const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
                         const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
                         const winnerTeam = m.winnerId ? (m.winnerId === m.team1Id ? t1 : t2) : null;
+
+                        const lowerIdTeam = m.team1Id < m.team2Id ? t1 : t2;
+                        const higherIdTeam = m.team1Id < m.team2Id ? t2 : t1;
+                        const coinFlipWinner = m.coinFlipResult === 'heads' ? lowerIdTeam : (m.coinFlipResult === 'tails' ? higherIdTeam : null);
+
                         return (
                           <tr key={m.id}>
                             <AdminStyledTd>{m.id}</AdminStyledTd>
@@ -2752,10 +2900,26 @@ const AdminPage: React.FC = () => {
                             <AdminStyledTd>
                               {m.status === 'completed' ? <AdminBadge variant="success">Completed</AdminBadge> : <AdminBadge variant="warning">Upcoming</AdminBadge>}
                             </AdminStyledTd>
+                            <AdminStyledTd>
+                              {coinFlipWinner ? (
+                                <span style={{ fontSize: '0.9rem' }}>
+                                  {m.coinFlipResult?.toUpperCase()}: <strong>{coinFlipWinner.name}</strong>
+                                </span>
+                              ) : (
+                                <span style={{ fontStyle: 'italic', opacity: 0.5, fontSize: '0.9rem' }}>Not Flipped</span>
+                              )}
+                            </AdminStyledTd>
                             <AdminStyledTd>{winnerTeam ? winnerTeam.name : '-'}</AdminStyledTd>
                             <AdminStyledTd>{m.score || '-'}</AdminStyledTd>
                             <AdminStyledTd>
                               <AdminButtonGroup>
+                                <AdminActionButton 
+                                  title="Flip Coin"
+                                  onClick={() => handleAdminFlipCoin(m)}
+                                  disabled={m.status === 'completed'}
+                                >
+                                  <FaCoins />
+                                </AdminActionButton>
                                 <AdminActionButton onClick={() => setEditingMatch(m)}><FaEdit /></AdminActionButton>
                                 <AdminClearButton onClick={() => handleDeleteMatch(m.id)}><FaTrash /></AdminClearButton>
                               </AdminButtonGroup>

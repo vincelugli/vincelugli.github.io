@@ -139,7 +139,6 @@ const MatchResultPage: React.FC<MatchResultProps> = ({ match: propMatch, teams: 
           <CoinFlipSection
             match={match}
             teams={teams}
-            onUpdateMatch={updateMatch}
           />
           {
             matchesList.map(([key, result]: [string, MatchResultData|undefined], game: number) => {
