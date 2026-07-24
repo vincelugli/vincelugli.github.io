@@ -21,7 +21,6 @@ class LcuRelay:
         self.auth_token = None
         self.port = None
         self.password = None
-        self.summoner_cache = {}
 
     def authenticate(self):
         """Exchange Caster Access Code for Firebase Custom Token, then sign-in to retrieve ID Token."""
@@ -35,7 +34,8 @@ class LcuRelay:
                 print(f"Error: Authentication function returned HTTP {res.status_code}: {res.text}")
                 sys.exit(1)
             
-            custom_token = res.json().get("result")
+            result = res.json().get("result")
+            custom_token = result.get("token") if isinstance(result, dict) else result
             if not custom_token:
                 print("Error: Could not retrieve custom auth token from server.")
                 sys.exit(1)
@@ -92,27 +92,6 @@ class LcuRelay:
         except Exception as e:
             print(f"Error reading lockfile at '{path}': {e}")
             sys.exit(1)
-
-    def get_summoner_name(self, summoner_id):
-        """Fetch summoner name from local LCU REST API."""
-        if summoner_id in self.summoner_cache:
-            return self.summoner_cache[summoner_id]
-        
-        auth = base64.b64encode(f"riot:{self.password}".encode()).decode()
-        headers = {"Authorization": f"Basic {auth}"}
-        url = f"https://127.0.0.1:{self.port}/lol-summoner/v1/summoners/{summoner_id}"
-        
-        try:
-            # Verify is False to bypass self-signed LCU SSL certificate
-            res = requests.get(url, headers=headers, verify=False, timeout=2)
-            if res.status_code == 200:
-                data = res.json()
-                name = data.get("displayName") or f"{data.get('gameName')} #{data.get('tagLine')}"
-                self.summoner_cache[summoner_id] = name
-                return name
-        except Exception as e:
-            print(f"Error fetching summoner {summoner_id}: {e}")
-        return f"Summoner {summoner_id}"
 
     def push_to_firestore(self, draft_state):
         """Updates Firestore live draft document via REST API using Bearer Token."""
@@ -201,15 +180,21 @@ class LcuRelay:
         
         # Populate blue side (myTeam)
         for member in session.get("myTeam", []):
-            name = self.get_summoner_name(member.get("summonerId"))
-            champ_id = member.get("championId", 0)
+            name = member.get("gameName") or "Player"
+            tag = member.get("tagLine")
+            if tag:
+                name = f"{name} #{tag}"
+            champ_id = member.get("championId") or member.get("championPickIntent") or 0
             blue_players.append(name)
             blue_champs.append(champ_id)
             
         # Populate red side (theirTeam)
         for member in session.get("theirTeam", []):
-            name = self.get_summoner_name(member.get("summonerId"))
-            champ_id = member.get("championId", 0)
+            name = member.get("gameName") or "Player"
+            tag = member.get("tagLine")
+            if tag:
+                name = f"{name} #{tag}"
+            champ_id = member.get("championId") or member.get("championPickIntent") or 0
             red_players.append(name)
             red_champs.append(champ_id)
 
