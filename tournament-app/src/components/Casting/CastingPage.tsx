@@ -6,6 +6,10 @@ import { useTournament } from '../../context/TournamentContext';
 import { usePlayers } from '../../context/PlayerContext';
 import { getTeamOrPlaceholder } from '../../utils';
 import { Team } from '../../types';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { getAuth } from 'firebase/auth';
+
 
 // Styled Components for Casting Overlay (1920x1080 stream canvas)
 const CastingWrapper = styled.div<{ chromaBg: string }>`
@@ -237,6 +241,7 @@ const ROLE_PRIORITY: { [key: string]: number } = {
 interface ChampData {
   id: string;
   name: string;
+  key: string;
 }
 
 const CastingPage: React.FC = () => {
@@ -296,11 +301,11 @@ const CastingPage: React.FC = () => {
       } catch (err) {
         console.error("Error connecting to Data Dragon, utilizing fallback list:", err);
         setChampionsList([
-          { name: 'Aatrox', id: 'Aatrox' },
-          { name: 'Ahri', id: 'Ahri' },
-          { name: 'Lee Sin', id: 'LeeSin' },
-          { name: 'Jinx', id: 'Jinx' },
-          { name: 'Thresh', id: 'Thresh' }
+          { name: 'Aatrox', id: 'Aatrox', key: '266' },
+          { name: 'Ahri', id: 'Ahri', key: '103' },
+          { name: 'Lee Sin', id: 'LeeSin', key: '64' },
+          { name: 'Jinx', id: 'Jinx', key: '222' },
+          { name: 'Thresh', id: 'Thresh', key: '412' }
         ]);
       }
     };
@@ -345,6 +350,43 @@ const CastingPage: React.FC = () => {
       setRedChamps(Array.from({ length: 5 }, (_, i) => championsList[(i + 5) % championsList.length].id));
     }
   }, [championsList]);
+
+
+  // Listen to Firestore live draft changes
+  useEffect(() => {
+    if (!matchId || championsList.length === 0) return;
+
+    const docRef = doc(db, 'liveDrafts', matchId);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.blueTeamName) setBlueTeamName(data.blueTeamName);
+        if (data.redTeamName) setRedTeamName(data.redTeamName);
+        if (data.bluePlayers) setBluePlayers(data.bluePlayers);
+        if (data.redPlayers) setRedPlayers(data.redPlayers);
+
+        // Map LCU champion numerical keys back to DDragon IDs (names)
+        if (data.blueChamps) {
+          const mappedBlue = data.blueChamps.map((cid: string) => {
+            if (cid === '0') return 'Aatrox';
+            const found = championsList.find(c => String(c.key) === cid);
+            return found ? found.id : cid;
+          });
+          setBlueChamps(mappedBlue);
+        }
+        if (data.redChamps) {
+          const mappedRed = data.redChamps.map((cid: string) => {
+            if (cid === '0') return 'Ahri';
+            const found = championsList.find(c => String(c.key) === cid);
+            return found ? found.id : cid;
+          });
+          setRedChamps(mappedRed);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [matchId, championsList]);
 
   // Toggle UI via Keyboard Hotkey 'H'
   useEffect(() => {
@@ -426,6 +468,18 @@ const CastingPage: React.FC = () => {
             <label>Red Team</label>
             <input type="text" value={redTeamName} onChange={(e) => setRedTeamName(e.target.value)} />
           </CtrlRow>
+
+          <div style={{ marginTop: '15px', marginBottom: '20px', padding: '12px', background: '#0a192f', border: '1.5px solid #c8aa6e', borderRadius: '6px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#c8aa6e', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🖥️ Sync Live Champ Select</span>
+            </div>
+            <p style={{ fontSize: '11px', margin: '0 0 10px 0', color: '#8892b0', lineHeight: '1.4' }}>
+              First, <a href="/lcu_relay.py" download="lcu_relay.py" style={{ color: '#64ffda', textDecoration: 'underline', fontWeight: 'bold', cursor: 'pointer' }}>download the python relay script (lcu_relay.py)</a> on your streaming computer. Then run this command in your terminal:
+            </p>
+            <code style={{ display: 'block', padding: '8px', background: '#020c1b', fontSize: '10px', wordBreak: 'break-all', userSelect: 'all', fontFamily: 'monospace', color: '#64ffda', border: '1px solid rgba(100, 255, 218, 0.2)', borderRadius: '4px' }}>
+              python lcu_relay.py {matchId} &lt;your_caster_access_code&gt;
+            </code>
+          </div>
 
           {/* Blue Controls */}
           <TeamHeaderCtrl>Blue Side Picks</TeamHeaderCtrl>
