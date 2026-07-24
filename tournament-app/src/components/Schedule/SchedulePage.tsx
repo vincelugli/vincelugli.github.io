@@ -45,14 +45,18 @@ import {
   DrawerInput,
   DrawerCheckboxLabel,
   DrawerFooter,
-  DrawerButton
+  DrawerButton,
+  CastingOverlayButton
 } from '../../styles';
 import { useDivision } from '../../context/DivisionContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useTournament } from '../../context/TournamentContext';
 import { useAuth } from '../Common/AuthContext';
-import { Match } from '../../types';
+import { usePlayers } from '../../context/PlayerContext';
+import { Match, Team } from '../../types';
 import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal, getTeamOrPlaceholder } from '../../utils';
+import { FaTv } from 'react-icons/fa';
+
 
 const tournamentStagesMaster = [
   {
@@ -190,6 +194,8 @@ const tournamentStages2026 = [
   }
 ];
 
+
+
 const SchedulePage: React.FC = () => {
   const { division, urlDivision } = useDivision();
   const year = getYearFromHash(window.location.hash) || '2026';
@@ -198,14 +204,20 @@ const SchedulePage: React.FC = () => {
   const { matches, loading: matchesLoading, updateMatch } = useGameMatches();
   const { teams, loading: teamsLoading } = useTournament();
   const { currentUser, isAdmin, captainTeamId, authDivision, isCaster } = useAuth();
+  const { getPlayerById } = usePlayers();
 
   const [activeTab, setActiveTab] = useState<'matches' | 'timeline'>('matches');
+
   const [selectedMatchForEdit, setSelectedMatchForEdit] = useState<Match | null>(null);
   const [editTimeValue, setEditTimeValue] = useState<string>('');
   const [broadcastCastedValue, setBroadcastCastedValue] = useState<boolean>(false);
   const [broadcastChannelValue, setBroadcastChannelValue] = useState<string>('');
 
+
+
+
   const getIconContent = (startDate: Date, endDate: Date, number: number) => {
+
     if (getStatusFromDate(startDate, endDate) === 'completed') return '✓';
     return number;
   };
@@ -440,11 +452,22 @@ const SchedulePage: React.FC = () => {
 
                         <MatchTimeDetails>
                           {renderTimeDisplay(match)}
-                          {(isAuthorizedToEdit(match) || isCaster || isAdmin) && (
-                            <EditButton onClick={() => handleOpenEditPanel(match)}>
-                              <FaEdit /> Edit Match
-                            </EditButton>
-                          )}
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            {team1 && team2 && (isCaster || isAdmin) && (
+                              <CastingOverlayButton
+                                href={`/#/cast/${match.id}?division=${urlDivision || division}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <FaTv /> Casting Tool
+                              </CastingOverlayButton>
+                            )}
+                            {(isAuthorizedToEdit(match) || isCaster || isAdmin) && (
+                              <EditButton onClick={() => handleOpenEditPanel(match)}>
+                                <FaEdit /> Edit Match
+                              </EditButton>
+                            )}
+                          </div>
                         </MatchTimeDetails>
                       </ScheduleMatchItem>
                     );
