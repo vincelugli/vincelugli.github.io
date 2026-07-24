@@ -1412,6 +1412,7 @@ export const ScheduleMatchItem = styled.div`
   border: 1px solid ${({ theme }) => theme.borderColor};
   border-radius: 6px;
   transition: all 0.2s ease-in-out;
+  gap: 1.5rem;
 
   &:hover {
     box-shadow: 0 4px 10px ${({ theme }) => theme.boxShadow};
@@ -1431,22 +1432,19 @@ export const MatchTeams = styled.div`
   gap: 1rem;
   font-size: 1.1rem;
   font-weight: 500;
-  width: 480px;
-
-  @media (max-width: 900px) {
-    width: 400px;
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
+  width: 100%;
+  min-width: 0;
 `;
+
 
 export const MatchupInfoGroup = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 `;
+
 
 export const TeamNameContainer = styled.div<{ align: 'left' | 'right' }>`
   text-align: ${({ align }) => align};
@@ -1477,14 +1475,20 @@ export const VersusSpan = styled.span`
 
 export const MatchTimeDetails = styled.div`
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
     width: 100%;
+    flex-direction: row;
     justify-content: space-between;
+    align-items: center;
   }
 `;
+
+
 
 export const TimeDisplay = styled.div`
   display: flex;
@@ -1525,6 +1529,28 @@ export const EditButton = styled.button`
     border-color: ${({ theme }) => theme.primary};
   }
 `;
+
+export const CastingOverlayButton = styled.a`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.borderColor};
+  color: ${({ theme }) => theme.textAlt};
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.body};
+    color: ${({ theme }) => theme.text};
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
 
 export const BroadcastBadge = styled.span`
   background-color: #9146ff; /* Twitch Purple */
@@ -4496,6 +4522,7 @@ export const PowerRankingsDropdownSelect = styled.select`
 
 export const CoinFlipContainer = styled.div`
   background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text};
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 8px;
   padding: 1.5rem;
@@ -4507,6 +4534,39 @@ export const CoinFlipContainer = styled.div`
   width: 100%;
   box-sizing: border-box;
 `;
+
+export const CoinFlipTitle = styled.h3`
+  margin: 0 0 0.5rem 0;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const CoinFlipText = styled.p`
+  margin: 0 0 0.25rem 0;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const CoinFlipSecondaryText = styled.p`
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.secondaryText};
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+  font-style: italic;
+  text-align: center;
+`;
+
+export const CoinFlipResultText = styled.p`
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const CoinFlipSubText = styled.p`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.secondaryText};
+  margin: 0;
+`;
+
 
 export const CoinFlipButton = styled.button`
   background-color: ${({ theme }) => theme.primary};

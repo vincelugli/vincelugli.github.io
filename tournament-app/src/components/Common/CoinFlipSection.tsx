@@ -1,6 +1,13 @@
 import React from 'react';
 import { Match, Team } from '../../types';
-import { CoinFlipContainer } from '../../styles';
+import { 
+  CoinFlipContainer, 
+  CoinFlipTitle, 
+  CoinFlipText, 
+  CoinFlipSecondaryText, 
+  CoinFlipResultText, 
+  CoinFlipSubText 
+} from '../../styles';
 
 interface CoinFlipSectionProps {
   match: Match;
@@ -25,24 +32,24 @@ export const CoinFlipSection: React.FC<CoinFlipSectionProps> = ({
 
   return (
     <CoinFlipContainer>
-      <h3 style={{ margin: '0 0 0.5rem 0' }}>Game 1 Side Selection</h3>
+      <CoinFlipTitle>Game 1 Side Selection</CoinFlipTitle>
       {!match.coinFlipResult ? (
-        <p style={{ textAlign: 'center', fontSize: '0.95rem', color: '#888', margin: '0 0 1rem 0', lineHeight: '1.4', fontStyle: 'italic' }}>
+        <CoinFlipSecondaryText>
           Waiting for an administrator to flip the coin.
-        </p>
+        </CoinFlipSecondaryText>
       ) : (
         <div style={{ marginTop: '0.5rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>
+          <CoinFlipResultText>
             Result: <span style={{ color: '#0070f3' }}>{match.coinFlipResult.toUpperCase()}</span>
-          </p>
-          <p style={{ margin: '0 0 0.25rem 0' }}>
+          </CoinFlipResultText>
+          <CoinFlipText>
             <strong>{coinFlipWinner?.name}</strong> won the coin flip and gets{' '}
             <span style={{ color: '#0070f3', fontWeight: 'bold' }}>BLUE</span> side for Game 1.
-          </p>
-          <p style={{ fontSize: '0.9rem', color: '#888', margin: 0 }}>
+          </CoinFlipText>
+          <CoinFlipSubText>
             {coinFlipLoser?.name} is on{' '}
             <span style={{ color: '#e00000', fontWeight: 'bold' }}>RED</span> side.
-          </p>
+          </CoinFlipSubText>
         </div>
       )}
     </CoinFlipContainer>

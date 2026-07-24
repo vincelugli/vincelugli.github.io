@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>League of Legends Draft Loading Overlay for OBS (Two Rows)</title>
+    <style>
+        :root {
+            --chroma-bg: #00ff00; /* Default green screen */
+            --blue-team-color: #00e5ff;
+            --red-team-color: #ff3366;
+            --card-width: 140px;
+            --card-height: 255px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Beaufort for LOL', 'Arial Black', sans-serif;
+        }
+
+        body, html {
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            background-color: var(--chroma-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        /* Full layout container representing the final stream frame */
+        #stream-canvas {
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 40px; /* Space between the two team blocks */
+            padding: 40px;
+            pointer-events: none; /* Allows click-through in OBS */
+        }
+
+        /* Group container keeping the label and its cards close together */
+        .team-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px; /* Small, controlled gap between label and cards */
+            width: 100%;
+        }
+
+        /* Live Team Header Updates */
+        .team-title-banner {
+            font-size: 28px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.9);
+            text-align: center;
+        }
+
+        .blue-title { color: var(--blue-team-color); }
+        .red-title { color: var(--red-team-color); }
+
+        /* Row of cards container */
+        .team-row {
+            display: flex;
+            justify-content: center;
+            gap: 16px; /* Horizontal space between cards */
+            width: 100%;
+            pointer-events: auto;
+        }
+
+        /* Loading Card Styles */
+        .player-card {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background: #050d12;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            transition: all 0.3s ease;
+        }
+
+        .blue-team .player-card {
+            border-color: rgba(0, 229, 255, 0.4);
+        }
+        
+        .red-team .player-card {
+            border-color: rgba(255, 51, 102, 0.4);
+        }
+
+        /* Splash Art Image Frame */
+        .splash-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .splash-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            transition: opacity 0.5s ease;
+            opacity: 0;
+        }
+
+        .splash-img.loaded {
+            opacity: 1;
+        }
+
+        /* Card Vignette & Overlays */
+        .card-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(5,13,18,0.95) 95%);
+            z-index: 2;
+        }
+
+        /* Player Details Panel */
+        .player-details {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+            padding: 10px 5px;
+            width: 100%;
+        }
+
+        .player-name {
+            font-size: 14px;
+            color: #f0e6d2;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .champ-name {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .blue-team .champ-name { color: var(--blue-team-color); }
+        .red-team .champ-name { color: var(--red-team-color); }
+
+        /* CONTROL PANEL (Hidden on Stream) */
+        #control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 20, 30, 0.95);
+            border: 2.5px solid #c8aa6e;
+            padding: 20px;
+            color: #f0e6d2;
+            z-index: 100;
+            border-radius: 8px;
+            width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #control-panel h3 {
+            border-bottom: 1px solid #c8aa6e;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ctrl-row {
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .ctrl-row label {
+            width: 80px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .ctrl-row input, .ctrl-row select {
+            flex-grow: 1;
+            background: #1e2328;
+            border: 1px solid #a09b8c;
+            color: #f0e6d2;
+            padding: 6px;
+            font-size: 13px;
+        }
+
+        .ctrl-row input:focus {
+            outline: 1px solid #c8aa6e;
+        }
+
+        .team-header-ctrl {
+            font-weight: bold;
+            color: #c8aa6e;
+            margin: 15px 0 10px 0;
+            font-size: 14px;
+            border-bottom: 1px dashed rgba(200, 170, 110, 0.3);
+            padding-bottom: 4px;
+        }
+
+        /* Hotkey toggle badge */
+        .hotkey-badge {
+            background: #c8aa6e;
+            color: #091420;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* Float Show Button */
+        #show-ui-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 20, 30, 0.9);
+            border: 1.5px solid #c8aa6e;
+            color: #f0e6d2;
+            padding: 10px 15px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 99;
+            border-radius: 4px;
+            display: none;
+            pointer-events: auto;
+        }
+
+        #show-ui-btn:hover, .hotkey-badge:hover {
+            background: #f0e6d2;
+            color: #091420;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Small UI summon button for when everything is hidden -->
+    <button id="show-ui-btn" onclick="toggleUI()">⚙️ Show Controls [H]</button>
+
+    <!-- Master Controller Interface -->
+    <div id="control-panel">
+        <h3>
+            <span>OBS Production Panel</span>
+            <span class="hotkey-badge" onclick="toggleUI()">Hide [H]</span>
+        </h3>
+
+        <!-- Global Settings -->
+        <div class="ctrl-row">
+            <label>Chroma Color</label>
+            <select id="chroma-select" onchange="changeChroma(this.value)">
+                <option value="#00ff00">Pure Green Screen (#00ff00)</option>
+                <option value="#0000ff">Pure Blue Screen (#0000ff)</option>
+                <option value="#ff00ff">Magenta Screen (#ff00ff)</option>
+                <option value="transparent">Transparent Background (OBS Browser Source)</option>
+            </select>
+        </div>
+
+        <div class="ctrl-row">
+            <label>Blue Team</label>
+            <input type="text" id="blue-team-name-input" value="Blue Team" oninput="updateTeamNames()">
+        </div>
+        <div class="ctrl-row">
+            <label>Red Team</label>
+            <input type="text" id="red-team-name-input" value="Red Team" oninput="updateTeamNames()">
+        </div>
+
+        <!-- Blue Team Players -->
+        <div class="team-header-ctrl">Blue Side Picks</div>
+        <div id="blue-ctrls"></div>
+
+        <!-- Red Team Players -->
+        <div class="team-header-ctrl">Red Side Picks</div>
+        <div id="red-ctrls"></div>
+    </div>
+
+    <!-- Active Stream Output Frame (Captured by OBS) -->
+    <div id="stream-canvas">
+        
+        <!-- Blue Team Group (Label + Cards) -->
+        <div class="team-group">
+            <div class="team-title-banner blue-title" id="blue-team-name-banner">Blue Team</div>
+            <div class="team-row blue-team" id="blue-team-display"></div>
+        </div>
+
+        <!-- Red Team Group (Label + Cards) -->
+        <div class="team-group">
+            <div class="team-title-banner red-title" id="red-team-name-banner">Red Team</div>
+            <div class="team-row red-team" id="red-team-display"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Parse incoming query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const team1Name = urlParams.get('team1') || 'Blue Team';
+        const team2Name = urlParams.get('team2') || 'Red Team';
+        const bluePlayersParam = urlParams.get('bluePlayers');
+        const redPlayersParam = urlParams.get('redPlayers');
+
+        const bluePlayers = bluePlayersParam ? bluePlayersParam.split(',') : [];
+        const redPlayers = redPlayersParam ? redPlayersParam.split(',') : [];
+
+        while (bluePlayers.length < 5) {
+            bluePlayers.push(`PLAYER ${bluePlayers.length + 1}`);
+        }
+        while (redPlayers.length < 5) {
+            redPlayers.push(`PLAYER ${redPlayers.length + 1}`);
+        }
+
+        // Set inputs to URL param values initially
+        document.getElementById('blue-team-name-input').value = team1Name;
+        document.getElementById('red-team-name-input').value = team2Name;
+
+        let championsList = [];
+        let patchVersion = '14.3.1'; // Standard stable fallback patch version
+
+        // Configuration Arrays for Teams
+        const teamData = {
+            blue: Array.from({ length: 5 }, (_, i) => ({ id: i, player: bluePlayers[i], champKey: 'Aatrox', champName: 'Aatrox' })),
+            red: Array.from({ length: 5 }, (_, i) => ({ id: i, player: redPlayers[i], champKey: 'Ahri', champName: 'Ahri' }))
+        };
+
+        // Fetch official Riot League of Legends champion list dynamically
+        async function fetchChampions() {
+            try {
+                const versionRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+                const versions = await versionRes.json();
+                patchVersion = versions[0]; // Set current patch dynamically
+                
+                const res = await fetch(`https://ddragon.leagueoflegends.com/cdn/${patchVersion}/data/en_US/champion.json`);
+                const data = await res.json();
+                championsList = Object.values(data.data);
+                
+                buildControls();
+                renderCards();
+                updateTeamNames();
+            } catch (err) {
+                console.error("Error connecting to Data Dragon, utilizing fallback list:", err);
+                championsList = [
+                    { name: 'Aatrox', id: 'Aatrox' },
+                    { name: 'Ahri', id: 'Ahri' },
+                    { name: 'Lee Sin', id: 'LeeSin' },
+                    { name: 'Jinx', id: 'Jinx' },
+                    { name: 'Thresh', id: 'Thresh' }
+                ];
+                buildControls();
+                renderCards();
+                updateTeamNames();
+            }
+        }
+
+        // Generate Control Panel UI inputs
+        function buildControls() {
+            const blueContainer = document.getElementById('blue-ctrls');
+            const redContainer = document.getElementById('red-ctrls');
+            
+            blueContainer.replaceChildren();
+            redContainer.replaceChildren();
+
+            const sortedChamps = [...championsList].sort((a,b) => a.name.localeCompare(b.name));
+
+            ['blue', 'red'].forEach(team => {
+                const container = team === 'blue' ? blueContainer : redContainer;
+                teamData[team].forEach((playerObj, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'ctrl-row';
+                    
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = playerObj.player;
+                    nameInput.placeholder = `Summoner ${idx + 1}`;
+                    nameInput.oninput = (e) => {
+                        teamData[team][idx].player = e.target.value;
+                        updateCardDetails(team, idx);
+                    };
+
+                    const champSelect = document.createElement('select');
+                    
+                    sortedChamps.forEach(champ => {
+                        const opt = document.createElement('option');
+                        opt.value = champ.id;
+                        opt.textContent = champ.name;
+                        champSelect.appendChild(opt);
+                    });
+
+                    const initId = team === 'blue' ? sortedChamps[idx % sortedChamps.length].id : sortedChamps[(idx + 5) % sortedChamps.length].id;
+                    teamData[team][idx].champKey = initId;
+                    teamData[team][idx].champName = dataKeyToName(initId);
+                    champSelect.value = initId;
+
+                    champSelect.onchange = (e) => {
+                        const selectedKey = e.target.value;
+                        teamData[team][idx].champKey = selectedKey;
+                        teamData[team][idx].champName = dataKeyToName(selectedKey);
+                        updateCardDetails(team, idx);
+                    };
+
+                    row.appendChild(nameInput);
+                    row.appendChild(champSelect);
+                    container.appendChild(row);
+                });
+            });
+        }
+
+        function dataKeyToName(key) {
+            const found = championsList.find(c => c.id === key);
+            return found ? found.name : key;
+        }
+
+        // Render stream visual components
+        function renderCards() {
+            ['blue', 'red'].forEach(team => {
+                const displayArea = document.getElementById(`${team}-team-display`);
+                displayArea.replaceChildren();
+
+                teamData[team].forEach((player, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'player-card';
+                    card.id = `card-${team}-${idx}`;
+
+                    const splashFrame = document.createElement('div');
+                    splashFrame.className = 'splash-frame';
+                    const img = document.createElement('img');
+                    img.className = 'splash-img';
+                    img.id = `img-${team}-${idx}`;
+                    
+                    img.onerror = function() {
+                        this.src = "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg";
+                    };
+
+                    splashFrame.appendChild(img);
+                    card.appendChild(splashFrame);
+
+                    const vignette = document.createElement('div');
+                    vignette.className = 'card-vignette';
+                    card.appendChild(vignette);
+
+                    const details = document.createElement('div');
+                    details.className = 'player-details';
+                    
+                    const pName = document.createElement('div');
+                    pName.className = 'player-name';
+                    pName.id = `name-${team}-${idx}`;
+                    
+                    const cName = document.createElement('div');
+                    cName.className = 'champ-name';
+                    cName.id = `champ-${team}-${idx}`;
+
+                    details.appendChild(pName);
+                    details.appendChild(cName);
+                    card.appendChild(details);
+
+                    displayArea.appendChild(card);
+                    
+                    updateCardDetails(team, idx);
+                });
+            });
+        }
+
+        function updateCardDetails(team, idx) {
+            const data = teamData[team][idx];
+            
+            const nameEl = document.getElementById(`name-${team}-${idx}`);
+            const champEl = document.getElementById(`champ-${team}-${idx}`);
+            if (nameEl) nameEl.textContent = data.player;
+            if (champEl) champEl.textContent = data.champName;
+
+            const imgEl = document.getElementById(`img-${team}-${idx}`);
+            if (imgEl) {
+                imgEl.classList.remove('loaded');
+                const splashUrl = `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${data.champKey}_0.jpg`;
+                imgEl.src = splashUrl;
+                imgEl.onload = () => {
+                    imgEl.classList.add('loaded');
+                };
+            }
+        }
+
+        function updateTeamNames() {
+            const bName = document.getElementById('blue-team-name-input').value;
+            const rName = document.getElementById('red-team-name-input').value;
+            document.getElementById('blue-team-name-banner').textContent = bName;
+            document.getElementById('red-team-name-banner').textContent = rName;
+        }
+
+        function changeChroma(val) {
+            if (val === 'transparent') {
+                document.body.style.backgroundColor = 'transparent';
+                document.documentElement.style.backgroundColor = 'transparent';
+            } else {
+                document.body.style.backgroundColor = val;
+                document.documentElement.style.backgroundColor = val;
+            }
+        }
+
+        function toggleUI() {
+            const ctrl = document.getElementById('control-panel');
+            const showBtn = document.getElementById('show-ui-btn');
+            
+            if (ctrl.classList.contains('hidden')) {
+                ctrl.classList.remove('hidden');
+                showBtn.style.display = 'none';
+            } else {
+                ctrl.classList.add('hidden');
+                showBtn.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') {
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+                    toggleUI();
+                }
+            }
+        });
+
+        fetchChampions();
+    </script>
+
+</body>
+</html>

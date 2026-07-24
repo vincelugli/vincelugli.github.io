@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 
 import Tournament from './components/Tournament';
@@ -30,12 +30,59 @@ import EditTeamPage from './components/TeamPage/EditTeamPage';
 import PlayerProfilePage from './components/Players/PlayerProfilePage';
 import { getYearFromHash } from './utils';
 import PowerRankingsPage from './components/PowerRankings/PowerRankingsPage';
+import CastingPage from './components/Casting/CastingPage';
 
+const AppContentInner: React.FC<{ year: string; urlDivision: string | null; matches: any[] }> = ({ year, urlDivision, matches }) => {
+  const { currentUser: user } = useAuth();
+  const location = useLocation();
+
+  const isCastingPage = location.pathname.startsWith('/cast/');
+
+  if (isCastingPage) {
+    return (
+      <Routes>
+        <Route path="/cast/:matchId" element={<CastingPage />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <AppContainer>
+      <Header />
+      <MainContent>
+        <Routes>
+          <Route path="/" element={<Tournament />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/availability" element={<AvailabilityPage />} />
+          <Route 
+            path="/swiss" 
+            element={year === '2026' ? <SwissSystemPage /> : <SwissStage />}
+          />
+          <Route path="/knockout" element={<DoubleEliminationBracket />} />
+          <Route path="/teams" element={<AllTeamsPage />} />
+          <Route path="/teams/:teamId" element={<TeamPage matches={matches} />} />
+          <Route path="/teams/:teamId/edit" element={<EditTeamPage />} />
+          <Route path="/teams/:teamId/knockout" element={<TeamKnockoutPage />} />
+          <Route path="/draft-access" element={<DraftAuthGate />} />
+          <Route path="/draft/:draftId" element={<DraftPage />} />
+          <Route path="/draft" element={<DraftPage />} />
+          {user && <Route path="/pick-priority" element={<PriorityListPage />} />}
+          <Route path="/subs" element={<SubstitutesPage />} />
+          <Route path="/admin-access" element={<AdminAuthGate />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/players" element={<AllPlayersPage />} />
+          <Route path="/match/:matchId" element={<MatchResultPage />} />
+          <Route path="/players/:playerId" element={<PlayerProfilePage />} />
+          <Route path="/power-rankings" element={<PowerRankingsPage />} />
+        </Routes>
+      </MainContent>
+      <Footer />
+    </AppContainer>
+  );
+};
 
 const AppContent: React.FC = () => {
-  const { currentUser: user } = useAuth();
   const { matches } = useGameMatches();
-  
   const [hash, setHash] = useState(window.location.hash);
   
   useEffect(() => {
@@ -47,60 +94,15 @@ const AppContent: React.FC = () => {
   const year = getYearFromHash(hash) || '2026';
   const basename = getYearFromHash(hash) ? `/${getYearFromHash(hash)}` : undefined;
 
+  // Retrieve division from current URL hash parameters
+  const queryParams = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
+  const urlDivision = queryParams.get('division');
+
   return (
     <Router basename={basename}>
       <RouteChangeTracker />
       <DivisionSync />
-      <AppContainer>
-          <Header />
-          <MainContent>
-            <Routes>
-                <Route 
-                path="/" 
-                  element={<Tournament />} 
-                  />
-                <Route path="/schedule" element={<SchedulePage />} />
-                <Route path="/availability" element={<AvailabilityPage />} />
-                <Route 
-                path="/swiss" 
-                element={year === '2026' ? <SwissSystemPage /> : <SwissStage />}
-                />
-                <Route 
-                path="/knockout" 
-                element={<DoubleEliminationBracket />}
-                />
-                <Route 
-                path="/teams" 
-                element={<AllTeamsPage />} 
-                />
-                <Route 
-                path="/teams/:teamId" 
-                element={<TeamPage matches={matches} />} 
-                />
-                <Route 
-                path="/teams/:teamId/edit" 
-                element={<EditTeamPage />} 
-                />
-                <Route 
-                path="/teams/:teamId/knockout" 
-                element={<TeamKnockoutPage />} 
-                />
-                <Route path="/draft-access" element={<DraftAuthGate />} />
-                <Route path="/draft/:draftId" element={<DraftPage />} />
-                <Route path="/draft" element={<DraftPage />} />
-                {user && (<Route path="/pick-priority" element={<PriorityListPage />} />)}
-                <Route path="/subs" element={<SubstitutesPage />} />
-                <Route path="/admin-access" element={<AdminAuthGate />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/players" element={<AllPlayersPage />} />
-                <Route path="/match/:matchId" element={<MatchResultPage />} />
-
-                <Route path="/players/:playerId" element={<PlayerProfilePage />} />
-                <Route path="/power-rankings" element={<PowerRankingsPage />} />
-            </Routes>
-          </MainContent>
-          <Footer />
-      </AppContainer>
+      <AppContentInner year={year} urlDivision={urlDivision} matches={matches} />
     </Router>
   );
 }
