@@ -264,8 +264,8 @@ const CastingPage: React.FC = () => {
   const [bluePlayers, setBluePlayers] = useState<string[]>(Array(5).fill(''));
   const [redPlayers, setRedPlayers] = useState<string[]>(Array(5).fill(''));
 
-  const [blueChamps, setBlueChamps] = useState<string[]>(Array(5).fill('Aatrox'));
-  const [redChamps, setRedChamps] = useState<string[]>(Array(5).fill('Ahri'));
+  const [blueChamps, setBlueChamps] = useState<string[]>(Array(5).fill(''));
+  const [redChamps, setRedChamps] = useState<string[]>(Array(5).fill(''));
 
   // Dynamic Riot DDragon Champions List
   const [championsList, setChampionsList] = useState<ChampData[]>([]);
@@ -343,13 +343,7 @@ const CastingPage: React.FC = () => {
     }
   }, [match, teams, matches]);
 
-  // Set default champions in selector when championsList is fetched
-  useEffect(() => {
-    if (championsList.length > 0) {
-      setBlueChamps(Array.from({ length: 5 }, (_, i) => championsList[i % championsList.length].id));
-      setRedChamps(Array.from({ length: 5 }, (_, i) => championsList[(i + 5) % championsList.length].id));
-    }
-  }, [championsList]);
+
 
 
   // Listen to Firestore live draft changes
@@ -368,7 +362,7 @@ const CastingPage: React.FC = () => {
         // Map LCU champion numerical keys back to DDragon IDs (names)
         if (data.blueChamps) {
           const mappedBlue = data.blueChamps.map((cid: string) => {
-            if (cid === '0') return 'Aatrox';
+            if (cid === '0') return '';
             const found = championsList.find(c => String(c.key) === cid);
             return found ? found.id : cid;
           });
@@ -376,7 +370,7 @@ const CastingPage: React.FC = () => {
         }
         if (data.redChamps) {
           const mappedRed = data.redChamps.map((cid: string) => {
-            if (cid === '0') return 'Ahri';
+            if (cid === '0') return '';
             const found = championsList.find(c => String(c.key) === cid);
             return found ? found.id : cid;
           });
@@ -408,6 +402,7 @@ const CastingPage: React.FC = () => {
   }
 
   const getChampName = (key: string) => {
+    if (!key) return '';
     const found = championsList.find(c => c.id === key);
     return found ? found.name : key;
   };
@@ -492,6 +487,7 @@ const CastingPage: React.FC = () => {
                 onChange={(e) => handlePlayerNameChange('blue', idx, e.target.value)}
               />
               <select value={blueChamps[idx] || ''} onChange={(e) => handleChampChange('blue', idx, e.target.value)}>
+                <option value="">No Champion</option>
                 {championsList.map(c => (
                   <option key={`blue-opt-${c.id}`} value={c.id}>{c.name}</option>
                 ))}
@@ -510,6 +506,7 @@ const CastingPage: React.FC = () => {
                 onChange={(e) => handlePlayerNameChange('red', idx, e.target.value)}
               />
               <select value={redChamps[idx] || ''} onChange={(e) => handleChampChange('red', idx, e.target.value)}>
+                <option value="">No Champion</option>
                 {championsList.map(c => (
                   <option key={`red-opt-${c.id}`} value={c.id}>{c.name}</option>
                 ))}
@@ -524,23 +521,31 @@ const CastingPage: React.FC = () => {
         <TeamGroup>
           <TeamTitleBanner isBlue={true}>{blueTeamName}</TeamTitleBanner>
           <TeamRow>
-            {bluePlayers.map((player, idx) => (
-              <PlayerCard key={`blue-card-${idx}`} isBlue={true}>
-                <SplashFrame>
-                  <SplashImg
-                    src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${blueChamps[idx]}_0.jpg`}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg";
-                    }}
-                  />
-                </SplashFrame>
-                <CardVignette />
-                <PlayerDetails>
-                  <PlayerNameDisplay>{player}</PlayerNameDisplay>
-                  <ChampNameDisplay isBlue={true}>{getChampName(blueChamps[idx])}</ChampNameDisplay>
-                </PlayerDetails>
-              </PlayerCard>
-            ))}
+            {bluePlayers.map((player, idx) => {
+              const champId = blueChamps[idx];
+              const hasChamp = champId && champId !== '0';
+              return (
+                <PlayerCard key={`blue-card-${idx}`} isBlue={true}>
+                  {hasChamp && (
+                    <SplashFrame>
+                      <SplashImg
+                        src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_0.jpg`}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg";
+                        }}
+                      />
+                    </SplashFrame>
+                  )}
+                  {hasChamp && <CardVignette />}
+                  <PlayerDetails>
+                    <PlayerNameDisplay>{player}</PlayerNameDisplay>
+                    {hasChamp && (
+                      <ChampNameDisplay isBlue={true}>{getChampName(champId)}</ChampNameDisplay>
+                    )}
+                  </PlayerDetails>
+                </PlayerCard>
+              );
+            })}
           </TeamRow>
         </TeamGroup>
 
@@ -548,23 +553,31 @@ const CastingPage: React.FC = () => {
         <TeamGroup>
           <TeamTitleBanner isBlue={false}>{redTeamName}</TeamTitleBanner>
           <TeamRow>
-            {redPlayers.map((player, idx) => (
-              <PlayerCard key={`red-card-${idx}`} isBlue={false}>
-                <SplashFrame>
-                  <SplashImg
-                    src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${redChamps[idx]}_0.jpg`}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg";
-                    }}
-                  />
-                </SplashFrame>
-                <CardVignette />
-                <PlayerDetails>
-                  <PlayerNameDisplay>{player}</PlayerNameDisplay>
-                  <ChampNameDisplay isBlue={false}>{getChampName(redChamps[idx])}</ChampNameDisplay>
-                </PlayerDetails>
-              </PlayerCard>
-            ))}
+            {redPlayers.map((player, idx) => {
+              const champId = redChamps[idx];
+              const hasChamp = champId && champId !== '0';
+              return (
+                <PlayerCard key={`red-card-${idx}`} isBlue={false}>
+                  {hasChamp && (
+                    <SplashFrame>
+                      <SplashImg
+                        src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champId}_0.jpg`}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Aatrox_0.jpg";
+                        }}
+                      />
+                    </SplashFrame>
+                  )}
+                  {hasChamp && <CardVignette />}
+                  <PlayerDetails>
+                    <PlayerNameDisplay>{player}</PlayerNameDisplay>
+                    {hasChamp && (
+                      <ChampNameDisplay isBlue={false}>{getChampName(champId)}</ChampNameDisplay>
+                    )}
+                  </PlayerDetails>
+                </PlayerCard>
+              );
+            })}
           </TeamRow>
         </TeamGroup>
       </StreamCanvas>
