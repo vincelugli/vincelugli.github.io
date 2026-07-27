@@ -22,7 +22,7 @@ import {
 } from '../../styles';
 
 // --- Data Dragon Configuration ---
-const LATEST_PATCH = '15.18.1';
+const LATEST_PATCH = '16.14.1';
 const getChampionImage = (championName: string) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/champion/${championName}.png`;
 const getItemImage = (itemId: number) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/item/${itemId}.png`;
 const getSpellImage = (spellName: string) => `https://ddragon.leagueoflegends.com/cdn/${LATEST_PATCH}/img/spell/${spellName}.png`;
