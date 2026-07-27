@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Team } from '../../types';
+import { getMatchWinnerId } from '../../utils';
 import { HistoryContainer, MatchHistoryTeamName, MatchList, MatchItem, MatchInfo, Opponent, Score } from '../../styles';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +35,7 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ teams }) => {
               <span>vs</span>
               <Opponent>{teams.find(t => t.id === match.team1Id)?.name}</Opponent>
             </MatchInfo>
-            <Score win={match.winnerId ? match.winnerId === match.team1Id : false}>{match.score}</Score>
+            <Score win={getMatchWinnerId(match) === match.team1Id}>{match.score}</Score>
           </MatchItem>
         ))}
       </MatchList>

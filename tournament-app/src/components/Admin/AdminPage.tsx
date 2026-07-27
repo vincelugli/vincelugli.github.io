@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder} from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -2882,7 +2882,8 @@ const AdminPage: React.FC = () => {
                       {matches.map(m => {
                         const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
                         const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
-                        const winnerTeam = m.winnerId ? (m.winnerId === m.team1Id ? t1 : t2) : null;
+                        const winnerId = getMatchWinnerId(m);
+                        const winnerTeam = winnerId ? (winnerId === m.team1Id ? t1 : t2) : null;
 
                         const lowerIdTeam = m.team1Id < m.team2Id ? t1 : t2;
                         const higherIdTeam = m.team1Id < m.team2Id ? t2 : t1;

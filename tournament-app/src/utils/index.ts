@@ -282,9 +282,9 @@ export function getTeamOrPlaceholder(
     return { id: teamId, name: `Placeholder Match ${matchIdx}` };
   }
   
-  if (sourceMatch.status === 'completed' && sourceMatch.winnerId) {
-    const winnerId = sourceMatch.winnerId;
-    const loserId = sourceMatch.winnerId === sourceMatch.team1Id ? sourceMatch.team2Id : sourceMatch.team1Id;
+  const winnerId = getMatchWinnerId(sourceMatch);
+  if (sourceMatch.status === 'completed' && winnerId !== null) {
+    const loserId = winnerId === sourceMatch.team1Id ? sourceMatch.team2Id : sourceMatch.team1Id;
     const resolvedId = isWinner ? winnerId : loserId;
     return getTeamOrPlaceholder(resolvedId, teams, matches);
   }
@@ -298,6 +298,24 @@ export function getTeamOrPlaceholder(
     id: teamId,
     name: `${isWinner ? 'Winner' : 'Loser'} of ${t1Name} vs ${t2Name}`
   };
+}
+
+export function getMatchWinnerId(match: Match): number | null {
+  if (match.status !== 'completed') {
+    return null;
+  }
+  if (match.score === 'BYE') {
+    return match.team1Id;
+  }
+  if (match.team1Wins !== undefined && match.team2Wins !== undefined) {
+    if (match.team1Wins > match.team2Wins) {
+      return match.team1Id;
+    }
+    if (match.team2Wins > match.team1Wins) {
+      return match.team2Id;
+    }
+  }
+  return null;
 }
 
 
