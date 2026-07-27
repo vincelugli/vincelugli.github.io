@@ -4,7 +4,7 @@ import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useDivision } from '../../context/DivisionContext';
-import { getTeamOrPlaceholder } from '../../utils';
+import { getTeamOrPlaceholder, getMatchWinnerId } from '../../utils';
 import {
   SwissBracketContainer,
   SwissRoundColumn,
@@ -241,8 +241,9 @@ const SwissBracket: React.FC = () => {
                     const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 
                     const isCompleted = match.status === 'completed';
-                    const isTeam1Winner = isCompleted && match.winnerId === match.team1Id;
-                    const isTeam2Winner = isCompleted && match.winnerId === match.team2Id;
+                    const winnerId = getMatchWinnerId(match);
+                    const isTeam1Winner = isCompleted && winnerId === match.team1Id;
+                    const isTeam2Winner = isCompleted && winnerId === match.team2Id;
 
                     const t1Score = match.team1Wins !== undefined ? String(match.team1Wins) : (isCompleted ? '0' : '-');
                     const t2Score = match.team2Wins !== undefined ? String(match.team2Wins) : (isCompleted ? '0' : '-');
