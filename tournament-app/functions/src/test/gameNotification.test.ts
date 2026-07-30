@@ -134,6 +134,21 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       data: () => ({division: "gold", matchId: 101}),
     });
 
+    // Mock division matches doc check
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        matches: [{
+          id: 101,
+          team1Id: 1,
+          team2Id: 2,
+          status: "active",
+          team1Wins: 0,
+          team2Wins: 0,
+        }],
+      }),
+    });
+
     // Mock division teams doc snap for findTeamIdByPlayerNames
     mockGet.mockResolvedValueOnce({
       exists: true,
@@ -267,6 +282,59 @@ describe("gameNotificationEndpoint Cloud Function", () => {
     expect(mockedAxios.get).not.toHaveBeenCalled();
     expect(mockCommit).not.toHaveBeenCalled();
   });
+
+  it(
+    "should return 200 OK and skip processing if the match already " +
+      "has a team with 2 wins",
+    async () => {
+      const notificationPayload = {
+        startTime: 12345678,
+        shortCode: "test-shortcode",
+        gameId: 987654321,
+        region: "NA",
+      };
+
+      // 1. Check if match_lock/test-shortcode exists
+      mockGet.mockResolvedValueOnce({exists: false});
+
+      // 2. Check if match_results/test-shortcode exists
+      mockGet.mockResolvedValueOnce({exists: false});
+
+      // 3. Mock match doc exists
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({division: "gold", matchId: 101}),
+      });
+
+      // 4. Mock division matches doc check, returning a match where team1
+      // has 2 wins
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          matches: [{
+            id: 101,
+            team1Id: 1,
+            team2Id: 2,
+            status: "completed",
+            team1Wins: 2,
+            team2Wins: 0,
+          }],
+        }),
+      });
+
+      const {req, res} = createMockReqRes(notificationPayload);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await gameNotificationEndpoint(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.send).toHaveBeenCalledWith({
+        message: "Match result created successfully.",
+      });
+      expect(mockedAxios.get).not.toHaveBeenCalled();
+      expect(mockCommit).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe("processGameFromNotification Cloud Function", () => {
@@ -314,6 +382,21 @@ describe("processGameFromNotification Cloud Function", () => {
       mockGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({division: "gold", matchId: 101}),
+      });
+
+      // Mock division matches doc check
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          matches: [{
+            id: 101,
+            team1Id: 1,
+            team2Id: 2,
+            status: "active",
+            team1Wins: 0,
+            team2Wins: 0,
+          }],
+        }),
       });
 
       // Mock division teams doc snap for findTeamIdByPlayerNames
