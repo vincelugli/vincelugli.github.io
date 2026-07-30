@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { WeeklyPowerRanking } from '../../types';
 import { FaArrowUp, FaArrowDown, FaMinus, FaAward } from 'react-icons/fa';
+import { cleanTeamName } from '../../utils';
 
 const ChartCard = styled.div`
   background-color: ${({ theme }) => theme.background};
@@ -217,7 +218,7 @@ const PowerRankingsTrendChart: React.FC<PowerRankingsTrendChartProps> = ({ weeks
     const teamsMap = new Map<string, number | null>();
     sortedWeeks.forEach(w => {
       w.rankings.forEach(r => {
-        const normalizedName = r.team.trim();
+        const normalizedName = cleanTeamName(r.team);
         if (!teamsMap.has(normalizedName)) {
           teamsMap.set(normalizedName, r.teamId ?? null);
         } else if (r.teamId && teamsMap.get(normalizedName) === null) {
@@ -287,7 +288,7 @@ const PowerRankingsTrendChart: React.FC<PowerRankingsTrendChartProps> = ({ weeks
     return uniqueTeams.map(team => {
       const points: { weekIndex: number; weekNum: number; rank: number; x: number; y: number; change: string; comments: string }[] = [];
       sortedWeeks.forEach((w, weekIndex) => {
-        const item = w.rankings.find(r => r.team.trim().toLowerCase() === team.name.toLowerCase());
+        const item = w.rankings.find(r => cleanTeamName(r.team).toLowerCase() === team.name.toLowerCase());
         if (item) {
           points.push({
             weekIndex,

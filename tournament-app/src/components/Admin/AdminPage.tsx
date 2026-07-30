@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId} from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -85,9 +85,7 @@ const parseCSV = (text: string): string[][] => {
         i++;
       }
       row.push(entry.trim());
-      if (row.some(r => r !== '')) {
-        lines.push(row);
-      }
+      lines.push(row);
       row = [];
       entry = '';
     } else {
@@ -97,9 +95,7 @@ const parseCSV = (text: string): string[][] => {
 
   if (entry || row.length > 0) {
     row.push(entry.trim());
-    if (row.some(r => r !== '')) {
-      lines.push(row);
-    }
+    lines.push(row);
   }
 
   return lines;
@@ -1690,12 +1686,13 @@ const AdminPage: React.FC = () => {
         if (row.length < requiredCols.length) continue;
 
         const rankStr = row[colIndices['rank']];
-        const teamName = row[colIndices['team']] || '';
+        const rawTeamName = row[colIndices['team']] || '';
+        const teamName = cleanTeamName(rawTeamName);
         const rosterItem = row[colIndices['roster']] || '';
         const comments = row[colIndices['comments']] || '';
 
         // Continuation row: empty rank and team name, but has roster name
-        if (!rankStr && !teamName && rosterItem) {
+        if (!rankStr && !rawTeamName && rosterItem) {
           if (rankingsList.length > 0) {
             rankingsList[rankingsList.length - 1].roster_list.push(rosterItem);
           }

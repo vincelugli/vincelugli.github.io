@@ -647,34 +647,11 @@ async function executeGameNotificationProcessing(
   logger.info(
     `Processing request for game with Riot gameId ${notificationData.gameId}`
   );
-
-  let matchResultData = {
-    winner: -1,
-    blueTeam: {
-      players: [{playerName: ""}],
-    },
-    redTeam: {
-      players: [{playerName: ""}],
-    },
-  };
-
-  try {
-    const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
-    const riotApiResponse = await axios.get(riotApiUrl, {
-      headers: {"X-Riot-Token": riotApiKey.value()},
-    });
-
-    matchResultData =
-      await transformRiotDataToMatchResult(riotApiResponse.data);
-
-    logger.info(
-      `Fetched match result data ${JSON.stringify(matchResultData)}`);
-  } catch (e) {
-    logger.error(
-      `Failed to fetch match data for ${notificationData.gameId}.`);
-    logger.error(`Failed with error ${e}`);
-    throw e;
-  }
+  logger.debug(
+    "executeGameNotificationProcessing entry: " +
+    `shortCode=${notificationData.shortCode}, ` +
+    `gameId=${notificationData.gameId}, region=${notificationData.region}`
+  );
 
   // Fetch match metadata to determine division
   const shortCodeDocRef = db.doc(`matches/${notificationData.shortCode}`);
@@ -688,8 +665,81 @@ async function executeGameNotificationProcessing(
   if (!division || !matchId) {
     throw new Error(
       `Document '${notificationData.shortCode}' ` +
-        "is missing 'division' or 'matchId' field."
+      "is missing 'division' or 'matchId' field."
     );
+  }
+  logger.debug(
+    `Fetched match metadata: division=${division}, matchId=${matchId}`
+  );
+
+  // Check if either team has already won 2 games in this match
+  const divisionMatchesDocRef = db.doc(`matches/grumble2026_${division}`);
+  const divisionMatchesDoc = await divisionMatchesDocRef.get();
+  if (!divisionMatchesDoc.exists) {
+    throw new Error(`Matches document 'grumble2026_${division}' not found.`);
+  }
+  const allMatches = divisionMatchesDoc.data()!.matches || [];
+  const currentMatch = allMatches.find((m: any) => m.id === matchId);
+  if (!currentMatch) {
+    throw new Error(
+      `Match with id '${matchId}' not found in division '${division}'.`
+    );
+  }
+  logger.debug(
+    `Fetched division matches count: ${allMatches.length}. ` +
+    `Found match status: ${currentMatch.status}, ` +
+    `team1Wins: ${currentMatch.team1Wins}, team2Wins: ${currentMatch.team2Wins}`
+  );
+  if (
+    (currentMatch.team1Wins || 0) >= WINS_NEEDED_FOR_MATCH ||
+    (currentMatch.team2Wins || 0) >= WINS_NEEDED_FOR_MATCH
+  ) {
+    logger.info(
+      `Match ${matchId} already has a team with ` +
+      `${WINS_NEEDED_FOR_MATCH} wins. Skipping duplicate processing.`
+    );
+    return;
+  } else {
+    logger.info(
+      `Match ${matchId} with ${currentMatch.team1Id} id having ` +
+      `${currentMatch.team1Wins} wins and ${currentMatch.team2Id} id ` +
+      `having ${currentMatch.team2Wins} wins. ` +
+      "Proceeding with processing."
+    );
+  }
+
+  let matchResultData = {
+    winner: -1,
+    blueTeam: {
+      players: [{playerName: ""}],
+    },
+    redTeam: {
+      players: [{playerName: ""}],
+    },
+  };
+
+  try {
+    const riotApiUrl = `https://americas.api.riotgames.com/lol/match/v5/matches/${notificationData.region}_${notificationData.gameId}`;
+    logger.debug(`Calling Riot API: url=${riotApiUrl}`);
+    const riotApiResponse = await axios.get(riotApiUrl, {
+      headers: {"X-Riot-Token": riotApiKey.value()},
+    });
+
+    matchResultData =
+      await transformRiotDataToMatchResult(riotApiResponse.data);
+
+    logger.info(
+      `Fetched match result data ${JSON.stringify(matchResultData)}`);
+    logger.debug(
+      `Transformed Riot data: winner=${matchResultData.winner}, ` +
+      `blue players count=${matchResultData.blueTeam.players.length}, ` +
+      `red players count=${matchResultData.redTeam.players.length}`
+    );
+  } catch (e) {
+    logger.error(
+      `Failed to fetch match data for ${notificationData.gameId}.`);
+    logger.error(`Failed with error ${e}`);
+    throw e;
   }
 
   // Fetch teams and players once
@@ -713,15 +763,27 @@ async function executeGameNotificationProcessing(
   const allPlayers = playersDocSnap.data()!.players || [];
 
   // Resolve side team names
+  const bluePlayerNames =
+    matchResultData.blueTeam.players.map((p) => p.playerName);
+  const redPlayerNames =
+    matchResultData.redTeam.players.map((p) => p.playerName);
+  logger.debug(
+    `Resolving team names: bluePlayers=[${bluePlayerNames.join(", ")}], ` +
+    `redPlayers=[${redPlayerNames.join(", ")}]`
+  );
   const blueTeamInfo = resolveTeamIdAndName(
-    matchResultData.blueTeam.players.map((p) => p.playerName),
+    bluePlayerNames,
     allTeams,
     allPlayers
   );
   const redTeamInfo = resolveTeamIdAndName(
-    matchResultData.redTeam.players.map((p) => p.playerName),
+    redPlayerNames,
     allTeams,
     allPlayers
+  );
+  logger.debug(
+    `Resolved team info: blueTeamInfo=${JSON.stringify(blueTeamInfo)}, ` +
+    `redTeamInfo=${JSON.stringify(redTeamInfo)}`
   );
 
   if (blueTeamInfo) {
@@ -762,6 +824,9 @@ async function executeGameNotificationProcessing(
     const resultRef = db
       .collection("match_results")
       .doc(notificationData.shortCode);
+    logger.debug(
+      `Checking if match result document already exists: path=${resultRef.path}`
+    );
     const resultDoc = await resultRef.get();
     if (resultDoc.exists) {
       logger.info(
@@ -782,7 +847,12 @@ async function executeGameNotificationProcessing(
     winnerId: winnerId || -1,
   });
 
+  logger.debug(
+    `Writing to Firestore batch: matchRef=${matchRef.path}, ` +
+    `resultRef=${resultRef.path}, winnerId=${winnerId}`
+  );
   await batch.commit();
+  logger.debug("Successfully committed Firestore batch.");
 
   // ////////////////////
   // Update Standings //

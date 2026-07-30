@@ -318,4 +318,8 @@ export function getMatchWinnerId(match: Match): number | null {
   return null;
 }
 
+export function cleanTeamName(name: string): string {
+  if (!name) return "";
+  return name.replace(/\s*[(]\s*\d+\s*-\s*\d+\s*[)]\s*$/, '').trim();
+}
 
