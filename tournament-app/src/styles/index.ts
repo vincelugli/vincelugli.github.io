@@ -3322,17 +3322,17 @@ export const TeamPagePlayerList = styled.ul`
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1.25rem;
 `;
 
 export const TeamPagePlayerCard = styled.li`
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   background-color: ${({ theme }) => theme.backgroundTwo};
   border: 1px solid ${({ theme }) => theme.border};
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
