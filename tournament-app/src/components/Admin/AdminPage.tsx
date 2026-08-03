@@ -1238,20 +1238,38 @@ const AdminPage: React.FC = () => {
 
       // Select BYE team if odd number of teams
       if (activeTeams.length % 2 !== 0) {
-        // Prioritize 1-2 teams who have not had a bye
-        let byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2 && !tr.hadBye);
-        if (byeCandidates.length === 0) {
-          byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2);
-        }
-        if (byeCandidates.length === 0) {
-          byeCandidates = activeTeams.filter(tr => !tr.hadBye);
-        }
-        const candidates = byeCandidates.length > 0 ? byeCandidates : activeTeams;
+        const getByePriorityScore = (tr: typeof activeTeams[0]): number => {
+          let score = 0;
+          // Prioritize 1-2 record
+          if (tr.wins === 1 && tr.losses === 2) {
+            score += 1000;
+          }
+          // Prioritize teams that haven't had a bye yet
+          if (!tr.hadBye) {
+            score += 500;
+          }
+          // Prioritize teams who had to play up in a previous round
+          if (tr.hasPlayedUp) {
+            score += 200;
+          }
+          return score;
+        };
 
-        // Sort candidates: lowest wins first, highest losses first, lowest ID first
+        const candidates = [...activeTeams];
+
+        // Sort candidates: highest priority score first, then lowest wins, highest losses, lowest ID
         candidates.sort((a, b) => {
-          if (a.wins !== b.wins) return a.wins - b.wins;
-          if (a.losses !== b.losses) return b.losses - a.losses;
+          const scoreA = getByePriorityScore(a);
+          const scoreB = getByePriorityScore(b);
+          if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+          if (a.wins !== b.wins) {
+            return a.wins - b.wins;
+          }
+          if (a.losses !== b.losses) {
+            return b.losses - a.losses;
+          }
           return a.id - b.id;
         });
 
