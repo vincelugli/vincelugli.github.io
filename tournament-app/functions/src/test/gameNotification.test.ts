@@ -134,21 +134,6 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       data: () => ({division: "gold", matchId: 101}),
     });
 
-    // Mock division matches doc check
-    mockGet.mockResolvedValueOnce({
-      exists: true,
-      data: () => ({
-        matches: [{
-          id: 101,
-          team1Id: 1,
-          team2Id: 2,
-          status: "active",
-          team1Wins: 0,
-          team2Wins: 0,
-        }],
-      }),
-    });
-
     // Mock division teams doc snap for findTeamIdByPlayerNames
     mockGet.mockResolvedValueOnce({
       exists: true,
@@ -170,7 +155,7 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       }),
     });
 
-    // 6. Check if match_results/test-shortcode exists
+    // 5. Check if match_results/test-shortcode exists
     // (duplicate check in executeGameNotificationProcessing)
     // -> returns false (does not exist)
     mockGet.mockResolvedValueOnce({exists: false});
@@ -284,8 +269,7 @@ describe("gameNotificationEndpoint Cloud Function", () => {
   });
 
   it(
-    "should return 200 OK and skip processing if the match already " +
-      "has a team with 2 wins",
+    "should not increment team records if shortcode has already been processed",
     async () => {
       const notificationPayload = {
         startTime: 12345678,
@@ -298,28 +282,96 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       mockGet.mockResolvedValueOnce({exists: false});
 
       // 2. Check if match_results/test-shortcode exists
+      // (duplicate check in endpoint)
+      // -> returns false (does not exist)
       mockGet.mockResolvedValueOnce({exists: false});
 
-      // 3. Mock match doc exists
+      // Mock axios get response for Riot API
+      mockedAxios.get.mockResolvedValueOnce({data: {}});
+
+      // Mock match doc exists
       mockGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({division: "gold", matchId: 101}),
       });
 
-      // 4. Mock division matches doc check, returning a match where team1
-      // has 2 wins
+      // Mock division teams doc snap for findTeamIdByPlayerNames
       mockGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({
-          matches: [{
-            id: 101,
-            team1Id: 1,
-            team2Id: 2,
-            status: "completed",
-            team1Wins: 2,
-            team2Wins: 0,
-          }],
+          teams: [
+            {id: 1, name: "Team 1", players: [10]},
+            {id: 2, name: "Team 2", players: [20]},
+          ],
         }),
+      });
+      // Mock players doc snap for findTeamIdByPlayerNames
+      mockGet.mockResolvedValueOnce({
+        exists: true,
+        data: () => ({
+          players: [
+            {id: 10, name: "Player1"},
+            {id: 20, name: "Player2"},
+          ],
+        }),
+      });
+
+      // Check if match_results/test-shortcode exists
+      mockGet.mockResolvedValueOnce({exists: false});
+
+      // Mock updateStandings transaction execution with
+      // already processed shortCode in match results
+      const mockUpdateTx = jest.fn();
+      mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+        const mockTx = {
+          getAll: jest.fn().mockResolvedValueOnce([
+            {
+              exists: true,
+              data: () => ({
+                matches: [{
+                  id: 101,
+                  team1Id: 1,
+                  team2Id: 2,
+                  status: "active",
+                  results: {
+                    "test-shortcode": {
+                      winnerId: 1,
+                      team1Win: 1,
+                      team2Win: 0,
+                    },
+                  },
+                }],
+              }),
+            },
+            {
+              exists: true,
+              data: () => ({
+                teams: [
+                  {
+                    id: 1,
+                    gameWins: 1,
+                    gameLosses: 0,
+                    wins: 0,
+                    losses: 0,
+                    record: "0-0",
+                    gameRecord: "1-0",
+                  },
+                  {
+                    id: 2,
+                    gameWins: 0,
+                    gameLosses: 1,
+                    wins: 0,
+                    losses: 0,
+                    record: "0-0",
+                    gameRecord: "0-1",
+                  },
+                ],
+              }),
+            },
+          ]),
+          update: mockUpdateTx,
+        };
+        await updateFn(mockTx);
       });
 
       const {req, res} = createMockReqRes(notificationPayload);
@@ -331,8 +383,16 @@ describe("gameNotificationEndpoint Cloud Function", () => {
       expect(res.send).toHaveBeenCalledWith({
         message: "Match result created successfully.",
       });
-      expect(mockedAxios.get).not.toHaveBeenCalled();
-      expect(mockCommit).not.toHaveBeenCalled();
+
+      // Verify transaction updates were called, but teams doc was NOT
+      // updated with new wins (gameWins should remain 1)
+      expect(mockUpdateTx).toHaveBeenCalledTimes(2);
+      const teamsCall = mockUpdateTx.mock.calls.find(
+        (call) => call[1] && "teams" in call[1]
+      );
+      expect(teamsCall).toBeDefined();
+      const updatedTeams = teamsCall[1].teams;
+      expect(updatedTeams[0].gameWins).toBe(1);
     }
   );
 });
@@ -382,21 +442,6 @@ describe("processGameFromNotification Cloud Function", () => {
       mockGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({division: "gold", matchId: 101}),
-      });
-
-      // Mock division matches doc check
-      mockGet.mockResolvedValueOnce({
-        exists: true,
-        data: () => ({
-          matches: [{
-            id: 101,
-            team1Id: 1,
-            team2Id: 2,
-            status: "active",
-            team1Wins: 0,
-            team2Wins: 0,
-          }],
-        }),
       });
 
       // Mock division teams doc snap for findTeamIdByPlayerNames

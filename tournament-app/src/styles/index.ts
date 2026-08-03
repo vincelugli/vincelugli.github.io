@@ -3697,6 +3697,11 @@ export const AdminCard = styled.div`
   box-shadow: 0 2px 8px ${({ theme }) => theme.boxShadow};
 `;
 
+export const AdminDryRunCard = styled(AdminCard)`
+  border: 1px dashed ${({ theme }) => theme.primary};
+  background: ${({ theme }) => theme.backgroundThree};
+`;
+
 export const AdminCardTitle = styled.h3`
   margin-top: 0;
   margin-bottom: 1rem;

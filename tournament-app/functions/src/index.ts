@@ -672,41 +672,7 @@ async function executeGameNotificationProcessing(
     `Fetched match metadata: division=${division}, matchId=${matchId}`
   );
 
-  // Check if either team has already won 2 games in this match
-  const divisionMatchesDocRef = db.doc(`matches/grumble2026_${division}`);
-  const divisionMatchesDoc = await divisionMatchesDocRef.get();
-  if (!divisionMatchesDoc.exists) {
-    throw new Error(`Matches document 'grumble2026_${division}' not found.`);
-  }
-  const allMatches = divisionMatchesDoc.data()!.matches || [];
-  const currentMatch = allMatches.find((m: any) => m.id === matchId);
-  if (!currentMatch) {
-    throw new Error(
-      `Match with id '${matchId}' not found in division '${division}'.`
-    );
-  }
-  logger.debug(
-    `Fetched division matches count: ${allMatches.length}. ` +
-    `Found match status: ${currentMatch.status}, ` +
-    `team1Wins: ${currentMatch.team1Wins}, team2Wins: ${currentMatch.team2Wins}`
-  );
-  if (
-    (currentMatch.team1Wins || 0) >= WINS_NEEDED_FOR_MATCH ||
-    (currentMatch.team2Wins || 0) >= WINS_NEEDED_FOR_MATCH
-  ) {
-    logger.info(
-      `Match ${matchId} already has a team with ` +
-      `${WINS_NEEDED_FOR_MATCH} wins. Skipping duplicate processing.`
-    );
-    return;
-  } else {
-    logger.info(
-      `Match ${matchId} with ${currentMatch.team1Id} id having ` +
-      `${currentMatch.team1Wins} wins and ${currentMatch.team2Id} id ` +
-      `having ${currentMatch.team2Wins} wins. ` +
-      "Proceeding with processing."
-    );
-  }
+  logger.info(`Proceeding with processing for match ${matchId}.`);
 
   let matchResultData = {
     winner: -1,
@@ -1017,63 +983,78 @@ const updateStandings = async (
     logger.info(`Current match 
 ${JSON.stringify(allMatches[currentMatchIndex])}`);
 
-    const {team1Id, team2Id} = allMatches[currentMatchIndex];
-    let {team1Wins, team2Wins} = allMatches[currentMatchIndex];
-    if (!team1Wins) {
-      team1Wins = 0;
-    }
-    if (!team2Wins) {
-      team2Wins = 0;
-    }
-    logger.debug(`Team 1 ${team1Wins} and team 2 ${team2Wins}`);
-    const loserId = winnerId === team1Id ? team2Id : team1Id;
-    if (winnerId === team1Id) {
-      team1Wins++;
-      allMatches[currentMatchIndex].team1Wins = team1Wins;
-      allMatches[currentMatchIndex].team2Wins = team2Wins;
-    } else {
-      team2Wins++;
-      allMatches[currentMatchIndex].team1Wins = team1Wins;
-      allMatches[currentMatchIndex].team2Wins = team2Wins;
-    }
+    const currentMatch = allMatches[currentMatchIndex];
+    const {team1Id, team2Id} = currentMatch;
+    currentMatch.results = currentMatch.results || {};
 
-    logger.debug(`Updated wins:
- Team 1 ${team1Wins} and team 2 ${team2Wins}`);
+    const alreadyProcessed = !!currentMatch.results[shortCode];
+    const isTeam1 = winnerId === team1Id;
 
-    const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
-    const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
-    if (winnerIndex === -1 || loserIndex === -1) {
-      throw new Error(
-        `One or both teams
-(${winnerId}, ${loserId})
-not found in division '${division}'.`);
-    }
+    currentMatch.results[shortCode] = {
+      winnerId: winnerId,
+      team1Win: isTeam1 ? 1 : 0,
+      team2Win: isTeam1 ? 0 : 1,
+    };
 
-    allTeams[winnerIndex].gameWins += 1;
-    allTeams[winnerIndex].gameRecord =
-      `${allTeams[winnerIndex].gameWins}-${allTeams[winnerIndex].gameLosses}`;
-    allTeams[loserIndex].gameLosses += 1;
-    allTeams[loserIndex].gameRecord =
-      `${allTeams[loserIndex].gameWins}-${allTeams[loserIndex].gameLosses}`;
-    logger.info(
-      `Updated game records for match ${matchId}.
-Winner: ${allTeams[winnerIndex].gameRecord},
-Loser: ${allTeams[loserIndex].gameRecord}`);
+    const resultsList = Object.values(currentMatch.results);
+    const team1Wins = resultsList.reduce(
+      (sum: number, r: any) => sum + (r.team1Win || 0),
+      0
+    );
+    const team2Wins = resultsList.reduce(
+      (sum: number, r: any) => sum + (r.team2Win || 0),
+      0
+    );
 
-    // check if winner has enough games
-    const newTotalWins = (winnerId === team1Id ? team1Wins : team2Wins);
-    logger.debug(`Checking if enough wins ${newTotalWins}`);
-    if (newTotalWins >=
-         WINS_NEEDED_FOR_MATCH) {
+    currentMatch.team1Wins = team1Wins;
+    currentMatch.team2Wins = team2Wins;
+
+    logger.debug(`Updated wins: Team 1 ${team1Wins} and team 2 ${team2Wins}`);
+
+    if (!alreadyProcessed) {
+      const loserId = winnerId === team1Id ? team2Id : team1Id;
+      const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
+      const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
+      if (winnerIndex === -1 || loserIndex === -1) {
+        throw new Error(
+          `One or both teams (${winnerId}, ${loserId}) ` +
+          `not found in division '${division}'.`
+        );
+      }
+
+      allTeams[winnerIndex].gameWins += 1;
+      allTeams[winnerIndex].gameRecord =
+        `${allTeams[winnerIndex].gameWins}-${allTeams[winnerIndex].gameLosses}`;
+      allTeams[loserIndex].gameLosses += 1;
+      allTeams[loserIndex].gameRecord =
+        `${allTeams[loserIndex].gameWins}-${allTeams[loserIndex].gameLosses}`;
       logger.info(
-        `Match win condition met for Team ${winnerId} in match ${matchId}!`);
-      allTeams[winnerIndex].wins += 1;
-      allTeams[winnerIndex].record =
-        `${allTeams[winnerIndex].wins}-${allTeams[winnerIndex].losses}`;
-      allTeams[loserIndex].losses += 1;
-      allTeams[loserIndex].record =
-        `${allTeams[loserIndex].wins}-${allTeams[loserIndex].losses}`;
-      allMatches[currentMatchIndex].status = "completed";
+        `Updated game records for match ${matchId}. ` +
+        `Winner: ${allTeams[winnerIndex].gameRecord}, ` +
+        `Loser: ${allTeams[loserIndex].gameRecord}`
+      );
+
+      // check if winner has enough games
+      const newTotalWins = winnerId === team1Id ? team1Wins : team2Wins;
+      logger.debug(`Checking if enough wins ${newTotalWins}`);
+      if (newTotalWins >= WINS_NEEDED_FOR_MATCH) {
+        logger.info(
+          `Match win condition met for Team ${winnerId} in match ${matchId}!`
+        );
+        allTeams[winnerIndex].wins += 1;
+        allTeams[winnerIndex].record =
+          `${allTeams[winnerIndex].wins}-${allTeams[winnerIndex].losses}`;
+        allTeams[loserIndex].losses += 1;
+        allTeams[loserIndex].record =
+          `${allTeams[loserIndex].wins}-${allTeams[loserIndex].losses}`;
+        currentMatch.status = "completed";
+      }
+    } else {
+      logger.info(
+        `Match result for shortCode ${shortCode} ` +
+        "already factored into standings. " +
+        "Skipping incremental standings update."
+      );
     }
 
     transaction.update(divisionTeamsDocRef, {teams: allTeams});
