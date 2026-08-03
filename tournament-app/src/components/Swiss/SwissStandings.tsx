@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTournament } from '../../context/TournamentContext';
-import { compareTeams } from '../../utils';
+import { calculateSwissStats } from '../../utils';
 import { useDivision } from '../../context/DivisionContext';
+import { useGameMatches } from '../../context/MatchesContext';
 import {
   TeamName,
   SwissStandingsContainer,
@@ -12,10 +13,11 @@ import {
 } from '../../styles';
 
 const SwissStandings: React.FC = () => {
-  const { teams, loading } = useTournament();
+  const { teams, loading: tournamentLoading } = useTournament();
+  const { matches, loading: matchesLoading } = useGameMatches();
   const { urlDivision } = useDivision();
 
-  if (loading) {
+  if (tournamentLoading || matchesLoading) {
     return <p>Loading Swiss standings...</p>;
   }
 
@@ -23,9 +25,29 @@ const SwissStandings: React.FC = () => {
     return <p>Teams not yet finalized.</p>;
   }
 
-  const advancedTeams = [...teams].filter(t => t.wins === 3).sort(compareTeams);
-  const eliminatedTeams = [...teams].filter(t => t.losses === 3).sort(compareTeams);
-  const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(compareTeams);
+  const stats = calculateSwissStats(teams, matches);
+
+  const sortStats = (a: typeof teams[0], b: typeof teams[0]) => {
+    const sA = stats.find(s => s.team.id === a.id);
+    const sB = stats.find(s => s.team.id === b.id);
+    if (!sA || !sB) return 0;
+    
+    if (sA.matchWinPercentage !== sB.matchWinPercentage) {
+      return sB.matchWinPercentage - sA.matchWinPercentage;
+    }
+    if (sA.adjustedBuchholz !== sB.adjustedBuchholz) {
+      return sB.adjustedBuchholz - sA.adjustedBuchholz;
+    }
+    if (sA.gameWinPercentage !== sB.gameWinPercentage) {
+      return sB.gameWinPercentage - sA.gameWinPercentage;
+    }
+    return sA.team.id - sB.team.id;
+  };
+
+  const advancedTeams = [...teams].filter(t => t.wins === 3).sort(sortStats);
+  const eliminatedTeams = [...teams].filter(t => t.losses === 3).sort(sortStats);
+  const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(sortStats);
+
 
   return (
     <SwissStandingsContainer>

@@ -1,4 +1,4 @@
-import { Player, Team, PlayerAchievement, Match } from "../types";
+import { Player, Team, PlayerAchievement, Match, BracketRound, BracketSeed, BracketTeam } from "../types";
 
 export function compareTeams(t1: Team , t2: Team): number {
     let result = t2.wins - t1.wins;
@@ -322,4 +322,245 @@ export function cleanTeamName(name: string): string {
   if (!name) return "";
   return name.replace(/\s*[(]\s*\d+\s*-\s*\d+\s*[)]\s*$/, '').trim();
 }
+
+export interface TeamStats {
+  team: Team;
+  wins: number;
+  losses: number;
+  gameWins: number;
+  gameLosses: number;
+  matchWinPercentage: number;
+  gameWinPercentage: number;
+  adjustedBuchholz: number;
+  opponents: number[];
+}
+
+export function calculateSwissStats(teams: Team[], matches: Match[]): TeamStats[] {
+  const swissMatches = matches.filter(m => !m.isKnockout && m.status === 'completed');
+  
+  const statsMap = new Map<number, TeamStats>();
+  
+  for (const team of teams) {
+    statsMap.set(team.id, {
+      team,
+      wins: 0,
+      losses: 0,
+      gameWins: 0,
+      gameLosses: 0,
+      matchWinPercentage: 0,
+      gameWinPercentage: 0,
+      adjustedBuchholz: 0,
+      opponents: []
+    });
+  }
+  
+  for (const match of swissMatches) {
+    const t1Id = match.team1Id;
+    const t2Id = match.team2Id;
+    
+    const isBye = match.score === 'BYE' || t1Id === t2Id;
+    const winnerId = getMatchWinnerId(match);
+    
+    const stats1 = statsMap.get(t1Id);
+    if (stats1) {
+      if (isBye || winnerId === t1Id) {
+        stats1.wins++;
+        stats1.gameWins += 2;
+      } else {
+        stats1.losses++;
+        if (t1Id !== -1 && t2Id !== -1) {
+          stats1.gameWins += match.team1Wins || 0;
+          stats1.gameLosses += match.team2Wins || 0;
+        }
+      }
+      if (!isBye && t2Id > 0) {
+        stats1.opponents.push(t2Id);
+      }
+    }
+    
+    if (!isBye && t2Id > 0) {
+      const stats2 = statsMap.get(t2Id);
+      if (stats2) {
+        if (winnerId === t2Id) {
+          stats2.wins++;
+          stats2.gameWins += 2;
+        } else {
+          stats2.losses++;
+          if (t1Id !== -1 && t2Id !== -1) {
+            stats2.gameWins += match.team2Wins || 0;
+            stats2.gameLosses += match.team1Wins || 0;
+          }
+        }
+        if (t1Id > 0) {
+          stats2.opponents.push(t1Id);
+        }
+      }
+    }
+  }
+  
+  for (const stats of statsMap.values()) {
+    const totalMatches = stats.wins + stats.losses;
+    stats.matchWinPercentage = totalMatches > 0 ? stats.wins / totalMatches : 0;
+    
+    const totalGames = stats.gameWins + stats.gameLosses;
+    stats.gameWinPercentage = totalGames > 0 ? stats.gameWins / totalGames : 0;
+  }
+  
+  for (const stats of statsMap.values()) {
+    let buchholz = 0;
+    for (const oppId of stats.opponents) {
+      const oppStats = statsMap.get(oppId);
+      if (oppStats) {
+        buchholz += oppStats.wins;
+        if (oppStats.wins === 3 && oppStats.losses === 0) {
+          buchholz += 2;
+        } else if (oppStats.wins === 3 && oppStats.losses === 1) {
+          buchholz += 1;
+        }
+      }
+    }
+    stats.adjustedBuchholz = buchholz;
+  }
+  
+  return Array.from(statsMap.values());
+}
+
+export function getQualifyingSeeding(teams: Team[], matches: Match[]): (Team | null)[] {
+  const stats = calculateSwissStats(teams, matches);
+  
+  const qualified = stats.filter(s => s.wins === 3);
+  
+  qualified.sort((a, b) => {
+    if (a.matchWinPercentage !== b.matchWinPercentage) {
+      return b.matchWinPercentage - a.matchWinPercentage;
+    }
+    if (a.adjustedBuchholz !== b.adjustedBuchholz) {
+      return b.adjustedBuchholz - a.adjustedBuchholz;
+    }
+    if (a.gameWinPercentage !== b.gameWinPercentage) {
+      return b.gameWinPercentage - a.gameWinPercentage;
+    }
+    return a.team.id - b.team.id;
+  });
+  
+  const seeding: (Team | null)[] = Array(6).fill(null);
+  for (let i = 0; i < qualified.length && i < 6; i++) {
+    seeding[i] = qualified[i].team;
+  }
+  
+  return seeding;
+}
+
+export function updateDoubleEliminationBracket(
+  currentBracket: BracketRound[],
+  teams: Team[],
+  matches: Match[]
+): BracketRound[] {
+  if (currentBracket.length < 6) return currentBracket;
+
+  const seeding = getQualifyingSeeding(teams, matches);
+  const updatedBracket = JSON.parse(JSON.stringify(currentBracket)) as BracketRound[];
+
+  const findSeedById = (id: number): BracketSeed | null => {
+    for (const round of updatedBracket) {
+      const seed = round.seeds.find(s => s.id === id);
+      if (seed) return seed;
+    }
+    return null;
+  };
+
+  const getWinnerAndLoserOfSeed = (seedId: number): { winnerId: number; loserId: number } => {
+    const seed = findSeedById(seedId);
+    if (!seed || seed.status !== 'completed' || !seed.winnerId) {
+      return { winnerId: 0, loserId: 0 };
+    }
+    const loserId = (seed.winnerId === seed.team1Id) ? seed.team2Id : seed.team1Id;
+    return { winnerId: seed.winnerId, loserId };
+  };
+
+  const resolveBracketTeam = (teamId: number): BracketTeam => {
+    if (teamId <= 0) return { id: 0, name: "TBD" };
+    const team = teams.find(t => t.id === teamId);
+    return team ? { id: team.id, name: team.name } : { id: teamId, name: "Unknown" };
+  };
+
+  // 1. Winners Semifinals (Match 1 & 2, seeds 1 and 2)
+  const wsf1 = findSeedById(1);
+  if (wsf1) {
+    wsf1.team1Id = seeding[0]?.id || 0;
+    wsf1.team2Id = seeding[3]?.id || 0;
+    wsf1.teams = [resolveBracketTeam(wsf1.team1Id), resolveBracketTeam(wsf1.team2Id)];
+  }
+
+  const wsf2 = findSeedById(2);
+  if (wsf2) {
+    wsf2.team1Id = seeding[1]?.id || 0;
+    wsf2.team2Id = seeding[2]?.id || 0;
+    wsf2.teams = [resolveBracketTeam(wsf2.team1Id), resolveBracketTeam(wsf2.team2Id)];
+  }
+
+  // 2. Winners Finals (Match 3, seed 3)
+  const wf = findSeedById(3);
+  if (wf) {
+    wf.team1Id = getWinnerAndLoserOfSeed(1).winnerId;
+    wf.team2Id = getWinnerAndLoserOfSeed(2).winnerId;
+    wf.teams = [resolveBracketTeam(wf.team1Id), resolveBracketTeam(wf.team2Id)];
+  }
+
+  // 3. Losers Round 1 (Match 4 & 5, seeds 4 and 5)
+  const l1m1 = findSeedById(4);
+  if (l1m1) {
+    l1m1.team1Id = seeding[4]?.id || 0;
+    l1m1.team2Id = getWinnerAndLoserOfSeed(1).loserId;
+    l1m1.teams = [resolveBracketTeam(l1m1.team1Id), resolveBracketTeam(l1m1.team2Id)];
+  }
+
+  const l1m2 = findSeedById(5);
+  if (l1m2) {
+    l1m2.team1Id = seeding[5]?.id || 0;
+    l1m2.team2Id = getWinnerAndLoserOfSeed(2).loserId;
+    l1m2.teams = [resolveBracketTeam(l1m2.team1Id), resolveBracketTeam(l1m2.team2Id)];
+  }
+
+  // 4. Losers Semifinals (Match 6, seed 6)
+  const lsf = findSeedById(6);
+  if (lsf) {
+    lsf.team1Id = getWinnerAndLoserOfSeed(4).winnerId;
+    lsf.team2Id = getWinnerAndLoserOfSeed(5).winnerId;
+    lsf.teams = [resolveBracketTeam(lsf.team1Id), resolveBracketTeam(lsf.team2Id)];
+  }
+
+  // 5. Losers Finals (Match 7, seed 7)
+  const lf = findSeedById(7);
+  if (lf) {
+    lf.team1Id = getWinnerAndLoserOfSeed(3).loserId;
+    lf.team2Id = getWinnerAndLoserOfSeed(6).winnerId;
+    lf.teams = [resolveBracketTeam(lf.team1Id), resolveBracketTeam(lf.team2Id)];
+  }
+
+  // 6. Grand Finals (Match 8 & 9, seeds 8 and 9)
+  const gf = findSeedById(8);
+  if (gf) {
+    gf.team1Id = getWinnerAndLoserOfSeed(3).winnerId;
+    gf.team2Id = getWinnerAndLoserOfSeed(7).winnerId;
+    gf.teams = [resolveBracketTeam(gf.team1Id), resolveBracketTeam(gf.team2Id)];
+  }
+
+  const gfReset = findSeedById(9);
+  if (gfReset) {
+    const gfSeed = findSeedById(8);
+    if (gfSeed && gfSeed.status === 'completed' && gfSeed.winnerId === gfSeed.team2Id) {
+      gfReset.team1Id = gfSeed.team1Id;
+      gfReset.team2Id = gfSeed.team2Id;
+    } else {
+      gfReset.team1Id = 0;
+      gfReset.team2Id = 0;
+    }
+    gfReset.teams = [resolveBracketTeam(gfReset.team1Id), resolveBracketTeam(gfReset.team2Id)];
+  }
+
+  return updatedBracket;
+}
+
+
 

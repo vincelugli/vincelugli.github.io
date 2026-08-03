@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName} from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -1238,20 +1238,38 @@ const AdminPage: React.FC = () => {
 
       // Select BYE team if odd number of teams
       if (activeTeams.length % 2 !== 0) {
-        // Prioritize 1-2 teams who have not had a bye
-        let byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2 && !tr.hadBye);
-        if (byeCandidates.length === 0) {
-          byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2);
-        }
-        if (byeCandidates.length === 0) {
-          byeCandidates = activeTeams.filter(tr => !tr.hadBye);
-        }
-        const candidates = byeCandidates.length > 0 ? byeCandidates : activeTeams;
+        const getByePriorityScore = (tr: typeof activeTeams[0]): number => {
+          let score = 0;
+          // Prioritize 1-2 record
+          if (tr.wins === 1 && tr.losses === 2) {
+            score += 1000;
+          }
+          // Prioritize teams that haven't had a bye yet
+          if (!tr.hadBye) {
+            score += 500;
+          }
+          // Prioritize teams who had to play up in a previous round
+          if (tr.hasPlayedUp) {
+            score += 200;
+          }
+          return score;
+        };
 
-        // Sort candidates: lowest wins first, highest losses first, lowest ID first
+        const candidates = [...activeTeams];
+
+        // Sort candidates: highest priority score first, then lowest wins, highest losses, lowest ID
         candidates.sort((a, b) => {
-          if (a.wins !== b.wins) return a.wins - b.wins;
-          if (a.losses !== b.losses) return b.losses - a.losses;
+          const scoreA = getByePriorityScore(a);
+          const scoreB = getByePriorityScore(b);
+          if (scoreA !== scoreB) {
+            return scoreB - scoreA;
+          }
+          if (a.wins !== b.wins) {
+            return a.wins - b.wins;
+          }
+          if (a.losses !== b.losses) {
+            return b.losses - a.losses;
+          }
           return a.id - b.id;
         });
 
@@ -1639,11 +1657,93 @@ const AdminPage: React.FC = () => {
       ];
 
       round.seeds[seedIndex] = updatedSeed;
-      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket });
+
+      const fullyUpdatedBracket = updateDoubleEliminationBracket(updatedBracket, teams, matches);
+
+      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket});
       showStatus('success', `Bracket Round "${round.title}" seed #${seed.id} updated!`);
     } catch (err: any) {
       console.error(err);
       showStatus('error', 'Failed to update bracket seed.');
+    }
+  };
+
+  const handleInitializeDoubleElimination = async () => {
+    if (!window.confirm('Are you sure you want to initialize the 6-team double elimination bracket? This will overwrite the current bracket.')) return;
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Initializing double elimination bracket...');
+
+      const defaultBracket: BracketRound[] = [
+        {
+          title: "Winners Semifinals",
+          seeds: [
+            {id: 1, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: []},
+            {id: 2, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: []}
+          ]
+        },
+        {
+          title: "Winners Finals",
+          seeds: [
+            {id: 3, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: []}
+          ]
+        },
+        {
+          title: "Losers Round 1",
+          seeds: [
+            {id: 4, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: []},
+            {id: 5, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: []}
+          ]
+        },
+        {
+          title: "Losers Semifinals",
+          seeds: [
+            {id: 6, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 3, tournamentCodes: [], teams: []}
+          ]
+        },
+        {
+          title: "Losers Finals",
+          seeds: [
+            {id: 7, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 3, tournamentCodes: [], teams: []}
+          ]
+        },
+        {
+          title: "Grand Finals",
+          seeds: [
+            {id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: []},
+            {id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: []}
+          ]
+        }
+      ];
+
+      const populatedBracket = updateDoubleEliminationBracket(defaultBracket, teams, matches);
+
+      await setDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: populatedBracket});
+      showStatus('success', 'Double elimination bracket initialized and seeded successfully!');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to initialize double elimination bracket.');
+    }
+  };
+
+  const handleSyncBracketProgressions = async () => {
+    if (!bracket || bracket.length === 0) {
+      showStatus('error', 'No bracket initialized yet. Please initialize it first.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Syncing bracket progressions...');
+
+      const fullyUpdatedBracket = updateDoubleEliminationBracket(bracket, teams, matches);
+
+      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket});
+      showStatus('success', 'Bracket progressions synced successfully!');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to sync bracket progressions.');
     }
   };
 
@@ -2639,6 +2739,15 @@ const AdminPage: React.FC = () => {
         <AdminCard>
           <AdminCardTitle>Brackets Rounds & Seed Management</AdminCardTitle>
           <p>Update teams, statuses, or scores for bracket rounds.</p>
+
+          <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem'}}>
+            <AdminActionButton variant="primary" onClick={handleInitializeDoubleElimination}>
+              Initialize 6-Team Double Elimination
+            </AdminActionButton>
+            <AdminActionButton variant="secondary" onClick={handleSyncBracketProgressions}>
+              Sync Seeding & Progressions
+            </AdminActionButton>
+          </div>
 
           {bracket.length === 0 ? (
             <p>No brackets round initialized. Use bulk upload or create a bracket structure.</p>

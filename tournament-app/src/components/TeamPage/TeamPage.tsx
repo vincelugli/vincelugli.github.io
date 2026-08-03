@@ -136,7 +136,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
             <TeamPagePlayerCard key={player.id}>
               {isPlayerCaptain(player, division) && <TeamPageCaptainIndicator title="Team Captain" />}
               <TeamPagePlayerInfo>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, width: '100%'}}>
                   <TeamPagePlayerNameLink to={`/players/${player.id}?division=${urlDivision}`}>
                     {player.name}
                   </TeamPagePlayerNameLink>
