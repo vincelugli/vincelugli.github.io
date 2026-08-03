@@ -42,6 +42,7 @@ import {
   AdminIconButton,
   AdminEditBox,
   AdminFloatingConfirm,
+  AdminDryRunCard,
 } from '../../styles/index';
 
 
@@ -216,6 +217,8 @@ const AdminPage: React.FC = () => {
   const [confirmResetDraft, setConfirmResetDraft] = useState(false);
   const [activePlayerListSubTab, setActivePlayerListSubTab] = useState<'draft' | 'subs'>('draft');
   const [isEditingSub, setIsEditingSub] = useState(false);
+  const [dryRunMatches, setDryRunMatches] = useState<Match[] | null>(null);
+  const [dryRunRound, setDryRunRound] = useState<number | null>(null);
 
   // Form states for creating/editing
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -1023,13 +1026,15 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const handleGenerateSwissStage = async () => {
+  const handleGenerateSwissStage = async (isDryRun = false) => {
     if (teams.length === 0) {
       showStatus('error', 'No teams found in the database. Please create teams first.');
       return;
     }
-    const confirmMsg = "Are you sure you want to generate Swiss Stage Round 1 matches? This will overwrite all current matches.";
-    if (!window.confirm(confirmMsg)) return;
+    if (!isDryRun) {
+      const confirmMsg = "Are you sure you want to generate Swiss Stage Round 1 matches? This will overwrite all current matches.";
+      if (!window.confirm(confirmMsg)) return;
+    }
 
     try {
       setStatus('loading');
@@ -1071,30 +1076,39 @@ const AdminPage: React.FC = () => {
         }
       }
 
-      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
-      await setDoc(matchesRef, { matches: generatedMatches });
-      showStatus('success', `Successfully generated ${generatedMatches.length} Swiss Round 1 matches.`);
+      if (isDryRun) {
+        setDryRunMatches(generatedMatches);
+        setDryRunRound(1);
+        setStatus('idle');
+        showStatus('success', `Dry run: Proposed ${generatedMatches.length} Swiss Round 1 matches.`);
+      } else {
+        const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+        await setDoc(matchesRef, { matches: generatedMatches });
+        showStatus('success', `Successfully generated ${generatedMatches.length} Swiss Round 1 matches.`);
+      }
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to generate Swiss Stage.');
     }
   };
 
-  const handleGenerateNextSwissRound = async () => {
+  const handleGenerateNextSwissRound = async (isDryRun = false) => {
     if (swissMatches.length === 0) {
       showStatus('error', 'No Swiss Round 1 matches found. Please generate Round 1 first.');
       return;
     }
 
-    if (hasIncompleteSwissMatches) {
+    if (hasIncompleteSwissMatches && !isDryRun) {
       const proceed = window.confirm(
         'Some previous Swiss matches are not completed. Pairings will be generated using placeholders (e.g., "Winner of Match X" / "Loser of Match X"). Do you want to proceed?'
       );
       if (!proceed) return;
     }
 
-    const confirmMsg = `Are you sure you want to generate Swiss Stage Round ${nextRoundNum} matches?`;
-    if (!window.confirm(confirmMsg)) return;
+    if (!isDryRun) {
+      const confirmMsg = `Are you sure you want to generate Swiss Stage Round ${nextRoundNum} matches?`;
+      if (!window.confirm(confirmMsg)) return;
+    }
 
     try {
       setStatus('loading');
@@ -1116,6 +1130,7 @@ const AdminPage: React.FC = () => {
         wins: number;
         losses: number;
         hadBye: boolean;
+        hasPlayedUp: boolean;
       }
 
       // Initialize participants as all real teams with 0-0 record
@@ -1124,7 +1139,8 @@ const AdminPage: React.FC = () => {
         name: t.name,
         wins: 0,
         losses: 0,
-        hadBye: false
+        hadBye: false,
+        hasPlayedUp: false
       }));
 
       // Sort existing Swiss matches by round number so we process them chronologically
@@ -1134,6 +1150,14 @@ const AdminPage: React.FC = () => {
       for (const m of sortedSwissMatches) {
         const p1 = participants.find(p => p.id === m.team1Id);
         const p2 = participants.find(p => p.id === m.team2Id);
+
+        if (p1 && p2 && m.team1Id !== m.team2Id) {
+          if (p1.wins < p2.wins) {
+            p1.hasPlayedUp = true;
+          } else if (p2.wins < p1.wins) {
+            p2.hasPlayedUp = true;
+          }
+        }
 
         if (m.status === 'completed') {
           if (m.team1Id === m.team2Id && m.score === 'BYE') {
@@ -1164,11 +1188,13 @@ const AdminPage: React.FC = () => {
           const p1Losses = p1 ? p1.losses : 0;
           const p1Name = p1 ? p1.name : `Team ${m.team1Id}`;
           const p1HadBye = p1 ? p1.hadBye : false;
+          const p1HasPlayedUp = p1 ? p1.hasPlayedUp : false;
 
           const p2Wins = p2 ? p2.wins : 0;
           const p2Losses = p2 ? p2.losses : 0;
           const p2Name = p2 ? p2.name : `Team ${m.team2Id}`;
           const p2HadBye = p2 ? p2.hadBye : false;
+          const p2HasPlayedUp = p2 ? p2.hasPlayedUp : false;
 
           // Remove constituent participants from active list
           participants = participants.filter(p => p.id !== m.team1Id && p.id !== m.team2Id);
@@ -1179,7 +1205,8 @@ const AdminPage: React.FC = () => {
             name: `Winner of ${p1Name} vs ${p2Name}`,
             wins: Math.max(p1Wins, p2Wins) + 1,
             losses: Math.min(p1Losses, p2Losses),
-            hadBye: p1HadBye && p2HadBye
+            hadBye: p1HadBye && p2HadBye,
+            hasPlayedUp: p1HasPlayedUp || p2HasPlayedUp
           });
 
           // Add Loser placeholder
@@ -1188,7 +1215,8 @@ const AdminPage: React.FC = () => {
             name: `Loser of ${p1Name} vs ${p2Name}`,
             wins: Math.min(p1Wins, p2Wins),
             losses: Math.max(p1Losses, p2Losses) + 1,
-            hadBye: p1HadBye || p2HadBye
+            hadBye: p1HadBye || p2HadBye,
+            hasPlayedUp: p1HasPlayedUp || p2HasPlayedUp
           });
         }
       }
@@ -1200,12 +1228,24 @@ const AdminPage: React.FC = () => {
         );
       };
 
-      let activeTeams = [...participants];
+      let activeTeams = participants.filter(p => p.wins < 3 && p.losses < 3);
+      if (activeTeams.length === 0) {
+        showStatus('success', 'All teams have completed the Swiss stage (reached 3 wins or 3 losses). No more pairings are needed.');
+        setStatus('idle');
+        return;
+      }
       let byeTeamId: number | null = null;
 
       // Select BYE team if odd number of teams
       if (activeTeams.length % 2 !== 0) {
-        const byeCandidates = activeTeams.filter(tr => !tr.hadBye);
+        // Prioritize 1-2 teams who have not had a bye
+        let byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2 && !tr.hadBye);
+        if (byeCandidates.length === 0) {
+          byeCandidates = activeTeams.filter(tr => tr.wins === 1 && tr.losses === 2);
+        }
+        if (byeCandidates.length === 0) {
+          byeCandidates = activeTeams.filter(tr => !tr.hadBye);
+        }
         const candidates = byeCandidates.length > 0 ? byeCandidates : activeTeams;
 
         // Sort candidates: lowest wins first, highest losses first, lowest ID first
@@ -1236,6 +1276,11 @@ const AdminPage: React.FC = () => {
         for (let i = 1; i < teamsList.length; i++) {
           const candidate = teamsList[i];
           if (!havePlayedEachOther(first.id, candidate.id)) {
+            const isFirstPlayingUp = first.wins < candidate.wins;
+            const isCandidatePlayingUp = candidate.wins < first.wins;
+            if (isFirstPlayingUp && first.hasPlayedUp) continue;
+            if (isCandidatePlayingUp && candidate.hasPlayedUp) continue;
+
             pairings.push([first.id, candidate.id]);
             const remaining = teamsList.filter((_, idx) => idx !== 0 && idx !== i);
             if (findPairings(remaining)) {
@@ -1253,6 +1298,11 @@ const AdminPage: React.FC = () => {
         const first = teamsList[0];
         for (let i = 1; i < teamsList.length; i++) {
           const candidate = teamsList[i];
+          const isFirstPlayingUp = first.wins < candidate.wins;
+          const isCandidatePlayingUp = candidate.wins < first.wins;
+          if (isFirstPlayingUp && first.hasPlayedUp) continue;
+          if (isCandidatePlayingUp && candidate.hasPlayedUp) continue;
+
           pairings.push([first.id, candidate.id]);
           const remaining = teamsList.filter((_, idx) => idx !== 0 && idx !== i);
           if (findPairingsRelaxed(remaining)) {
@@ -1263,10 +1313,30 @@ const AdminPage: React.FC = () => {
         return false;
       };
 
-      const success = findPairings(activeTeams);
+      const findPairingsFullyRelaxed = (teamsList: typeof activeTeams): boolean => {
+        if (teamsList.length === 0) return true;
+
+        const first = teamsList[0];
+        for (let i = 1; i < teamsList.length; i++) {
+          const candidate = teamsList[i];
+          pairings.push([first.id, candidate.id]);
+          const remaining = teamsList.filter((_, idx) => idx !== 0 && idx !== i);
+          if (findPairingsFullyRelaxed(remaining)) {
+            return true;
+          }
+          pairings.pop();
+        }
+        return false;
+      };
+
+      let success = findPairings(activeTeams);
       if (!success) {
-        console.warn("Could not find pairings without repeat matchups. Relaxing constraint.");
-        findPairingsRelaxed(activeTeams);
+        console.warn("Could not find pairings without repeat matchups and play-up violations. Relaxing repeat matchups constraint.");
+        success = findPairingsRelaxed(activeTeams);
+      }
+      if (!success) {
+        console.warn("Could not find pairings respecting play-up restrictions. Relaxing play-up constraint.");
+        findPairingsFullyRelaxed(activeTeams);
       }
 
       // Generate match objects
@@ -1307,16 +1377,55 @@ const AdminPage: React.FC = () => {
         });
       }
 
-      // Save back to database
-      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
-      const updatedMatches = [...matches, ...newMatches];
-      await setDoc(matchesRef, {matches: updatedMatches});
-
-      showStatus('success', `Successfully generated Swiss Round ${nextRoundNum} matches.`);
+      if (isDryRun) {
+        setDryRunMatches(newMatches);
+        setDryRunRound(nextRoundNum);
+        setStatus('idle');
+        showStatus('success', `Dry run: Proposed ${newMatches.length} Swiss Round ${nextRoundNum} matches.`);
+      } else {
+        // Save back to database
+        const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+        const updatedMatches = [...matches, ...newMatches];
+        await setDoc(matchesRef, {matches: updatedMatches});
+        showStatus('success', `Successfully generated Swiss Round ${nextRoundNum} matches.`);
+      }
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to generate next Swiss round.');
     }
+  };
+
+  const handleSaveDryRunMatches = async () => {
+    if (!dryRunMatches || !dryRunRound) return;
+
+    const confirmMsg = dryRunRound === 1
+      ? "Are you sure you want to save these Swiss Stage Round 1 matches? This will overwrite all current matches."
+      : `Are you sure you want to save these Swiss Stage Round ${dryRunRound} matches?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setStatus('loading');
+      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+      let updatedMatches: Match[] = [];
+      if (dryRunRound === 1) {
+        updatedMatches = dryRunMatches;
+      } else {
+        updatedMatches = [...matches, ...dryRunMatches];
+      }
+      await setDoc(matchesRef, { matches: updatedMatches });
+      showStatus('success', `Successfully saved Swiss Round ${dryRunRound} matches.`);
+      setDryRunMatches(null);
+      setDryRunRound(null);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to save dry run matches.');
+    }
+  };
+
+  const handleDiscardDryRunMatches = () => {
+    setDryRunMatches(null);
+    setDryRunRound(null);
   };
 
   const handleCopyCode = (code: string) => {
@@ -2832,30 +2941,100 @@ const AdminPage: React.FC = () => {
               <AdminCard style={{ marginTop: '1.5rem' }}>
                 <AdminCardTitle>Generate Swiss Stage</AdminCardTitle>
                 <p>Automatically generate Round 1 Swiss matchup pairings based on the first-round draft pick order.</p>
-                    <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem'}}>
-                      <AdminActionButton variant="primary" onClick={handleGenerateSwissStage}>
-                        Generate Swiss Stage (Round 1)
-                      </AdminActionButton>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <AdminActionButton variant="secondary" onClick={() => handleGenerateSwissStage(true)}>
+                      Dry Run Round 1
+                    </AdminActionButton>
+                    <AdminActionButton variant="primary" onClick={() => handleGenerateSwissStage(false)}>
+                      Generate Round 1 (Commit)
+                    </AdminActionButton>
+                  </div>
 
-                      {swissMatches.length > 0 && (
-                        <AdminActionButton
-                          variant="primary"
-                          onClick={handleGenerateNextSwissRound}
-                        >
-                          {hasIncompleteSwissMatches ? (
-                            `Generate Swiss Round ${nextRoundNum} (with placeholders)`
-                          ) : (
-                            `Generate Swiss Round ${nextRoundNum}`
-                          )}
-                        </AdminActionButton>
-                      )}
+                  {swissMatches.length > 0 && (
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                      <AdminActionButton variant="secondary" onClick={() => handleGenerateNextSwissRound(true)}>
+                        Dry Run Round {nextRoundNum}
+                      </AdminActionButton>
+                      <AdminActionButton variant="primary" onClick={() => handleGenerateNextSwissRound(false)}>
+                        {hasIncompleteSwissMatches ? (
+                          `Generate Round ${nextRoundNum} (with placeholders)`
+                        ) : (
+                          `Generate Round ${nextRoundNum}`
+                        )}
+                      </AdminActionButton>
                     </div>
-                    {hasIncompleteSwissMatches && (
-                      <p style={{color: '#f59e0b', fontSize: '0.875rem', marginTop: '0.5rem', fontWeight: 500}}>
-                        * Some previous matches are incomplete. Generating the next round will create placeholder pairings (e.g. 'Winner of A vs B').
-                      </p>
-                    )}
+                  )}
+                </div>
+                {hasIncompleteSwissMatches && (
+                  <p style={{color: '#f59e0b', fontSize: '0.875rem', marginTop: '0.5rem', fontWeight: 500}}>
+                    * Some previous matches are incomplete. Generating the next round will create placeholder pairings (e.g. 'Winner of A vs B').
+                  </p>
+                )}
               </AdminCard>
+
+              {dryRunMatches && (
+                <AdminDryRunCard style={{ marginTop: '1.5rem' }}>
+                  <AdminCardTitle style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Proposed Swiss Round {dryRunRound} Matchups (Dry Run Preview)</span>
+                    <AdminBadge variant="warning">Not Saved</AdminBadge>
+                  </AdminCardTitle>
+                  <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1rem' }}>
+                    Review the proposed matchups below. If they look correct, click "Save & Apply Pairings" to commit them to the database.
+                  </p>
+
+                  <AdminTableContainer style={{ marginBottom: '1.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                    <AdminStyledTable>
+                      <thead>
+                        <tr>
+                          <AdminStyledTh>ID</AdminStyledTh>
+                          <AdminStyledTh>Matchup</AdminStyledTh>
+                          <AdminStyledTh>Details</AdminStyledTh>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dryRunMatches.map((m) => {
+                          const t1 = getTeamOrPlaceholder(m.team1Id, teams, matches);
+                          const t2 = getTeamOrPlaceholder(m.team2Id, teams, matches);
+                          const isBye = m.score === 'BYE';
+                          return (
+                            <tr key={m.id}>
+                              <AdminStyledTd>{m.id}</AdminStyledTd>
+                              <AdminStyledTd>
+                                {isBye ? (
+                                  <strong>{t1?.name || `Team ${m.team1Id}`} (BYE)</strong>
+                                ) : (
+                                  <>
+                                    <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
+                                    <span style={{ margin: '0 0.5rem', opacity: 0.5 }}>vs</span>
+                                    <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
+                                  </>
+                                )}
+                              </AdminStyledTd>
+                              <AdminStyledTd>
+                                {isBye ? (
+                                  <AdminBadge variant="success">BYE</AdminBadge>
+                                ) : (
+                                  <span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Regular Matchup</span>
+                                )}
+                              </AdminStyledTd>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </AdminStyledTable>
+                  </AdminTableContainer>
+
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <AdminActionButton variant="primary" onClick={handleSaveDryRunMatches}>
+                      <FaSave /> Save & Apply Pairings
+                    </AdminActionButton>
+                    <AdminClearButton onClick={handleDiscardDryRunMatches}>
+                      <FaTimes /> Discard Preview
+                    </AdminClearButton>
+                  </div>
+                </AdminDryRunCard>
+              )}
             </div>
 
             {/* Match Schedule Table */}
@@ -2886,14 +3065,22 @@ const AdminPage: React.FC = () => {
                         const higherIdTeam = m.team1Id < m.team2Id ? t2 : t1;
                         const coinFlipWinner = m.coinFlipResult === 'heads' ? lowerIdTeam : (m.coinFlipResult === 'tails' ? higherIdTeam : null);
 
+                        const isByeMatch = m.score === 'BYE' || m.team1Id === m.team2Id;
+
                         return (
                           <tr key={m.id}>
                             <AdminStyledTd>{m.id}</AdminStyledTd>
                             <AdminStyledTd>{m.weekPlayed}</AdminStyledTd>
                             <AdminStyledTd>
-                              <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
-                              <span style={{ margin: '0 0.25rem', opacity: 0.5 }}>vs</span>
-                              <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
+                              {isByeMatch ? (
+                                <strong>{t1?.name || `Team ${m.team1Id}`} (BYE)</strong>
+                              ) : (
+                                <>
+                                  <strong>{t1?.name || `Team ${m.team1Id}`}</strong>
+                                  <span style={{ margin: '0 0.25rem', opacity: 0.5 }}>vs</span>
+                                  <strong>{t2?.name || `Team ${m.team2Id}`}</strong>
+                                </>
+                              )}
                             </AdminStyledTd>
                             <AdminStyledTd>
                               {m.status === 'completed' ? <AdminBadge variant="success">Completed</AdminBadge> : <AdminBadge variant="warning">Upcoming</AdminBadge>}

@@ -240,21 +240,22 @@ const SwissBracket: React.FC = () => {
                     const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : 'Unknown Team');
                     const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
 
+                    const isBye = match.score === 'BYE' || match.team1Id === match.team2Id;
                     const isCompleted = match.status === 'completed';
                     const winnerId = getMatchWinnerId(match);
-                    const isTeam1Winner = isCompleted && winnerId === match.team1Id;
-                    const isTeam2Winner = isCompleted && winnerId === match.team2Id;
+                    const isTeam1Winner = isCompleted && (isBye || winnerId === match.team1Id);
+                    const isTeam2Winner = isCompleted && !isBye && winnerId === match.team2Id;
 
                     const t1Score = match.team1Wins !== undefined ? String(match.team1Wins) : (isCompleted ? '0' : '-');
                     const t2Score = match.team2Wins !== undefined ? String(match.team2Wins) : (isCompleted ? '0' : '-');
 
                     const hasHoveredTeam = hoveredTeamId !== null && 
-                      (match.team1Id === hoveredTeamId || match.team2Id === hoveredTeamId);
+                      (match.team1Id === hoveredTeamId || (!isBye && match.team2Id === hoveredTeamId));
 
                     return (
                       <SwissMatchupCard 
                         key={match.id} 
-                        onClick={() => navigate(`/match/${match.id}?division=${urlDivision}`)}
+                        onClick={() => !isBye && navigate(`/match/${match.id}?division=${urlDivision}`)}
                         style={{
                           position: 'relative',
                           zIndex: 1, // Stay on top of SVG path
@@ -262,6 +263,7 @@ const SwissBracket: React.FC = () => {
                           borderColor: hasHoveredTeam ? '#3b82f6' : undefined,
                           boxShadow: hasHoveredTeam ? '0 0 10px rgba(59, 130, 246, 0.4)' : undefined,
                           transition: 'all 0.2s ease-in-out',
+                          cursor: isBye ? 'default' : 'pointer',
                         }}
                       >
                         <SwissTeamRow 
@@ -283,30 +285,47 @@ const SwissBracket: React.FC = () => {
                           }}
                         >
                           <SwissTeamName isWinner={isTeam1Winner}>{team1Name}</SwissTeamName>
-                          {isCompleted && <SwissTeamScore isWinner={isTeam1Winner}>{t1Score}</SwissTeamScore>}
+                          {isCompleted && (
+                            <SwissTeamScore isWinner={isTeam1Winner}>
+                              {isBye ? 'W' : t1Score}
+                            </SwissTeamScore>
+                          )}
                         </SwissTeamRow>
 
-                        <SwissTeamRow 
-                          isWinner={isTeam2Winner}
-                          data-team-id={match.team2Id !== -1 ? match.team2Id : undefined}
-                          onMouseEnter={() => match.team2Id !== -1 && setHoveredTeamId(match.team2Id)}
-                          onMouseLeave={() => setHoveredTeamId(null)}
-                          onClick={(e) => {
-                            if (match.team2Id !== -1) {
-                              e.stopPropagation();
-                              navigate(`/teams/${match.team2Id}?division=${urlDivision}`);
-                            }
-                          }}
-                          style={{
-                            cursor: match.team2Id !== -1 ? 'pointer' : 'default',
-                            transition: 'all 0.15s ease-in-out',
-                            backgroundColor: hoveredTeamId !== null && hoveredTeamId === match.team2Id ? 'rgba(59, 130, 246, 0.15)' : undefined,
-                            borderRadius: '4px',
-                          }}
-                        >
-                          <SwissTeamName isWinner={isTeam2Winner}>{team2Name}</SwissTeamName>
-                          {isCompleted && <SwissTeamScore isWinner={isTeam2Winner}>{t2Score}</SwissTeamScore>}
-                        </SwissTeamRow>
+                        {isBye ? (
+                          <SwissTeamRow 
+                            isWinner={false}
+                            style={{
+                              cursor: 'default',
+                              opacity: 0.6,
+                              paddingLeft: '0.25rem',
+                            }}
+                          >
+                            <SwissTeamName isWinner={false} style={{ fontStyle: 'italic' }}>BYE</SwissTeamName>
+                          </SwissTeamRow>
+                        ) : (
+                          <SwissTeamRow 
+                            isWinner={isTeam2Winner}
+                            data-team-id={match.team2Id !== -1 ? match.team2Id : undefined}
+                            onMouseEnter={() => match.team2Id !== -1 && setHoveredTeamId(match.team2Id)}
+                            onMouseLeave={() => setHoveredTeamId(null)}
+                            onClick={(e) => {
+                              if (match.team2Id !== -1) {
+                                e.stopPropagation();
+                                navigate(`/teams/${match.team2Id}?division=${urlDivision}`);
+                              }
+                            }}
+                            style={{
+                              cursor: match.team2Id !== -1 ? 'pointer' : 'default',
+                              transition: 'all 0.15s ease-in-out',
+                              backgroundColor: hoveredTeamId !== null && hoveredTeamId === match.team2Id ? 'rgba(59, 130, 246, 0.15)' : undefined,
+                              borderRadius: '4px',
+                            }}
+                          >
+                            <SwissTeamName isWinner={isTeam2Winner}>{team2Name}</SwissTeamName>
+                            {isCompleted && <SwissTeamScore isWinner={isTeam2Winner}>{t2Score}</SwissTeamScore>}
+                          </SwissTeamRow>
+                        )}
 
                         <SwissMatchMeta>
                           <SwissStatusBadge status={match.status}>
