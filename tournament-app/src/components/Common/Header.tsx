@@ -136,6 +136,7 @@ const Header: React.FC = () => {
               <SubMenuItem to="/schedule">Schedule</SubMenuItem>
               <SubMenuItem to="/availability">Availability</SubMenuItem>
               <SubMenuItem to="/players">Players</SubMenuItem>
+              <SubMenuItem to="/teams">Teams</SubMenuItem>
               <SubMenuItem to="/power-rankings">Power Rankings</SubMenuItem>
             </SubMenu>
           </NavItem>
@@ -146,7 +147,6 @@ const Header: React.FC = () => {
               <SubMenuItem to="/draft-access">Draft</SubMenuItem>
               <SubMenuItem to="/swiss">{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</SubMenuItem>
               <SubMenuItem to="/knockout">Knockout Stage</SubMenuItem>
-              <SubMenuItem to="/teams">Teams</SubMenuItem>
             </SubMenu>
           </NavItem>
 
@@ -209,6 +209,7 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/schedule" onClick={closeAllMenus}>Schedule</MobileSubMenuItem>
             <MobileSubMenuItem to="/availability" onClick={closeAllMenus}>Availability</MobileSubMenuItem>
             <MobileSubMenuItem to="/players" onClick={closeAllMenus}>Players</MobileSubMenuItem>
+            <MobileSubMenuItem to="/teams" onClick={closeAllMenus}>Teams</MobileSubMenuItem>
             <MobileSubMenuItem to="/power-rankings" onClick={closeAllMenus}>Power Rankings</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
@@ -221,7 +222,6 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft Lobby</MobileSubMenuItem>
             <MobileSubMenuItem to="/swiss" onClick={closeAllMenus}>{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</MobileSubMenuItem>
             <MobileSubMenuItem to="/knockout" onClick={closeAllMenus}>Knockout Stage</MobileSubMenuItem>
-            <MobileSubMenuItem to="/teams" onClick={closeAllMenus}>Teams</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
 
