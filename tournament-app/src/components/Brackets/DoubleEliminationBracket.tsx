@@ -19,9 +19,9 @@ const ColumnsWrapper = styled.div`
   overflow-x: auto;
   padding: 3rem 2rem;
   position: relative;
-  background: rgba(15, 23, 42, 0.45);
+  background: ${({ theme }) => theme.backgroundTwo || 'rgba(15, 23, 42, 0.45)'};
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
   backdrop-filter: blur(8px);
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.2);
   
@@ -70,7 +70,7 @@ const SvgOverlay = styled.svg`
 
 const ConnectorPath = styled.path<{ $isActive?: boolean }>`
   fill: none;
-  stroke: ${({ $isActive, theme }) => $isActive ? (theme.primary || '#3b82f6') : 'rgba(255, 255, 255, 0.12)'};
+  stroke: ${({ $isActive, theme }) => $isActive ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.12)')};
   stroke-width: ${({ $isActive }) => $isActive ? '3' : '2'};
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -94,10 +94,10 @@ const RoundTitle = styled.h4`
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.04);
+  background: ${({ theme }) => theme.backgroundThree || 'rgba(255, 255, 255, 0.04)'};
   padding: 0.6rem;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.05)'};
 `;
 
 const MatchupsList = styled.div`
@@ -112,8 +112,8 @@ interface MatchCardProps {
 }
 
 const MatchCard = styled.div<MatchCardProps>`
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid ${({ $isHovered, theme }) => $isHovered ? (theme.primary || '#3b82f6') : 'rgba(255, 255, 255, 0.07)'};
+  background: ${({ theme }) => theme.background || 'rgba(15, 23, 42, 0.65)'};
+  border: 1px solid ${({ $isHovered, theme }) => $isHovered ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.07)')};
   border-radius: 12px;
   padding: 1rem;
   display: flex;
@@ -136,7 +136,7 @@ const MatchHeader = styled.div`
   align-items: center;
   font-size: 0.75rem;
   color: ${({ theme }) => theme.textAlt || '#64748b'};
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
   padding-bottom: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: 600;
@@ -155,10 +155,10 @@ const TeamRow = styled.div<TeamRowProps>`
   align-items: center;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  background: ${({ isWinner, $isHovered }) => {
+  background: ${({ isWinner, $isHovered, theme }) => {
     if ($isHovered) return 'rgba(59, 130, 246, 0.12)';
     if (isWinner) return 'rgba(34, 197, 94, 0.08)';
-    return 'rgba(255, 255, 255, 0.02)';
+    return theme.backgroundTwo || 'rgba(255, 255, 255, 0.02)';
   }};
   border: 1px solid ${({ isWinner, $isHovered, theme }) => {
     if ($isHovered) return theme.primary || '#3b82f6';
@@ -169,10 +169,10 @@ const TeamRow = styled.div<TeamRowProps>`
   transition: all 0.15s ease;
   
   &:hover {
-    background: ${({ isTbd, $isHovered }) => {
-      if (isTbd) return 'rgba(255, 255, 255, 0.02)';
+    background: ${({ isTbd, $isHovered, theme }) => {
+      if (isTbd) return theme.backgroundTwo || 'rgba(255, 255, 255, 0.02)';
       if ($isHovered) return 'rgba(59, 130, 246, 0.18)';
-      return 'rgba(255, 255, 255, 0.06)';
+      return theme.backgroundThree || 'rgba(255, 255, 255, 0.06)';
     }};
   }
 `;
@@ -188,8 +188,8 @@ const TeamName = styled.span<TeamNameProps>`
   font-weight: ${({ isWinner, $isHovered }) => (isWinner || $isHovered) ? '700' : '600'};
   color: ${({ isWinner, isTbd, $isHovered, theme }) => {
     if ($isHovered) return theme.primary || '#3b82f6';
-    if (isWinner) return '#22c55e';
-    if (isTbd) return '#64748b';
+    if (isWinner) return theme.success || '#22c55e';
+    if (isTbd) return theme.textAlt || '#64748b';
     return theme.text || '#f8fafc';
   }};
   white-space: nowrap;
@@ -212,9 +212,9 @@ const TeamScore = styled.span<TeamScoreProps>`
   font-weight: 800;
   color: ${({ isWinner, isTbd, $isHovered, theme }) => {
     if ($isHovered) return theme.primary || '#3b82f6';
-    if (isWinner) return '#22c55e';
-    if (isTbd) return '#475569';
-    return '#94a3b8';
+    if (isWinner) return theme.success || '#22c55e';
+    if (isTbd) return theme.textAlt || '#475569';
+    return theme.textAlt || '#94a3b8';
   }};
 `;
 
