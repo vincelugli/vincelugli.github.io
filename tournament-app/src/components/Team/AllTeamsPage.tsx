@@ -1,5 +1,5 @@
 import React from 'react';
-import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record, TableScrollWrapper } from '../../styles';
+import { TeamsContainer, Title, TeamsTable, TableHead, TableBody, TeamNameLink, Record, TableScrollWrapper, TableRow } from '../../styles';
 import { compareTeams } from '../../utils';
 import { useTournament } from '../../context/TournamentContext';
 import { useDivision } from '../../context/DivisionContext';
@@ -25,25 +25,28 @@ const AllTeamsPage: React.FC = () => {
             </tr>
           </TableHead>
           <TableBody>
-            {teams.map(team => (
-              <tr key={team.id}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    {team.logo && <TeamLogo logo={team.logo} size={28} />}
-                    {/* Each team name links to their detailed match history */}
-                    <TeamNameLink to={`/teams/${team.id}?division=${urlDivision}`}>
-                      {team.name}
-                    </TeamNameLink>
-                  </div>
-                </td>
-                <td>
-                  <Record>{team.record}</Record>
-                </td>
-                <td>
-                  <Record>{team.gameRecord}</Record>
-                </td>
-              </tr>
-            ))}
+            {teams.map(team => {
+              const status = team.wins === 3 ? 'qualified' : team.losses === 3 ? 'eliminated' : 'active';
+              return (
+                <TableRow key={team.id} status={status}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      {team.logo && <TeamLogo logo={team.logo} size={28} />}
+                      {/* Each team name links to their detailed match history */}
+                      <TeamNameLink to={`/teams/${team.id}?division=${urlDivision}`}>
+                        {team.name}
+                      </TeamNameLink>
+                    </div>
+                  </td>
+                  <td>
+                    <Record>{team.record}</Record>
+                  </td>
+                  <td>
+                    <Record>{team.gameRecord}</Record>
+                  </td>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </TeamsTable>
       </TableScrollWrapper>

@@ -1041,16 +1041,22 @@ export const TableHead = styled.thead`
 
 // Table body
 export const TableBody = styled.tbody`
-  tr {
-    border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-
   td {
     padding: 1.25rem 1rem;
     vertical-align: middle;
+  }
+`;
+
+export const TableRow = styled.tr<{ status?: 'qualified' | 'eliminated' | 'active' }>`
+  border-bottom: 1px solid ${({ theme }) => theme.secondaryBorderBotton};
+  background-color: ${({ status, theme }) => {
+    if (status === 'qualified') return theme.success + '15';
+    if (status === 'eliminated') return theme.danger + '15';
+    return 'transparent';
+  }};
+
+  &:last-child {
+    border-bottom: none;
   }
 `;
 
@@ -3335,6 +3341,7 @@ export const TeamPagePlayerCard = styled.li`
   padding: 0.75rem 1rem;
   border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
 
   &:hover {
     transform: translateY(-3px);
@@ -3347,6 +3354,8 @@ export const TeamPagePlayerInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
+  width: 100%;
 `;
 
 export const TeamPagePlayerNameLink = styled(Link)`
@@ -3354,6 +3363,11 @@ export const TeamPagePlayerNameLink = styled(Link)`
   color: ${({ theme }) => theme.text};
   text-decoration: none;
   font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
 
   &:hover {
     color: ${({ theme }) => theme.primary};
