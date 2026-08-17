@@ -1,10 +1,12 @@
 import React from 'react';
-import { useTournament } from '../../context/TournamentContext';
+import {useTournament} from '../../context/TournamentContext';
+import {useGameMatches} from '../../context/MatchesContext';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
-import { useDivision } from '../../context/DivisionContext';
-import { BracketSeed, BracketRound } from '../../types';
-import { FaCoins, FaTv } from 'react-icons/fa';
+import {useNavigate} from 'react-router-dom';
+import {useDivision} from '../../context/DivisionContext';
+import {BracketSeed, BracketRound} from '../../types';
+import {getTeamSeedMap} from '../../utils';
+import {FaCoins, FaTv} from 'react-icons/fa';
 
 const BracketWrapper = styled.div`
   display: flex;
@@ -19,9 +21,9 @@ const ColumnsWrapper = styled.div`
   overflow-x: auto;
   padding: 3rem 2rem;
   position: relative;
-  background: ${({ theme }) => theme.backgroundTwo || 'rgba(15, 23, 42, 0.45)'};
+  background: ${({theme}) => theme.backgroundTwo || 'rgba(15, 23, 42, 0.45)'};
   border-radius: 16px;
-  border: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
+  border: 1px solid ${({theme}) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
   backdrop-filter: blur(8px);
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.2);
   
@@ -68,14 +70,14 @@ const SvgOverlay = styled.svg`
   z-index: 1;
 `;
 
-const ConnectorPath = styled.path<{ $isActive?: boolean }>`
+const ConnectorPath = styled.path<{$isActive?: boolean}>`
   fill: none;
-  stroke: ${({ $isActive, theme }) => $isActive ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.12)')};
-  stroke-width: ${({ $isActive }) => $isActive ? '3' : '2'};
+  stroke: ${({$isActive, theme}) => $isActive ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.12)')};
+  stroke-width: ${({$isActive}) => $isActive ? '3' : '2'};
   stroke-linecap: round;
   stroke-linejoin: round;
   transition: stroke 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
-  filter: ${({ $isActive }) => $isActive ? 'drop-shadow(0px 0px 6px rgba(59, 130, 246, 0.5))' : 'none'};
+  filter: ${({$isActive}) => $isActive ? 'drop-shadow(0px 0px 6px rgba(59, 130, 246, 0.5))' : 'none'};
 `;
 
 const RoundColumn = styled.div`
@@ -89,15 +91,15 @@ const RoundColumn = styled.div`
 const RoundTitle = styled.h4`
   font-size: 0.9rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.textAlt || '#94a3b8'};
+  color: ${({theme}) => theme.textAlt || '#94a3b8'};
   margin-bottom: 2rem;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: ${({ theme }) => theme.backgroundThree || 'rgba(255, 255, 255, 0.04)'};
+  background: ${({theme}) => theme.backgroundThree || 'rgba(255, 255, 255, 0.04)'};
   padding: 0.6rem;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.05)'};
+  border: 1px solid ${({theme}) => theme.borderColor || 'rgba(255, 255, 255, 0.05)'};
 `;
 
 const MatchupsList = styled.div`
@@ -112,8 +114,8 @@ interface MatchCardProps {
 }
 
 const MatchCard = styled.div<MatchCardProps>`
-  background: ${({ theme }) => theme.background || 'rgba(15, 23, 42, 0.65)'};
-  border: 1px solid ${({ $isHovered, theme }) => $isHovered ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.07)')};
+  background: ${({theme}) => theme.background || 'rgba(15, 23, 42, 0.65)'};
+  border: 1px solid ${({$isHovered, theme}) => $isHovered ? (theme.primary || '#3b82f6') : (theme.borderColor || 'rgba(255, 255, 255, 0.07)')};
   border-radius: 12px;
   padding: 1rem;
   display: flex;
@@ -121,11 +123,11 @@ const MatchCard = styled.div<MatchCardProps>`
   gap: 0.6rem;
   width: 100%;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: ${({ $isHovered }) => $isHovered ? '0 8px 24px -5px rgba(59, 130, 246, 0.25)' : '0 4px 15px rgba(0, 0, 0, 0.25)'};
+  box-shadow: ${({$isHovered}) => $isHovered ? '0 8px 24px -5px rgba(59, 130, 246, 0.25)' : '0 4px 15px rgba(0, 0, 0, 0.25)'};
 
   &:hover {
     transform: translateY(-3px);
-    border-color: ${({ theme }) => theme.primary || '#3b82f6'};
+    border-color: ${({theme}) => theme.primary || '#3b82f6'};
     box-shadow: 0 12px 28px -5px rgba(59, 130, 246, 0.3), 0 8px 16px -8px rgba(59, 130, 246, 0.2);
   }
 `;
@@ -135,8 +137,8 @@ const MatchHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   font-size: 0.75rem;
-  color: ${({ theme }) => theme.textAlt || '#64748b'};
-  border-bottom: 1px solid ${({ theme }) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
+  color: ${({theme}) => theme.textAlt || '#64748b'};
+  border-bottom: 1px solid ${({theme}) => theme.borderColor || 'rgba(255, 255, 255, 0.06)'};
   padding-bottom: 0.5rem;
   margin-bottom: 0.3rem;
   font-weight: 600;
@@ -155,25 +157,25 @@ const TeamRow = styled.div<TeamRowProps>`
   align-items: center;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  background: ${({ isWinner, $isHovered, theme }) => {
+  background: ${({isWinner, $isHovered, theme}) => {
     if ($isHovered) return 'rgba(59, 130, 246, 0.12)';
     if (isWinner) return 'rgba(34, 197, 94, 0.08)';
     return theme.backgroundTwo || 'rgba(255, 255, 255, 0.02)';
   }};
-  border: 1px solid ${({ isWinner, $isHovered, theme }) => {
+  border: 1px solid ${({isWinner, $isHovered, theme}) => {
     if ($isHovered) return theme.primary || '#3b82f6';
     if (isWinner) return 'rgba(34, 197, 94, 0.15)';
     return 'transparent';
   }};
-  cursor: ${({ isTbd }) => isTbd ? 'default' : 'pointer'};
+  cursor: ${({isTbd}) => isTbd ? 'default' : 'pointer'};
   transition: all 0.15s ease;
   
   &:hover {
-    background: ${({ isTbd, $isHovered, theme }) => {
-      if (isTbd) return theme.backgroundTwo || 'rgba(255, 255, 255, 0.02)';
-      if ($isHovered) return 'rgba(59, 130, 246, 0.18)';
-      return theme.backgroundThree || 'rgba(255, 255, 255, 0.06)';
-    }};
+    background: ${({isTbd, $isHovered, theme}) => {
+    if (isTbd) return theme.backgroundTwo || 'rgba(255, 255, 255, 0.02)';
+    if ($isHovered) return 'rgba(59, 130, 246, 0.18)';
+    return theme.backgroundThree || 'rgba(255, 255, 255, 0.06)';
+  }};
   }
 `;
 
@@ -185,8 +187,8 @@ interface TeamNameProps {
 
 const TeamName = styled.span<TeamNameProps>`
   font-size: 0.85rem;
-  font-weight: ${({ isWinner, $isHovered }) => (isWinner || $isHovered) ? '700' : '600'};
-  color: ${({ isWinner, isTbd, $isHovered, theme }) => {
+  font-weight: ${({isWinner, $isHovered}) => (isWinner || $isHovered) ? '700' : '600'};
+  color: ${({isWinner, isTbd, $isHovered, theme}) => {
     if ($isHovered) return theme.primary || '#3b82f6';
     if (isWinner) return theme.success || '#22c55e';
     if (isTbd) return theme.textAlt || '#64748b';
@@ -198,7 +200,29 @@ const TeamName = styled.span<TeamNameProps>`
   max-width: 190px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+`;
+
+const TeamNameText = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const SeedBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: ${({theme}) => theme.primary || '#60a5fa'};
+  background: ${({theme}) => theme.backgroundThree || 'rgba(59, 130, 246, 0.12)'};
+  border: 1px solid ${({theme}) => theme.primary ? `${theme.primary}40` : 'rgba(59, 130, 246, 0.25)'};
+  padding: 1px 5px;
+  border-radius: 4px;
+  min-width: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
 `;
 
 interface TeamScoreProps {
@@ -210,7 +234,7 @@ interface TeamScoreProps {
 const TeamScore = styled.span<TeamScoreProps>`
   font-size: 0.9rem;
   font-weight: 800;
-  color: ${({ isWinner, isTbd, $isHovered, theme }) => {
+  color: ${({isWinner, isTbd, $isHovered, theme}) => {
     if ($isHovered) return theme.primary || '#3b82f6';
     if (isWinner) return theme.success || '#22c55e';
     if (isTbd) return theme.textAlt || '#475569';
@@ -237,9 +261,9 @@ const StatusBadge = styled.span<StatusBadgeProps>`
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: ${({ status }) => status === 'completed' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(234, 179, 8, 0.12)'};
-  color: ${({ status }) => status === 'completed' ? '#22c55e' : '#eab308'};
-  border: 1px solid ${({ status }) => status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)'};
+  background: ${({status}) => status === 'completed' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(234, 179, 8, 0.12)'};
+  color: ${({status}) => status === 'completed' ? '#22c55e' : '#eab308'};
+  border: 1px solid ${({status}) => status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)'};
 `;
 
 const CoinsBadge = styled.span`
@@ -269,14 +293,17 @@ const LiveBadge = styled.span`
 `;
 
 const DoubleEliminationBracket: React.FC = () => {
-  const { bracket } = useTournament();
+  const {bracket, teams} = useTournament();
+  const {matches} = useGameMatches();
   const navigate = useNavigate();
-  const { urlDivision } = useDivision();
+  const {urlDivision} = useDivision();
+
+  const teamSeedMap = React.useMemo(() => getTeamSeedMap(teams, matches, bracket), [teams, matches, bracket]);
 
   const [hoveredTeamId, setHoveredTeamId] = React.useState<number | null>(null);
   const [hoveredMatchId, setHoveredMatchId] = React.useState<number | null>(null);
-  const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
-  const [paths, setPaths] = React.useState<{ d: string; isActive: boolean }[]>([]);
+  const [dimensions, setDimensions] = React.useState({width: 0, height: 0});
+  const [paths, setPaths] = React.useState<{d: string; isActive: boolean}[]>([]);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   const findSeedById = React.useCallback((id: number): BracketSeed | null => {
@@ -289,10 +316,10 @@ const DoubleEliminationBracket: React.FC = () => {
 
   React.useLayoutEffect(() => {
     if (!containerRef.current || bracket.length === 0) return;
-    
+
     const container = containerRef.current;
     const containerRect = container.getBoundingClientRect();
-    
+
     setDimensions({
       width: container.scrollWidth,
       height: container.scrollHeight
@@ -308,12 +335,12 @@ const DoubleEliminationBracket: React.FC = () => {
       };
     };
 
-    const isConnActive = (conn: { from: number; to: number; type: string }) => {
+    const isConnActive = (conn: {from: number; to: number; type: string}) => {
       if (hoveredTeamId === null) return false;
-      
+
       const fromSeed = findSeedById(conn.from);
       const toSeed = findSeedById(conn.to);
-      
+
       if (fromSeed) {
         const isTeamInFrom = fromSeed.team1Id === hoveredTeamId || fromSeed.team2Id === hoveredTeamId;
         if (isTeamInFrom) {
@@ -326,12 +353,12 @@ const DoubleEliminationBracket: React.FC = () => {
           }
         }
       }
-      
+
       if (toSeed) {
         const isTeamInTo = toSeed.team1Id === hoveredTeamId || toSeed.team2Id === hoveredTeamId;
         if (isTeamInTo) return true;
       }
-      
+
       return false;
     };
 
@@ -339,20 +366,20 @@ const DoubleEliminationBracket: React.FC = () => {
 
     const connections = [
       // Upper to Upper
-      { from: 1, fromSlot: 1, to: 3, toSlot: 1, type: 'winner' }, 
-      { from: 2, fromSlot: 1, to: 3, toSlot: 2, type: 'winner' }, 
-      
+      {from: 1, fromSlot: 1, to: 3, toSlot: 1, type: 'winner'},
+      {from: 2, fromSlot: 1, to: 3, toSlot: 2, type: 'winner'},
+
       // Lower to Lower
-      { from: 4, fromSlot: 1, to: 6, toSlot: 1, type: 'winner' }, 
-      { from: 5, fromSlot: 1, to: 6, toSlot: 2, type: 'winner' }, 
-      { from: 6, fromSlot: 1, to: 7, toSlot: 2, type: 'winner' }, 
+      {from: 4, fromSlot: 1, to: 6, toSlot: 1, type: 'winner'},
+      {from: 5, fromSlot: 1, to: 6, toSlot: 2, type: 'winner'},
+      {from: 6, fromSlot: 1, to: 7, toSlot: 2, type: 'winner'},
 
       // Connect to Grand Finals
-      { from: 3, fromSlot: 1, to: 8, toSlot: 1, type: 'winner' },
-      { from: 7, fromSlot: 1, to: 8, toSlot: 2, type: 'winner' },
+      {from: 3, fromSlot: 1, to: 8, toSlot: 1, type: 'winner'},
+      {from: 7, fromSlot: 1, to: 8, toSlot: 2, type: 'winner'},
 
       // Grand Finals Reset
-      { from: 8, fromSlot: 1, to: 9, toSlot: 1, type: 'reset' }   
+      {from: 8, fromSlot: 1, to: 9, toSlot: 1, type: 'reset'}
     ];
 
     connections.forEach(conn => {
@@ -369,10 +396,10 @@ const DoubleEliminationBracket: React.FC = () => {
 
         const midX = startX + (endX - startX) * 0.45;
         const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
-        
+
         const isPathActive = isConnActive(conn) || (hoveredMatchId === conn.from && (conn.type === 'winner' || conn.type === 'reset'));
 
-        newPaths.push({ d, isActive: isPathActive });
+        newPaths.push({d, isActive: isPathActive});
       }
     });
 
@@ -384,12 +411,12 @@ const DoubleEliminationBracket: React.FC = () => {
   }
 
   const parseScore = (scoreStr: string | undefined) => {
-    if (!scoreStr) return { s1: '-', s2: '-' };
+    if (!scoreStr) return {s1: '-', s2: '-'};
     const parts = scoreStr.split('-');
     if (parts.length === 2) {
-      return { s1: parts[0], s2: parts[1] };
+      return {s1: parts[0], s2: parts[1]};
     }
-    return { s1: '-', s2: '-' };
+    return {s1: '-', s2: '-'};
   };
 
   const handleTeamClick = (teamId: number) => {
@@ -424,7 +451,10 @@ const DoubleEliminationBracket: React.FC = () => {
     const t1Name = t1Id > 0 ? (team1?.name || `Team ${t1Id}`) : getSeedPlaceholderName(seed.id, 1);
     const t2Name = t2Id > 0 ? (team2?.name || `Team ${t2Id}`) : getSeedPlaceholderName(seed.id, 2);
 
-    const { s1, s2 } = parseScore(seed.score);
+    const t1Seed = t1Id > 0 ? (seed.teams?.[0]?.seed || teamSeedMap.get(t1Id)) : null;
+    const t2Seed = t2Id > 0 ? (seed.teams?.[1]?.seed || teamSeedMap.get(t2Id)) : null;
+
+    const {s1, s2} = parseScore(seed.score);
 
     const t1CoinWinner = seed.coinFlipResult === 'heads';
     const t2CoinWinner = seed.coinFlipResult === 'tails';
@@ -434,8 +464,8 @@ const DoubleEliminationBracket: React.FC = () => {
     const isMatchHovered = seed.id === hoveredMatchId;
 
     return (
-      <MatchCard 
-        key={seed.id} 
+      <MatchCard
+        key={seed.id}
         isCompleted={isCompleted}
         data-match-card-id={seed.id}
         $isHovered={isMatchHovered}
@@ -447,8 +477,8 @@ const DoubleEliminationBracket: React.FC = () => {
           <span>Week {seed.weekPlayed}</span>
         </MatchHeader>
 
-        <TeamRow 
-          isWinner={isT1Winner} 
+        <TeamRow
+          isWinner={isT1Winner}
           isTbd={t1Id <= 0}
           $isHovered={isT1Hovered}
           data-match-row-id={`${seed.id}-1`}
@@ -457,14 +487,15 @@ const DoubleEliminationBracket: React.FC = () => {
           onClick={() => handleTeamClick(t1Id)}
         >
           <TeamName isWinner={isT1Winner} isTbd={t1Id <= 0} $isHovered={isT1Hovered}>
-            {t1Name}
+            {t1Seed && <SeedBadge title={`Seed #${t1Seed}`}>#{t1Seed}</SeedBadge>}
+            <TeamNameText title={t1Name}>{t1Name}</TeamNameText>
             {t1CoinWinner && <CoinsBadge title="Side Selection Coin Flip Winner"><FaCoins /></CoinsBadge>}
           </TeamName>
           <TeamScore isWinner={isT1Winner} isTbd={t1Id <= 0} $isHovered={isT1Hovered}>{s1}</TeamScore>
         </TeamRow>
 
-        <TeamRow 
-          isWinner={isT2Winner} 
+        <TeamRow
+          isWinner={isT2Winner}
           isTbd={t2Id <= 0}
           $isHovered={isT2Hovered}
           data-match-row-id={`${seed.id}-2`}
@@ -473,7 +504,8 @@ const DoubleEliminationBracket: React.FC = () => {
           onClick={() => handleTeamClick(t2Id)}
         >
           <TeamName isWinner={isT2Winner} isTbd={t2Id <= 0} $isHovered={isT2Hovered}>
-            {t2Name}
+            {t2Seed && <SeedBadge title={`Seed #${t2Seed}`}>#{t2Seed}</SeedBadge>}
+            <TeamNameText title={t2Name}>{t2Name}</TeamNameText>
             {t2CoinWinner && <CoinsBadge title="Side Selection Coin Flip Winner"><FaCoins /></CoinsBadge>}
           </TeamName>
           <TeamScore isWinner={isT2Winner} isTbd={t2Id <= 0} $isHovered={isT2Hovered}>{s2}</TeamScore>
@@ -481,9 +513,6 @@ const DoubleEliminationBracket: React.FC = () => {
 
         <MatchMeta>
           <StatusBadge status={seed.status}>{seed.status}</StatusBadge>
-          {seed.tournamentCodes && seed.tournamentCodes.length > 0 && (
-            <LiveBadge title="Live Tournament Codes Available"><FaTv /> Codes</LiveBadge>
-          )}
         </MatchMeta>
       </MatchCard>
     );
@@ -503,11 +532,11 @@ const DoubleEliminationBracket: React.FC = () => {
 
   return (
     <BracketWrapper>
-      <div style={{ textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '1.5rem' }}>
+      <div style={{textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '1.5rem'}}>
         ← Swipe horizontally to view full bracket progress →
       </div>
-      
-      <div style={{ position: 'relative' }}>
+
+      <div style={{position: 'relative'}}>
         <ColumnsWrapper ref={containerRef}>
           {dimensions.width > 0 && (
             <SvgOverlay width={dimensions.width} height={dimensions.height}>
@@ -522,14 +551,14 @@ const DoubleEliminationBracket: React.FC = () => {
             <BracketRow>
               <RoundColumn>
                 <RoundTitle>Winners Semifinals</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'space-around', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'space-around', minHeight: '340px'}}>
                   {wSF.map(renderSeedCard)}
                 </MatchupsList>
               </RoundColumn>
 
               <RoundColumn>
                 <RoundTitle>Winners Finals</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'center', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
                   {wfMatch && renderSeedCard(wfMatch)}
                 </MatchupsList>
               </RoundColumn>
@@ -539,21 +568,21 @@ const DoubleEliminationBracket: React.FC = () => {
             <BracketRow>
               <RoundColumn>
                 <RoundTitle>Losers Round 1</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'space-around', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'space-around', minHeight: '340px'}}>
                   {lR1.map(renderSeedCard)}
                 </MatchupsList>
               </RoundColumn>
 
               <RoundColumn>
                 <RoundTitle>Losers Semifinals</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'center', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
                   {lSF.map(renderSeedCard)}
                 </MatchupsList>
               </RoundColumn>
 
               <RoundColumn>
                 <RoundTitle>Losers Finals</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'center', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
                   {lF.map(renderSeedCard)}
                 </MatchupsList>
               </RoundColumn>
@@ -561,17 +590,17 @@ const DoubleEliminationBracket: React.FC = () => {
           </LeftSection>
 
           <RightSection>
-            <RoundColumn style={{ maxWidth: '320px' }}>
+            <RoundColumn style={{maxWidth: '320px'}}>
               <RoundTitle>Grand Finals</RoundTitle>
-              <MatchupsList style={{ justifyContent: 'center', minHeight: '340px' }}>
+              <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
                 {gfMatch && renderSeedCard(gfMatch)}
               </MatchupsList>
             </RoundColumn>
 
             {(isResetNeeded || (gfResetMatch && gfResetMatch.team1Id > 0)) && (
-              <RoundColumn style={{ maxWidth: '320px' }}>
+              <RoundColumn style={{maxWidth: '320px'}}>
                 <RoundTitle>GF Reset (If Needed)</RoundTitle>
-                <MatchupsList style={{ justifyContent: 'center', minHeight: '340px' }}>
+                <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
                   {gfResetMatch && renderSeedCard(gfResetMatch)}
                 </MatchupsList>
               </RoundColumn>

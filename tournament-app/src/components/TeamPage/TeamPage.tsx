@@ -87,18 +87,49 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     return ([] as BracketSeed[]).concat(...seeds);
   }, [bracket, teamId]);
 
-  if (!team) return <div>Team not found</div>;
+  const upcomingKnockoutMatches = useMemo(() => {
+    return teamKnockoutMatches.filter(m => m.status === 'upcoming');
+  }, [teamKnockoutMatches]);
 
-  const upcomingKnockoutMatches = teamKnockoutMatches.filter(m => m.status === 'upcoming');
-  const completedKnockoutMatches = teamKnockoutMatches.filter(m => m.status === 'completed');
+  const completedKnockoutMatches = useMemo(() => {
+    return teamKnockoutMatches.filter(m => m.status === 'completed');
+  }, [teamKnockoutMatches]);
 
-  const upcomingMatches = matches.filter(m =>
-    m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
-  ).sort((m1, m2) => m1.weekPlayed - m2.weekPlayed).concat(upcomingKnockoutMatches);
+  const upcomingMatches = useMemo(() => {
+    if (!team) return [];
+    const rawMatches = matches.filter(m =>
+      m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
+    );
+
+    const filteredKnockouts = upcomingKnockoutMatches.filter(km => 
+      !rawMatches.some(m => 
+        String(m.id) === `ko_${km.id}` || 
+        String(m.id) === String(km.id) ||
+        (m.isKnockout && ((m.team1Id === km.team1Id && m.team2Id === km.team2Id) || (m.team1Id === km.team2Id && m.team2Id === km.team1Id)))
+      )
+    );
+
+    return [...rawMatches, ...filteredKnockouts].sort((m1, m2) => m1.weekPlayed - m2.weekPlayed);
+  }, [matches, team, upcomingKnockoutMatches]);
   
-  const completedMatches = matches.filter(m =>
-    m.status === 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
-  ).concat(completedKnockoutMatches);
+  const completedMatches = useMemo(() => {
+    if (!team) return [];
+    const rawMatches = matches.filter(m =>
+      m.status === 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
+    );
+
+    const filteredKnockouts = completedKnockoutMatches.filter(km => 
+      !rawMatches.some(m => 
+        String(m.id) === `ko_${km.id}` || 
+        String(m.id) === String(km.id) ||
+        (m.isKnockout && ((m.team1Id === km.team1Id && m.team2Id === km.team2Id) || (m.team1Id === km.team2Id && m.team2Id === km.team1Id)))
+      )
+    );
+
+    return [...rawMatches, ...filteredKnockouts];
+  }, [matches, team, completedKnockoutMatches]);
+
+  if (!team) return <div>Team not found</div>;
   
   return (
     <TeamPageContainer>

@@ -65,6 +65,7 @@ export interface Group {
 export interface BracketTeam {
   id?: number;
   name?: string;
+  seed?: number;
 }
 
 export interface BracketSeed {
