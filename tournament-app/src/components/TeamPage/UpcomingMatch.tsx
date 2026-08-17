@@ -38,7 +38,7 @@ const UpcomingMatch: React.FC<UpcomingMatchProps> = ({ match, teams, currentTeam
       <OpponentInfo>
         {!!opponent && "vs"} <span>{opponent ? <MatchNavLink to={`/teams/${opponent?.id}?division=${urlDivision}`}>{opponent.name}</MatchNavLink> : 'Bye'}</span>
       </OpponentInfo>
-      {!!opponent && (
+      {!!opponent && !match.isKnockout && (
         <CoinFlipSection
           match={match}
           teams={teams}

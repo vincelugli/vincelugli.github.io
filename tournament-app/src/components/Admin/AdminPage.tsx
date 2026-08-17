@@ -2,14 +2,14 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { doc, getDoc, updateDoc, writeBatch, setDoc, onSnapshot, arrayUnion } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import { BracketRound, Player, Team, Match, DraftState, DraftTeam } from '../../types';
+import { BracketRound, BracketSeed, Player, Team, Match, DraftState, DraftTeam } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket} from '../../utils';
-import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins} from 'react-icons/fa';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown} from '../../utils';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins, FaInfoCircle, FaCalculator, FaChevronDown, FaChevronUp} from 'react-icons/fa';
 import {
   AdminPageContainer,
   AdminTitle,
@@ -212,6 +212,28 @@ const AdminPage: React.FC = () => {
     return roundNums.length > 0 ? Math.max(...roundNums) + 1 : 1;
   }, [swissMatches]);
 
+  const teamSeedMap = useMemo(() => getTeamSeedMap(teams, matches, bracket), [teams, matches, bracket]);
+  const qualifyingSeeding = useMemo(() => getQualifyingSeeding(teams, matches), [teams, matches]);
+  const swissStats = useMemo(() => calculateSwissStats(teams, matches), [teams, matches]);
+  const playoffBuchholzBreakdown = useMemo(() => getPlayoffBuchholzBreakdown(teams, matches), [teams, matches]);
+
+  const [expandedBuchholzTeamId, setExpandedBuchholzTeamId] = useState<number | null>(null);
+
+  const getBracketMatchSlotLabel = (seedId: number, slot: 1 | 2): string => {
+    switch (seedId) {
+      case 1: return slot === 1 ? 'Seed 1' : 'Seed 4';
+      case 2: return slot === 1 ? 'Seed 2' : 'Seed 3';
+      case 3: return slot === 1 ? 'Winner M1' : 'Winner M2';
+      case 4: return slot === 1 ? 'Seed 5' : 'Loser M1';
+      case 5: return slot === 1 ? 'Seed 6' : 'Loser M2';
+      case 6: return slot === 1 ? 'Winner M4' : 'Winner M5';
+      case 7: return slot === 1 ? 'Loser M3' : 'Winner M6';
+      case 8: return slot === 1 ? 'Winner M3' : 'Winner M7';
+      case 9: return slot === 1 ? 'GF Winner' : 'GF Runner-up';
+      default: return 'TBD';
+    }
+  };
+
   // Local component states
   const [playerSearch, setPlayerSearch] = useState('');
   const [confirmResetDraft, setConfirmResetDraft] = useState(false);
@@ -219,6 +241,7 @@ const AdminPage: React.FC = () => {
   const [isEditingSub, setIsEditingSub] = useState(false);
   const [dryRunMatches, setDryRunMatches] = useState<Match[] | null>(null);
   const [dryRunRound, setDryRunRound] = useState<number | null>(null);
+  const [knockoutCodesCount, setKnockoutCodesCount] = useState<number>(3);
 
   // Form states for creating/editing
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -1636,6 +1659,25 @@ const AdminPage: React.FC = () => {
       coinFlipResult: result,
       firstGameSideSelection: 'blue',
     });
+
+    const seed = bracket[roundIndex]?.seeds[seedIndex];
+    if (seed) {
+      const matchId = `ko_${seed.id}`;
+      const matchExists = matches.some(m => m.id === matchId || String(m.id) === String(seed.id));
+      if (matchExists) {
+        const updatedMatches = matches.map(m => {
+          if (m.id === matchId || String(m.id) === String(seed.id)) {
+            return {
+              ...m,
+              coinFlipResult: result,
+              firstGameSideSelection: 'blue' as const
+            };
+          }
+          return m;
+        });
+        await updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedMatches });
+      }
+    }
   };
 
   // Bracket updates
@@ -1651,9 +1693,12 @@ const AdminPage: React.FC = () => {
       // Map team names based on updated team1Id / team2Id
       const t1 = teams.find(t => t.id === updatedSeed.team1Id);
       const t2 = teams.find(t => t.id === updatedSeed.team2Id);
+      const currentSeedMap = getTeamSeedMap(teams, matches, updatedBracket);
+      const t1Seed = updatedSeed.team1Id ? currentSeedMap.get(updatedSeed.team1Id) : undefined;
+      const t2Seed = updatedSeed.team2Id ? currentSeedMap.get(updatedSeed.team2Id) : undefined;
       updatedSeed.teams = [
-        { id: updatedSeed.team1Id || undefined, name: t1?.name || '-' },
-        { id: updatedSeed.team2Id || undefined, name: t2?.name || '-' }
+        { id: updatedSeed.team1Id || undefined, name: t1?.name || '-', seed: t1Seed },
+        { id: updatedSeed.team2Id || undefined, name: t2?.name || '-', seed: t2Seed }
       ];
 
       round.seeds[seedIndex] = updatedSeed;
@@ -1718,9 +1763,14 @@ const AdminPage: React.FC = () => {
       ];
 
       const populatedBracket = updateDoubleEliminationBracket(defaultBracket, teams, matches);
+      const seeding = getQualifyingSeeding(teams, matches);
+      const qualified = seeding.filter((t): t is Team => t !== null && t.id > 0);
 
       await setDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: populatedBracket});
-      showStatus('success', 'Double elimination bracket initialized and seeded successfully!');
+      const seedDetails = qualified.length > 0
+        ? qualified.map((t, idx) => `Seed #${idx + 1}: ${t.name}`).join(', ')
+        : 'All initial slots set to TBD placeholders.';
+      showStatus('success', `Double elimination bracket initialized and seeded! (${seedDetails})`);
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to initialize double elimination bracket.');
@@ -1738,12 +1788,249 @@ const AdminPage: React.FC = () => {
       setStatusMsg('Syncing bracket progressions...');
 
       const fullyUpdatedBracket = updateDoubleEliminationBracket(bracket, teams, matches);
+      const seeding = getQualifyingSeeding(teams, matches);
+      const qualified = seeding.filter((t): t is Team => t !== null && t.id > 0);
 
       await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket});
-      showStatus('success', 'Bracket progressions synced successfully!');
+      showStatus('success', `Bracket progressions and seeds synced successfully! (${qualified.length}/6 qualified teams seeded)`);
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to sync bracket progressions.');
+    }
+  };
+
+  const handleGenerateKnockoutMatches = async () => {
+    if (!bracket || bracket.length === 0) {
+      showStatus('error', 'No bracket initialized yet. Please initialize the bracket first.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Generating knockout stage matches from bracket...');
+
+      const updatedBracket = updateDoubleEliminationBracket(bracket, teams, matches);
+      const existingKnockoutMatches = matches.filter(m => m.isKnockout);
+      const nonKnockoutMatches = matches.filter(m => !m.isKnockout);
+
+      const generatedKnockoutMatches: Match[] = [];
+
+      for (const round of updatedBracket) {
+        for (const seed of round.seeds) {
+          const matchId = `ko_${seed.id}`;
+          const existing = existingKnockoutMatches.find(m => m.id === matchId || String(m.id) === String(seed.id));
+
+          const mergedCodes = Array.from(new Set([
+            ...(seed.tournamentCodes || []),
+            ...(existing?.tournamentCodes || [])
+          ]));
+
+          const knockoutMatch: Match = {
+            id: matchId,
+            team1Id: seed.team1Id || 0,
+            team2Id: seed.team2Id || 0,
+            status: seed.status || existing?.status || 'upcoming',
+            tournamentCodes: mergedCodes,
+            weekPlayed: seed.weekPlayed || 1,
+            isKnockout: true,
+            stage: round.title,
+            winnerId: seed.winnerId ?? existing?.winnerId ?? null,
+            score: seed.score || existing?.score || '',
+            coinFlipResult: seed.coinFlipResult ?? existing?.coinFlipResult ?? null,
+            firstGameSideSelection: seed.firstGameSideSelection ?? existing?.firstGameSideSelection ?? (seed.coinFlipResult ? 'blue' : null)
+          };
+
+          seed.tournamentCodes = mergedCodes;
+          generatedKnockoutMatches.push(knockoutMatch);
+        }
+      }
+
+      const combinedMatches = [...nonKnockoutMatches, ...generatedKnockoutMatches];
+
+      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+      const bracketRef = doc(db, 'bracket', `${prefix}_${division}`);
+
+      await Promise.all([
+        setDoc(matchesRef, { matches: combinedMatches }),
+        updateDoc(bracketRef, { bracket: updatedBracket })
+      ]);
+
+      showStatus('success', `Successfully generated and synchronized ${generatedKnockoutMatches.length} knockout stage matches!`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to generate knockout matches.');
+    }
+  };
+
+  const handleBulkFlipKnockoutCoins = async () => {
+    if (!bracket || bracket.length === 0) {
+      showStatus('error', 'No bracket initialized yet.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Flipping coins for all eligible knockout matches...');
+
+      const updatedBracket = [...bracket];
+      const flippedSummaries: string[] = [];
+
+      for (const round of updatedBracket) {
+        for (const seed of round.seeds) {
+          if (seed.team1Id && seed.team2Id && seed.team1Id > 0 && seed.team2Id > 0 && seed.status !== 'completed') {
+            const result = Math.random() < 0.5 ? 'heads' : 'tails';
+            seed.coinFlipResult = result;
+            seed.firstGameSideSelection = 'blue';
+
+            const t1 = teams.find(t => t.id === seed.team1Id);
+            const t2 = teams.find(t => t.id === seed.team2Id);
+            const lowerIdTeam = seed.team1Id < seed.team2Id ? t1 : t2;
+            const higherIdTeam = seed.team1Id < seed.team2Id ? t2 : t1;
+            const winner = result === 'heads' ? lowerIdTeam : higherIdTeam;
+
+            flippedSummaries.push(`Match #${seed.id} (${t1?.name} vs ${t2?.name}): ${result.toUpperCase()} (${winner?.name || 'Winner'} won side choice)`);
+          }
+        }
+      }
+
+      if (flippedSummaries.length === 0) {
+        showStatus('error', 'No upcoming knockout matches with both teams determined found to flip.');
+        return;
+      }
+
+      const updatedMatches = matches.map(m => {
+        if (!m.isKnockout) return m;
+        for (const round of updatedBracket) {
+          const matchSeed = round.seeds.find(s => `ko_${s.id}` === String(m.id) || String(s.id) === String(m.id));
+          if (matchSeed && matchSeed.coinFlipResult) {
+            return {
+              ...m,
+              coinFlipResult: matchSeed.coinFlipResult,
+              firstGameSideSelection: matchSeed.firstGameSideSelection || 'blue'
+            };
+          }
+        }
+        return m;
+      });
+
+      await Promise.all([
+        updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket }),
+        updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedMatches })
+      ]);
+
+      showStatus('success', `Flipped coins for ${flippedSummaries.length} knockout matches: ${flippedSummaries.join(' | ')}`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to flip knockout coins.');
+    }
+  };
+
+  const handleGenerateCodesForBracketSeed = async (seedId: number, count: number = 3) => {
+    try {
+      setStatus('loading');
+      setStatusMsg(`Generating ${count} tournament codes for Knockout Match #${seedId}...`);
+
+      const matchId = `ko_${seedId}`;
+      const year = prefix.replace('grumble', '');
+
+      const matchExists = matches.some(m => m.id === matchId || String(m.id) === String(seedId));
+      if (!matchExists) {
+        await handleGenerateKnockoutMatches();
+      }
+
+      const functions = getFunctions();
+      const generateCodesFn = httpsCallable(functions, 'generateTournamentCodesForMatch');
+
+      const result = await generateCodesFn({
+        division,
+        matchId: matchId,
+        count: count,
+        isKnockout: true,
+        year
+      });
+
+      const newCodes = (result.data as { codes: string[] }).codes;
+
+      const updatedBracket = [...bracket];
+      for (const round of updatedBracket) {
+        const seed = round.seeds.find(s => s.id === seedId);
+        if (seed) {
+          seed.tournamentCodes = Array.from(new Set([...(seed.tournamentCodes || []), ...newCodes]));
+        }
+      }
+      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket });
+
+      showStatus('success', `Generated ${newCodes.length} tournament codes for Knockout Match #${seedId}: ${newCodes.join(', ')}`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || `Failed to generate codes for Knockout Match #${seedId}.`);
+    }
+  };
+
+  const handleBulkGenerateKnockoutCodes = async (count: number = 3) => {
+    if (!bracket || bracket.length === 0) {
+      showStatus('error', 'No bracket initialized yet.');
+      return;
+    }
+
+    const eligibleSeeds: { roundTitle: string; seed: BracketSeed }[] = [];
+    for (const round of bracket) {
+      for (const seed of round.seeds) {
+        if (seed.team1Id && seed.team2Id && seed.team1Id > 0 && seed.team2Id > 0) {
+          if (!seed.tournamentCodes || seed.tournamentCodes.length === 0) {
+            eligibleSeeds.push({ roundTitle: round.title, seed });
+          }
+        }
+      }
+    }
+
+    if (eligibleSeeds.length === 0) {
+      showStatus('success', 'All ready knockout matches already have tournament codes!');
+      return;
+    }
+
+    const confirmMsg = `Generate ${count} tournament codes for each of the ${eligibleSeeds.length} ready knockout match(es) that currently have no codes?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setStatus('loading');
+      await handleGenerateKnockoutMatches();
+
+      const functions = getFunctions();
+      const generateCodesFn = httpsCallable(functions, 'generateTournamentCodesForMatch');
+      const year = prefix.replace('grumble', '');
+
+      const updatedBracket = [...bracket];
+      let totalGenerated = 0;
+
+      for (let i = 0; i < eligibleSeeds.length; i++) {
+        const item = eligibleSeeds[i];
+        setStatusMsg(`Generating codes for Match #${item.seed.id} (${item.roundTitle}) - ${i + 1}/${eligibleSeeds.length}...`);
+
+        const result = await generateCodesFn({
+          division,
+          matchId: `ko_${item.seed.id}`,
+          count: count,
+          isKnockout: true,
+          year
+        });
+
+        const newCodes = (result.data as { codes: string[] }).codes;
+        totalGenerated += newCodes.length;
+
+        for (const round of updatedBracket) {
+          const s = round.seeds.find(s => s.id === item.seed.id);
+          if (s) {
+            s.tournamentCodes = Array.from(new Set([...(s.tournamentCodes || []), ...newCodes]));
+          }
+        }
+      }
+
+      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket });
+      showStatus('success', `Successfully generated ${totalGenerated} tournament codes across ${eligibleSeeds.length} knockout matches!`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to bulk generate knockout tournament codes.');
     }
   };
 
@@ -1789,7 +2076,7 @@ const AdminPage: React.FC = () => {
         seeds: z.array(z.object({
           id: z.number(),
           status: z.string(),
-          teams: z.array(z.object({ id: z.number().optional(), name: z.string().optional() })),
+          teams: z.array(z.object({ id: z.number().optional(), name: z.string().optional(), seed: z.number().optional() })),
           team1Id: z.number(),
           team2Id: z.number(),
           tournamentCodes: z.array(z.string()),
@@ -2738,15 +3025,281 @@ const AdminPage: React.FC = () => {
       {activeTab === 'bracket' && (
         <AdminCard>
           <AdminCardTitle>Brackets Rounds & Seed Management</AdminCardTitle>
-          <p>Update teams, statuses, or scores for bracket rounds.</p>
+          <p>Update teams, statuses, or scores for bracket rounds. Top 6 qualified teams from the Swiss stage are seeded into the double elimination bracket.</p>
 
-          <div style={{display: 'flex', gap: '1rem', marginBottom: '1.5rem'}}>
-            <AdminActionButton variant="primary" onClick={handleInitializeDoubleElimination}>
-              Initialize 6-Team Double Elimination
+          {/* Qualified Teams & Seeding Overview */}
+          <AdminEditBox style={{ marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FaTrophy style={{ color: '#eab308' }} /> Swiss Stage Qualifying Seeds (Top 6 Advance)
+              </h4>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1rem' }}>
+              Teams qualify by reaching 3 wins in the Swiss stage. Seeding order is determined by Match Win %, Adjusted Buchholz score, and Game Win %.
+            </p>
+            <AdminTableContainer>
+              <AdminStyledTable>
+                <thead>
+                  <tr>
+                    <AdminStyledTh style={{ width: '110px', minWidth: '110px', whiteSpace: 'nowrap' }}>Seed</AdminStyledTh>
+                    <AdminStyledTh>Team</AdminStyledTh>
+                    <AdminStyledTh style={{ minWidth: '110px', whiteSpace: 'nowrap' }}>Swiss Record</AdminStyledTh>
+                    <AdminStyledTh style={{ minWidth: '110px', whiteSpace: 'nowrap' }}>Adj. Buchholz</AdminStyledTh>
+                    <AdminStyledTh style={{ minWidth: '130px', whiteSpace: 'nowrap' }}>Game W-L (%)</AdminStyledTh>
+                    <AdminStyledTh>Bracket Slot Assignment</AdminStyledTh>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 1, 2, 3, 4, 5].map(seedIndex => {
+                    const team = qualifyingSeeding[seedIndex];
+                    const st = team ? swissStats.find(s => s.team.id === team.id) : null;
+                    const slotAssignments = [
+                      'Winners Semifinals (Match 1, Team 1) vs Seed 4',
+                      'Winners Semifinals (Match 2, Team 1) vs Seed 3',
+                      'Winners Semifinals (Match 2, Team 2) vs Seed 2',
+                      'Winners Semifinals (Match 1, Team 2) vs Seed 1',
+                      'Losers Round 1 (Match 4, Team 1) vs Loser M1',
+                      'Losers Round 1 (Match 5, Team 1) vs Loser M2',
+                    ];
+
+                    return (
+                      <tr key={seedIndex}>
+                        <AdminStyledTd style={{ whiteSpace: 'nowrap', width: '110px', minWidth: '110px' }}>
+                          <AdminBadge variant="primary">Seed #{seedIndex + 1}</AdminBadge>
+                        </AdminStyledTd>
+                        <AdminStyledTd>
+                          {team ? (
+                            <strong>{team.name}</strong>
+                          ) : (
+                            <span style={{ fontStyle: 'italic', opacity: 0.5 }}>Pending Qualification (3 Wins)</span>
+                          )}
+                        </AdminStyledTd>
+                        <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                          {team ? (team.record || `${team.wins}-${team.losses}`) : '-'}
+                        </AdminStyledTd>
+                        <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                          {st ? st.adjustedBuchholz : '-'}
+                        </AdminStyledTd>
+                        <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                          {st ? `${st.gameWins}-${st.gameLosses} (${(st.gameWinPercentage * 100).toFixed(1)}%)` : '-'}
+                        </AdminStyledTd>
+                        <AdminStyledTd style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                          {slotAssignments[seedIndex]}
+                        </AdminStyledTd>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </AdminStyledTable>
+            </AdminTableContainer>
+          </AdminEditBox>
+
+          {/* Adjusted Buchholz Score Explanation & Breakdown for Playoff Teams */}
+          <AdminEditBox style={{ marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.02)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FaCalculator style={{ color: '#38bdf8' }} /> Playoff Teams: Adjusted Buchholz Score Breakdown
+              </h4>
+            </div>
+
+            {/* Explanatory Box */}
+            <div style={{
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.2)',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1.25rem',
+              fontSize: '0.85rem',
+              lineHeight: '1.5',
+              color: '#cbd5e1'
+            }}>
+              <div style={{ fontWeight: 700, color: '#38bdf8', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <FaInfoCircle /> How Adjusted Buchholz is Calculated & Used for Playoff Seeding
+              </div>
+              <ul style={{ margin: '0 0 0.5rem 1.2rem', padding: 0 }}>
+                <li>
+                  <strong>Purpose:</strong> Buchholz measures a team's <em>Strength of Schedule (SoS)</em> by summing the total Swiss match wins of all opponents they faced. It is the primary tiebreaker when teams finish with identical match records (e.g. 3-1 vs 3-1, or 3-2 vs 3-2).
+                </li>
+                <li>
+                  <strong>Raw Buchholz:</strong> Sum of Swiss match wins of all opponents faced.
+                </li>
+                <li>
+                  <strong>Why Adjustment is Necessary:</strong> In a standard 5-round Swiss tournament, teams that qualify early (3-0 or 3-1) play fewer matches (e.g. a 3-0 team only plays 3 rounds). Without adjustment, facing an undefeated 3-0 team would only count as 3 wins rather than the true strength of an undefeated team.
+                </li>
+                <li>
+                  <strong>Advancement Bonus Rules:</strong>
+                  <ul style={{ margin: '0.25rem 0 0 1.2rem' }}>
+                    <li>Opponent qualified <strong>3-0</strong>: <strong style={{ color: '#22c55e' }}>+2 bonus points</strong> (effective value: 3 wins + 2 bonus = 5 pts)</li>
+                    <li>Opponent qualified <strong>3-1</strong>: <strong style={{ color: '#60a5fa' }}>+1 bonus point</strong> (effective value: 3 wins + 1 bonus = 4 pts)</li>
+                    <li>Opponents finished <strong>3-2</strong> or eliminated: <strong style={{ color: '#94a3b8' }}>+0 bonus points</strong> (effective value: actual wins)</li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Seeding Tiebreaker Hierarchy:</strong> 1. Match Win % &rarr; 2. <strong>Adjusted Buchholz Score</strong> &rarr; 3. Game Win % &rarr; 4. Team ID.
+                </li>
+              </ul>
+            </div>
+
+            {/* Playoff Teams Buchholz Table */}
+            {playoffBuchholzBreakdown.length === 0 ? (
+              <p style={{ fontStyle: 'italic', opacity: 0.6, fontSize: '0.85rem' }}>
+                No teams have completed 3 wins to qualify for playoffs yet.
+              </p>
+            ) : (
+              <AdminTableContainer>
+                <AdminStyledTable>
+                  <thead>
+                    <tr>
+                      <AdminStyledTh style={{ width: '110px', minWidth: '110px', whiteSpace: 'nowrap' }}>Seed</AdminStyledTh>
+                      <AdminStyledTh>Team</AdminStyledTh>
+                      <AdminStyledTh style={{ minWidth: '110px', whiteSpace: 'nowrap' }}>Swiss Record</AdminStyledTh>
+                      <AdminStyledTh style={{ minWidth: '90px', whiteSpace: 'nowrap' }}>Raw Wins</AdminStyledTh>
+                      <AdminStyledTh style={{ minWidth: '90px', whiteSpace: 'nowrap' }}>Bonus Pts</AdminStyledTh>
+                      <AdminStyledTh style={{ minWidth: '110px', whiteSpace: 'nowrap' }}>Adj. Buchholz</AdminStyledTh>
+                      <AdminStyledTh>Opponents Breakdown Formula</AdminStyledTh>
+                      <AdminStyledTh style={{ width: '90px', minWidth: '90px', whiteSpace: 'nowrap' }}>Details</AdminStyledTh>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playoffBuchholzBreakdown.map(tb => {
+                      const isExpanded = expandedBuchholzTeamId === tb.team.id;
+                      const teamRecord = tb.team.record || `${tb.team.wins}-${tb.team.losses}`;
+
+                      return (
+                        <React.Fragment key={tb.team.id}>
+                          <tr>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap', width: '110px', minWidth: '110px' }}>
+                              <AdminBadge variant="primary">Seed #{tb.seed}</AdminBadge>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <strong>{tb.team.name}</strong>
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>{teamRecord}</AdminStyledTd>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>{tb.rawBuchholz}</AdminStyledTd>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                              {tb.totalBonus > 0 ? (
+                                <span style={{ color: '#22c55e', fontWeight: 700 }}>+{tb.totalBonus}</span>
+                              ) : (
+                                '0'
+                              )}
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                              <strong style={{ fontSize: '1rem', color: '#38bdf8' }}>{tb.adjustedBuchholz}</strong>
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ fontSize: '0.8rem', color: '#94a3b8', maxWidth: '350px' }}>
+                              {tb.calculationString}
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
+                              <AdminActionButton
+                                variant="secondary"
+                                style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                onClick={() => setExpandedBuchholzTeamId(isExpanded ? null : tb.team.id)}
+                              >
+                                {isExpanded ? 'Hide' : 'Inspect'}
+                              </AdminActionButton>
+                            </AdminStyledTd>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <AdminStyledTd colSpan={8} style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '1rem' }}>
+                                <div style={{ marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>
+                                  Opponent-by-Opponent Schedule for {tb.team.name} (Seed #{tb.seed})
+                                </div>
+                                <AdminStyledTable style={{ background: 'transparent' }}>
+                                  <thead>
+                                    <tr>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Opponent</AdminStyledTh>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Match Result</AdminStyledTh>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Opponent Record</AdminStyledTh>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Base Wins</AdminStyledTh>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Advancement Bonus</AdminStyledTh>
+                                      <AdminStyledTh style={{ fontSize: '0.75rem' }}>Adjusted Pts</AdminStyledTh>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {tb.opponents.map((opp, idx) => (
+                                      <tr key={idx}>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem' }}><strong>{opp.opponentName}</strong></AdminStyledTd>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem' }}>
+                                          <AdminBadge variant={opp.matchResult === 'W' ? 'success' : (opp.matchResult === 'BYE' ? 'warning' : 'danger')}>
+                                            {opp.matchResult === 'W' ? 'Won' : (opp.matchResult === 'BYE' ? 'BYE' : 'Lost')}
+                                          </AdminBadge>
+                                        </AdminStyledTd>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem' }}>{opp.opponentRecord}</AdminStyledTd>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem' }}>{opp.opponentWins}</AdminStyledTd>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem' }}>
+                                          {opp.bonus > 0 ? (
+                                            <span style={{ color: '#22c55e', fontWeight: 700 }}>
+                                              +{opp.bonus} ({opp.opponentWins === 3 && opp.opponentLosses === 0 ? '3-0 Bonus' : '3-1 Bonus'})
+                                            </span>
+                                          ) : (
+                                            '-'
+                                          )}
+                                        </AdminStyledTd>
+                                        <AdminStyledTd style={{ fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8' }}>
+                                          {opp.totalContributed}
+                                        </AdminStyledTd>
+                                      </tr>
+                                    ))}
+                                    <tr style={{ fontWeight: 700, background: 'rgba(255, 255, 255, 0.04)' }}>
+                                      <AdminStyledTd colSpan={3} style={{ fontSize: '0.8rem', textAlign: 'right' }}>
+                                        Total Adjusted Buchholz:
+                                      </AdminStyledTd>
+                                      <AdminStyledTd style={{ fontSize: '0.8rem' }}>{tb.rawBuchholz}</AdminStyledTd>
+                                      <AdminStyledTd style={{ fontSize: '0.8rem', color: '#22c55e' }}>+{tb.totalBonus}</AdminStyledTd>
+                                      <AdminStyledTd style={{ fontSize: '0.85rem', color: '#38bdf8' }}>{tb.adjustedBuchholz}</AdminStyledTd>
+                                    </tr>
+                                  </tbody>
+                                </AdminStyledTable>
+                              </AdminStyledTd>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </AdminStyledTable>
+              </AdminTableContainer>
+            )}
+          </AdminEditBox>
+
+          {/* Action Buttons Bar */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+            <AdminActionButton variant="primary" onClick={handleInitializeDoubleElimination} disabled={status === 'loading'}>
+              <FaTrophy /> Initialize 6-Team Double Elimination
             </AdminActionButton>
-            <AdminActionButton variant="secondary" onClick={handleSyncBracketProgressions}>
-              Sync Seeding & Progressions
+            <AdminActionButton variant="secondary" onClick={handleSyncBracketProgressions} disabled={status === 'loading'}>
+              <FaSync /> Sync Seeding & Progressions
             </AdminActionButton>
+            <AdminActionButton variant="primary" onClick={handleGenerateKnockoutMatches} disabled={status === 'loading'}>
+              <FaCalendarAlt /> Generate / Sync Knockout Matches
+            </AdminActionButton>
+            <AdminActionButton variant="secondary" onClick={handleBulkFlipKnockoutCoins} disabled={status === 'loading'}>
+              <FaCoins /> Flip All Knockout Coins
+            </AdminActionButton>
+
+            {/* Code count dropdown and bulk generate button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <FaLink /> Codes/Match:
+                <AdminTextInput
+                  type="number"
+                  min={1}
+                  max={5}
+                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.8rem', margin: 0 }}
+                  value={knockoutCodesCount}
+                  onChange={(e) => setKnockoutCodesCount(Math.max(1, Number(e.target.value)))}
+                />
+              </label>
+              <AdminActionButton
+                variant="secondary"
+                onClick={() => handleBulkGenerateKnockoutCodes(knockoutCodesCount)}
+                disabled={status === 'loading'}
+                style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+              >
+                Generate Codes for Knockouts
+              </AdminActionButton>
+            </div>
           </div>
 
           {bracket.length === 0 ? (
@@ -2759,14 +3312,15 @@ const AdminPage: React.FC = () => {
                   <AdminStyledTable>
                     <thead>
                       <tr>
-                        <AdminStyledTh>Seed ID</AdminStyledTh>
-                        <AdminStyledTh>Team 1</AdminStyledTh>
-                        <AdminStyledTh>Team 2</AdminStyledTh>
+                        <AdminStyledTh style={{ minWidth: '130px' }}>Match / Slot</AdminStyledTh>
+                        <AdminStyledTh style={{ minWidth: '200px' }}>Team 1</AdminStyledTh>
+                        <AdminStyledTh style={{ minWidth: '200px' }}>Team 2</AdminStyledTh>
                         <AdminStyledTh>Week</AdminStyledTh>
                         <AdminStyledTh>Status</AdminStyledTh>
                         <AdminStyledTh>Coin Flip</AdminStyledTh>
+                        <AdminStyledTh style={{ minWidth: '210px' }}>Tournament Codes</AdminStyledTh>
                         <AdminStyledTh>Score</AdminStyledTh>
-                        <AdminStyledTh>Winner</AdminStyledTh>
+                        <AdminStyledTh style={{ minWidth: '160px' }}>Winner</AdminStyledTh>
                         <AdminStyledTh>Knockout?</AdminStyledTh>
                       </tr>
                     </thead>
@@ -2774,30 +3328,75 @@ const AdminPage: React.FC = () => {
                       {round.seeds?.map((seed, sIdx) => {
                         const t1 = teams.find(t => t.id === seed.team1Id);
                         const t2 = teams.find(t => t.id === seed.team2Id);
+                        const t1Seed = seed.team1Id ? (seed.teams?.[0]?.seed || teamSeedMap.get(seed.team1Id)) : null;
+                        const t2Seed = seed.team2Id ? (seed.teams?.[1]?.seed || teamSeedMap.get(seed.team2Id)) : null;
                         const lowerIdTeam = seed.team1Id && seed.team2Id ? (seed.team1Id < seed.team2Id ? t1 : t2) : null;
                         const higherIdTeam = seed.team1Id && seed.team2Id ? (seed.team1Id < seed.team2Id ? t2 : t1) : null;
                         const coinFlipWinner = seed.coinFlipResult === 'heads' ? lowerIdTeam : (seed.coinFlipResult === 'tails' ? higherIdTeam : null);
 
+                        const slot1Label = getBracketMatchSlotLabel(seed.id, 1);
+                        const slot2Label = getBracketMatchSlotLabel(seed.id, 2);
+
                         return (
                           <tr key={seed.id}>
-                            <AdminStyledTd>{seed.id}</AdminStyledTd>
                             <AdminStyledTd>
-                              <AdminSelectInput
-                                value={seed.team1Id || 0}
-                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team1Id: Number(e.target.value) })}
-                              >
-                                <option value={0}>TBD</option>
-                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                              </AdminSelectInput>
+                              <div>
+                                <strong>Match #{seed.id}</strong>
+                                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
+                                  {slot1Label} vs {slot2Label}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '1px' }}>
+                                  ID: ko_{seed.id}
+                                </div>
+                              </div>
                             </AdminStyledTd>
                             <AdminStyledTd>
-                              <AdminSelectInput
-                                value={seed.team2Id || 0}
-                                onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team2Id: Number(e.target.value) })}
-                              >
-                                <option value={0}>TBD</option>
-                                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                              </AdminSelectInput>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Slot: <strong>{slot1Label}</strong></span>
+                                <AdminSelectInput
+                                  value={seed.team1Id || 0}
+                                  onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team1Id: Number(e.target.value) })}
+                                >
+                                  <option value={0}>TBD ({slot1Label})</option>
+                                  {teams.map(t => {
+                                    const sNum = teamSeedMap.get(t.id);
+                                    return (
+                                      <option key={t.id} value={t.id}>
+                                        {t.name} {sNum ? `(Seed #${sNum})` : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </AdminSelectInput>
+                                {t1Seed && (
+                                  <AdminBadge variant="primary" style={{ alignSelf: 'flex-start' }}>
+                                    Seed #{t1Seed}
+                                  </AdminBadge>
+                                )}
+                              </div>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Slot: <strong>{slot2Label}</strong></span>
+                                <AdminSelectInput
+                                  value={seed.team2Id || 0}
+                                  onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { team2Id: Number(e.target.value) })}
+                                >
+                                  <option value={0}>TBD ({slot2Label})</option>
+                                  {teams.map(t => {
+                                    const sNum = teamSeedMap.get(t.id);
+                                    return (
+                                      <option key={t.id} value={t.id}>
+                                        {t.name} {sNum ? `(Seed #${sNum})` : ''}
+                                      </option>
+                                    );
+                                  })}
+                                </AdminSelectInput>
+                                {t2Seed && (
+                                  <AdminBadge variant="primary" style={{ alignSelf: 'flex-start' }}>
+                                    Seed #{t2Seed}
+                                  </AdminBadge>
+                                )}
+                              </div>
                             </AdminStyledTd>
                             <AdminStyledTd>
                               <AdminTextInput
@@ -2838,6 +3437,41 @@ const AdminPage: React.FC = () => {
                               </div>
                             </AdminStyledTd>
                             <AdminStyledTd>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                                  {seed.tournamentCodes && seed.tournamentCodes.length > 0 ? (
+                                    seed.tournamentCodes.map((code, cIdx) => (
+                                      <AdminActionButton
+                                        key={cIdx}
+                                        title={`Click to copy: ${code}`}
+                                        variant="secondary"
+                                        onClick={() => handleCopyCode(code)}
+                                        style={{ padding: '2px 6px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      >
+                                        {copiedCode === code ? <FaCheck style={{ color: '#22c55e' }} /> : <FaCopy />}
+                                        Code {cIdx + 1}
+                                      </AdminActionButton>
+                                    ))
+                                  ) : (
+                                    <span style={{ fontStyle: 'italic', opacity: 0.5, fontSize: '0.8rem' }}>No Codes</span>
+                                  )}
+                                </div>
+                                {seed.team1Id && seed.team2Id && seed.team1Id > 0 && seed.team2Id > 0 && (
+                                  <div style={{ marginTop: '2px' }}>
+                                    <AdminActionButton
+                                      title={`Generate ${knockoutCodesCount} Riot Tournament Codes for this match`}
+                                      variant="secondary"
+                                      onClick={() => handleGenerateCodesForBracketSeed(seed.id, knockoutCodesCount)}
+                                      disabled={status === 'loading'}
+                                      style={{ padding: '2px 6px', fontSize: '0.75rem', opacity: 0.85 }}
+                                    >
+                                      <FaLink /> +{knockoutCodesCount} Codes
+                                    </AdminActionButton>
+                                  </div>
+                                )}
+                              </div>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
                               <AdminTextInput
                                 type="text"
                                 style={{ width: '80px' }}
@@ -2852,8 +3486,16 @@ const AdminPage: React.FC = () => {
                                 onChange={(e) => handleUpdateBracketSeed(rIdx, sIdx, { winnerId: Number(e.target.value) || null })}
                               >
                                 <option value={0}>None</option>
-                                {seed.team1Id && <option value={seed.team1Id}>Team 1 (ID: {seed.team1Id})</option>}
-                                {seed.team2Id && <option value={seed.team2Id}>Team 2 (ID: {seed.team2Id})</option>}
+                                {seed.team1Id && (
+                                  <option value={seed.team1Id}>
+                                    {t1?.name || `Team 1 (ID: ${seed.team1Id})`} {t1Seed ? `(Seed #${t1Seed})` : ''}
+                                  </option>
+                                )}
+                                {seed.team2Id && (
+                                  <option value={seed.team2Id}>
+                                    {t2?.name || `Team 2 (ID: ${seed.team2Id})`} {t2Seed ? `(Seed #${t2Seed})` : ''}
+                                  </option>
+                                )}
                               </AdminSelectInput>
                             </AdminStyledTd>
                             <AdminStyledTd>
@@ -3280,7 +3922,7 @@ const AdminPage: React.FC = () => {
                   Is Bracket/Knockout match?
                 </AdminCheckboxLabel>
 
-                <AdminButtonGroup style={{marginTop: '0.5rem'}}>
+                <AdminButtonGroup style={{marginTop: '0.5rem', flexWrap: 'wrap'}}>
                   <AdminActionButton type="submit" variant="primary" disabled={status === 'loading'}>
                     {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for Selected Match
                   </AdminActionButton>
@@ -3290,7 +3932,15 @@ const AdminPage: React.FC = () => {
                     disabled={status === 'loading'} 
                     onClick={handleBulkGenerateCodesForMissing}
                   >
-                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for All Empty Matches
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaLink />} Generate for All Empty Swiss Matches
+                  </AdminActionButton>
+                  <AdminActionButton 
+                    type="button" 
+                    variant="secondary" 
+                    disabled={status === 'loading'} 
+                    onClick={() => handleBulkGenerateKnockoutCodes(codesCount || 3)}
+                  >
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaTrophy />} Generate for Knockout Matches
                   </AdminActionButton>
                 </AdminButtonGroup>
               </AdminFormLayout>

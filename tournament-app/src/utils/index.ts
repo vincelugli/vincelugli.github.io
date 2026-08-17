@@ -451,6 +451,144 @@ export function getQualifyingSeeding(teams: Team[], matches: Match[]): (Team | n
   return seeding;
 }
 
+export interface OpponentBuchholzDetail {
+  opponentId: number;
+  opponentName: string;
+  opponentRecord: string;
+  opponentWins: number;
+  opponentLosses: number;
+  bonus: number;
+  totalContributed: number;
+  matchResult: 'W' | 'L' | 'BYE';
+}
+
+export interface TeamBuchholzBreakdown {
+  team: Team;
+  seed: number;
+  rawBuchholz: number;
+  totalBonus: number;
+  adjustedBuchholz: number;
+  opponents: OpponentBuchholzDetail[];
+  calculationString: string;
+}
+
+export function getPlayoffBuchholzBreakdown(
+  teams: Team[],
+  matches: Match[]
+): TeamBuchholzBreakdown[] {
+  const stats = calculateSwissStats(teams, matches);
+  const seeding = getQualifyingSeeding(teams, matches);
+  const swissMatches = matches.filter(m => !m.isKnockout && m.status === 'completed');
+
+  const statsMap = new Map<number, TeamStats>();
+  stats.forEach(s => statsMap.set(s.team.id, s));
+
+  const result: TeamBuchholzBreakdown[] = [];
+
+  seeding.forEach((team, seedIdx) => {
+    if (!team) return;
+    const teamStat = statsMap.get(team.id);
+    if (!teamStat) return;
+
+    const opponentDetails: OpponentBuchholzDetail[] = [];
+    let rawBuchholz = 0;
+    let totalBonus = 0;
+
+    for (const oppId of teamStat.opponents) {
+      const oppStat = statsMap.get(oppId);
+      const oppTeam = teams.find(t => t.id === oppId);
+      const oppName = oppTeam ? oppTeam.name : `Team ${oppId}`;
+      const oppWins = oppStat ? oppStat.wins : 0;
+      const oppLosses = oppStat ? oppStat.losses : 0;
+      const oppRecord = oppStat ? `${oppWins}-${oppLosses}` : '0-0';
+
+      let bonus = 0;
+      if (oppWins === 3 && oppLosses === 0) {
+        bonus = 2;
+      } else if (oppWins === 3 && oppLosses === 1) {
+        bonus = 1;
+      }
+
+      rawBuchholz += oppWins;
+      totalBonus += bonus;
+
+      const match = swissMatches.find(m =>
+        (m.team1Id === team.id && m.team2Id === oppId) ||
+        (m.team2Id === team.id && m.team1Id === oppId)
+      );
+      const winnerId = match ? getMatchWinnerId(match) : 0;
+      const matchResult = match?.score === 'BYE' ? 'BYE' : (winnerId === team.id ? 'W' : 'L');
+
+      opponentDetails.push({
+        opponentId: oppId,
+        opponentName: oppName,
+        opponentRecord: oppRecord,
+        opponentWins: oppWins,
+        opponentLosses: oppLosses,
+        bonus,
+        totalContributed: oppWins + bonus,
+        matchResult
+      });
+    }
+
+    const calcParts = opponentDetails.map(
+      o => `${o.opponentName} (${o.opponentWins}${o.bonus > 0 ? `+${o.bonus}` : ''}=${o.totalContributed})`
+    );
+    const calculationString = calcParts.length > 0
+      ? `${calcParts.join(' + ')} = ${rawBuchholz + totalBonus}`
+      : 'No Swiss matches played';
+
+    result.push({
+      team,
+      seed: seedIdx + 1,
+      rawBuchholz,
+      totalBonus,
+      adjustedBuchholz: rawBuchholz + totalBonus,
+      opponents: opponentDetails,
+      calculationString
+    });
+  });
+
+  return result;
+}
+
+export function getTeamSeedMap(
+  teams: Team[],
+  matches: Match[],
+  bracket?: BracketRound[]
+): Map<number, number> {
+  const map = new Map<number, number>();
+  const seeding = getQualifyingSeeding(teams, matches);
+  seeding.forEach((team, idx) => {
+    if (team && team.id > 0) {
+      map.set(team.id, idx + 1);
+    }
+  });
+
+  // Fallback to initial seeds in bracket if not found in seeding
+  if (bracket && bracket.length > 0) {
+    const findSeed = (id: number) => {
+      for (const r of bracket) {
+        const s = r.seeds.find(seed => seed.id === id);
+        if (s) return s;
+      }
+      return null;
+    };
+    const s1 = findSeed(1);
+    const s2 = findSeed(2);
+    const s4 = findSeed(4);
+    const s5 = findSeed(5);
+    if (s1?.team1Id && !map.has(s1.team1Id)) map.set(s1.team1Id, 1);
+    if (s2?.team1Id && !map.has(s2.team1Id)) map.set(s2.team1Id, 2);
+    if (s2?.team2Id && !map.has(s2.team2Id)) map.set(s2.team2Id, 3);
+    if (s1?.team2Id && !map.has(s1.team2Id)) map.set(s1.team2Id, 4);
+    if (s4?.team1Id && !map.has(s4.team1Id)) map.set(s4.team1Id, 5);
+    if (s5?.team1Id && !map.has(s5.team1Id)) map.set(s5.team1Id, 6);
+  }
+
+  return map;
+}
+
 export function updateDoubleEliminationBracket(
   currentBracket: BracketRound[],
   teams: Team[],
@@ -460,6 +598,12 @@ export function updateDoubleEliminationBracket(
 
   const seeding = getQualifyingSeeding(teams, matches);
   const updatedBracket = JSON.parse(JSON.stringify(currentBracket)) as BracketRound[];
+
+  const getTeamSeedNumber = (teamId: number): number | undefined => {
+    if (teamId <= 0) return undefined;
+    const idx = seeding.findIndex(t => t?.id === teamId);
+    return idx >= 0 ? idx + 1 : undefined;
+  };
 
   const findSeedById = (id: number): BracketSeed | null => {
     for (const round of updatedBracket) {
@@ -481,7 +625,10 @@ export function updateDoubleEliminationBracket(
   const resolveBracketTeam = (teamId: number): BracketTeam => {
     if (teamId <= 0) return { id: 0, name: "TBD" };
     const team = teams.find(t => t.id === teamId);
-    return team ? { id: team.id, name: team.name } : { id: teamId, name: "Unknown" };
+    const teamSeed = getTeamSeedNumber(teamId);
+    return team
+      ? { id: team.id, name: team.name, seed: teamSeed }
+      : { id: teamId, name: "Unknown", seed: teamSeed };
   };
 
   // 1. Winners Semifinals (Match 1 & 2, seeds 1 and 2)

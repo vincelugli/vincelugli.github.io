@@ -3823,6 +3823,8 @@ export const AdminSearchInput = styled(AdminTextInput)`
 `;
 
 export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'danger' | 'warning' }>`
+  display: inline-block;
+  white-space: nowrap;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-size: 0.75rem;
