@@ -83,14 +83,14 @@ describe('Seeding and Double Elimination Bracket Logic', () => {
       {
         title: "Losers Finals",
         seeds: [
-          { id: 7, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 3, tournamentCodes: [], teams: [] }
+          { id: 7, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: [] }
         ]
       },
       {
         title: "Grand Finals",
         seeds: [
-          { id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: [] },
-          { id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: [] }
+          { id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] },
+          { id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] }
         ]
       }
     ];
