@@ -7,8 +7,8 @@ const mockGet = jest.fn();
 jest.mock("firebase-admin", () => ({
   initializeApp: jest.fn(),
   firestore: () => ({
-    collection: (collectionPath: string) => ({
-      doc: (docPath: string) => ({
+    collection: (_collectionPath: string) => ({
+      doc: (_docPath: string) => ({
         get: mockGet,
         update: mockUpdate,
       }),
