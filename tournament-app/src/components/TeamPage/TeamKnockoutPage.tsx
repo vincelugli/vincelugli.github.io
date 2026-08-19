@@ -29,7 +29,7 @@ const TeamKnockoutPage: React.FC = () => {
     return ([] as BracketSeed[]).concat(...seeds);
   }, [bracket, teamId]);
 
-  const upcomingMatches = teamKnockoutMatches.filter(m => m.status === 'upcoming');
+  const upcomingMatches = teamKnockoutMatches.filter(m => m.status !== 'completed');
   const completedMatches = teamKnockoutMatches.filter(m => m.status === 'completed');
 
   if (!currentTeam) {

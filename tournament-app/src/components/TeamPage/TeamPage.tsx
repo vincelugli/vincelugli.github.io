@@ -88,7 +88,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   }, [bracket, teamId]);
 
   const upcomingKnockoutMatches = useMemo(() => {
-    return teamKnockoutMatches.filter(m => m.status === 'upcoming');
+    return teamKnockoutMatches.filter(m => m.status !== 'completed');
   }, [teamKnockoutMatches]);
 
   const completedKnockoutMatches = useMemo(() => {
@@ -98,7 +98,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
   const upcomingMatches = useMemo(() => {
     if (!team) return [];
     const rawMatches = matches.filter(m =>
-      m.status === 'upcoming' && (m.team1Id === team.id || m.team2Id === team.id)
+      m.status !== 'completed' && (m.team1Id === team.id || m.team2Id === team.id)
     );
 
     const filteredKnockouts = upcomingKnockoutMatches.filter(km => 

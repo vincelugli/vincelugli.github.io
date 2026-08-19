@@ -91,22 +91,22 @@ jest.mock("../riotApiTransformer", () => ({
 
 import {gameNotificationEndpoint, processGameFromNotification} from "../index";
 
+const createMockReqRes = (body: unknown) => {
+  const req = {
+    method: "POST",
+    body,
+  };
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    send: jest.fn(),
+  };
+  return {req, res};
+};
+
 describe("gameNotificationEndpoint Cloud Function", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-  const createMockReqRes = (body: unknown) => {
-    const req = {
-      method: "POST",
-      body,
-    };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      send: jest.fn(),
-    };
-    return {req, res};
-  };
 
   it("should process a new notification successfully", async () => {
     const notificationPayload = {
@@ -194,6 +194,9 @@ describe("gameNotificationEndpoint Cloud Function", () => {
                 },
               ],
             }),
+          },
+          {
+            exists: false,
           },
         ]),
         update: jest.fn(),
@@ -368,6 +371,9 @@ describe("gameNotificationEndpoint Cloud Function", () => {
                 ],
               }),
             },
+            {
+              exists: false,
+            },
           ]),
           update: mockUpdateTx,
         };
@@ -503,6 +509,9 @@ describe("processGameFromNotification Cloud Function", () => {
                 ],
               }),
             },
+            {
+              exists: false,
+            },
           ]),
           update: jest.fn(),
         };
@@ -522,5 +531,542 @@ describe("processGameFromNotification Cloud Function", () => {
       expect(mockedAxios.get).toHaveBeenCalledTimes(1);
       expect(mockCommit).toHaveBeenCalledTimes(1);
     });
+
+  it("should update bracket seed to in_progress " +
+    "when game 1 is won in best-of-3", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "ko-shortcode-1",
+      gameId: 987654321,
+      region: "NA",
+    };
+
+    // 1. match_lock check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 2. match_results check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 3. Riot API
+    mockedAxios.get.mockResolvedValueOnce({data: {}});
+    // 4. match doc exists with isKnockout and matchId
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({division: "gold", matchId: "ko_1", isKnockout: true}),
+    });
+    // 5. division teams doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        teams: [
+          {id: 1, name: "Team 1", players: [10]},
+          {id: 4, name: "Team 4", players: [20]},
+        ],
+      }),
+    });
+    // 6. division players doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        players: [
+          {id: 10, name: "Player1"},
+          {id: 20, name: "Player2"},
+        ],
+      }),
+    });
+    // 7. match_results duplicate check
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    const initialBracket = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 1,
+            team2Id: 4,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: ["ko-shortcode-1"],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+          {
+            id: 2,
+            team1Id: 2,
+            team2Id: 3,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: [],
+            teams: [{id: 2, name: "Team 2"}, {id: 3, name: "Team 3"}],
+          },
+        ],
+      },
+      {
+        title: "Winners Finals",
+        seeds: [
+          {
+            id: 3,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Round 1",
+        seeds: [
+          {
+            id: 4,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+          {
+            id: 5,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Semifinals",
+        seeds: [
+          {
+            id: 6,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 3,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Finals",
+        seeds: [
+          {
+            id: 7,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 4,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Grand Finals",
+        seeds: [
+          {
+            id: 8,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: [],
+            teams: [],
+          },
+          {
+            id: 9,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+    ];
+
+    const mockTxUpdate = jest.fn();
+    mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+      const mockTx = {
+        getAll: jest.fn().mockResolvedValueOnce([
+          {
+            exists: true,
+            data: () => ({
+              matches: [
+                {
+                  id: "ko_1",
+                  team1Id: 1,
+                  team2Id: 4,
+                  status: "upcoming",
+                  isKnockout: true,
+                  tournamentCodes: ["ko-shortcode-1"],
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              teams: [
+                {
+                  id: 1,
+                  name: "Team 1",
+                  gameWins: 0,
+                  gameLosses: 0,
+                  wins: 0,
+                  losses: 0,
+                  record: "0-0",
+                  gameRecord: "0-0",
+                },
+                {
+                  id: 4,
+                  name: "Team 4",
+                  gameWins: 0,
+                  gameLosses: 0,
+                  wins: 0,
+                  losses: 0,
+                  record: "0-0",
+                  gameRecord: "0-0",
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              bracket: initialBracket,
+            }),
+          },
+        ]),
+        update: mockTxUpdate,
+      };
+      await updateFn(mockTx);
+    });
+
+    const {req, res} = createMockReqRes(notificationPayload);
+    await gameNotificationEndpoint(req as any, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(mockTxUpdate).toHaveBeenCalledTimes(3);
+
+    // Verify bracket update call
+    const bracketUpdateCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].bracket !== undefined
+    );
+    expect(bracketUpdateCall).toBeDefined();
+    const updatedBracket = bracketUpdateCall[1].bracket;
+    const seed1 = updatedBracket[0].seeds[0];
+    expect(seed1.status).toBe("in_progress");
+    expect(seed1.score).toBe("1-0");
+    expect(seed1.winnerId).toBeNull();
+  });
+
+  it("should update bracket seed to completed and advance " +
+    "winners/losers when best-of-3 finishes", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "ko-shortcode-2",
+      gameId: 987654322,
+      region: "NA",
+    };
+
+    // 1. match_lock check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 2. match_results check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 3. Riot API
+    mockedAxios.get.mockResolvedValueOnce({data: {}});
+    // 4. match doc exists with isKnockout and matchId
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({division: "gold", matchId: "ko_1", isKnockout: true}),
+    });
+    // 5. division teams doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        teams: [
+          {id: 1, name: "Team 1", players: [10]},
+          {id: 4, name: "Team 4", players: [20]},
+        ],
+      }),
+    });
+    // 6. division players doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        players: [
+          {id: 10, name: "Player1"},
+          {id: 20, name: "Player2"},
+        ],
+      }),
+    });
+    // 7. match_results duplicate check
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    const initialBracket = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 1,
+            team2Id: 4,
+            status: "in_progress",
+            score: "1-0",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: ["ko-shortcode-1", "ko-shortcode-2"],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+          {
+            id: 2,
+            team1Id: 2,
+            team2Id: 3,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: [],
+            teams: [{id: 2, name: "Team 2"}, {id: 3, name: "Team 3"}],
+          },
+        ],
+      },
+      {
+        title: "Winners Finals",
+        seeds: [
+          {
+            id: 3,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Round 1",
+        seeds: [
+          {
+            id: 4,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+          {
+            id: 5,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 2,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Semifinals",
+        seeds: [
+          {
+            id: 6,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 3,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Losers Finals",
+        seeds: [
+          {
+            id: 7,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 4,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+      {
+        title: "Grand Finals",
+        seeds: [
+          {
+            id: 8,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: [],
+            teams: [],
+          },
+          {
+            id: 9,
+            team1Id: 0,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: [],
+            teams: [],
+          },
+        ],
+      },
+    ];
+
+    const mockTxUpdate = jest.fn();
+    mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+      const mockTx = {
+        getAll: jest.fn().mockResolvedValueOnce([
+          {
+            exists: true,
+            data: () => ({
+              matches: [
+                {
+                  id: "ko_1",
+                  team1Id: 1,
+                  team2Id: 4,
+                  status: "in_progress",
+                  isKnockout: true,
+                  tournamentCodes: ["ko-shortcode-1", "ko-shortcode-2"],
+                  results: {
+                    "ko-shortcode-1": {
+                      winnerId: 1,
+                      team1Win: 1,
+                      team2Win: 0,
+                    },
+                  },
+                  team1Wins: 1,
+                  team2Wins: 0,
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              teams: [
+                {
+                  id: 1,
+                  name: "Team 1",
+                  gameWins: 1,
+                  gameLosses: 0,
+                  wins: 0,
+                  losses: 0,
+                  record: "0-0",
+                  gameRecord: "1-0",
+                },
+                {
+                  id: 4,
+                  name: "Team 4",
+                  gameWins: 0,
+                  gameLosses: 1,
+                  wins: 0,
+                  losses: 0,
+                  record: "0-0",
+                  gameRecord: "0-1",
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              bracket: initialBracket,
+            }),
+          },
+        ]),
+        update: mockTxUpdate,
+      };
+      await updateFn(mockTx);
+    });
+
+    const {req, res} = createMockReqRes(notificationPayload);
+    await gameNotificationEndpoint(req as any, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    const bracketUpdateCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].bracket !== undefined
+    );
+    expect(bracketUpdateCall).toBeDefined();
+    const updatedBracket = bracketUpdateCall[1].bracket;
+    const seed1 = updatedBracket[0].seeds[0];
+    expect(seed1.status).toBe("completed");
+    expect(seed1.score).toBe("2-0");
+    expect(seed1.winnerId).toBe(1);
+
+    // Verify progression: Winners Finals (seed 3) gets winner
+    // of seed 1 (Team 1)
+    const seed3 = updatedBracket[1].seeds[0];
+    expect(seed3.team1Id).toBe(1);
+
+    // Verify progression: Losers Round 1 (seed 4) gets loser
+    // of seed 1 (Team 4)
+    const seed4 = updatedBracket[2].seeds[0];
+    expect(seed4.team2Id).toBe(4);
+  });
 });
 

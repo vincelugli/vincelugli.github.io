@@ -261,9 +261,24 @@ const StatusBadge = styled.span<StatusBadgeProps>`
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: ${({status}) => status === 'completed' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(234, 179, 8, 0.12)'};
-  color: ${({status}) => status === 'completed' ? '#22c55e' : '#eab308'};
-  border: 1px solid ${({status}) => status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)'};
+  background: ${({status}) => {
+    const s = status?.toLowerCase();
+    if (s === 'completed') return 'rgba(34, 197, 94, 0.12)';
+    if (s === 'in progress' || s === 'in_progress') return 'rgba(59, 130, 246, 0.12)';
+    return 'rgba(234, 179, 8, 0.12)';
+  }};
+  color: ${({status}) => {
+    const s = status?.toLowerCase();
+    if (s === 'completed') return '#22c55e';
+    if (s === 'in progress' || s === 'in_progress') return '#3b82f6';
+    return '#eab308';
+  }};
+  border: 1px solid ${({status}) => {
+    const s = status?.toLowerCase();
+    if (s === 'completed') return 'rgba(34, 197, 94, 0.2)';
+    if (s === 'in progress' || s === 'in_progress') return 'rgba(59, 130, 246, 0.2)';
+    return 'rgba(234, 179, 8, 0.2)';
+  }};
 `;
 
 const CoinsBadge = styled.span`
@@ -512,7 +527,7 @@ const DoubleEliminationBracket: React.FC = () => {
         </TeamRow>
 
         <MatchMeta>
-          <StatusBadge status={seed.status}>{seed.status}</StatusBadge>
+          <StatusBadge status={seed.status}>{seed.status ? seed.status.replace('_', ' ') : 'upcoming'}</StatusBadge>
         </MatchMeta>
       </MatchCard>
     );

@@ -4,7 +4,7 @@ export interface Match {
   id: string|number; // Use a string for unique IDs like from a DB
   team1Id: number;
   team2Id: number;
-  status: 'upcoming' | 'completed';
+  status: 'upcoming' | 'in_progress' | 'in progress' | 'completed' | string;
   tournamentCodes: string[]; // The code for players to join
   weekPlayed: number;
   winnerId?: number | null; // Only for 'completed' status
@@ -70,7 +70,7 @@ export interface BracketTeam {
 
 export interface BracketSeed {
   id: number;
-  status: 'upcoming' | 'completed';
+  status: 'upcoming' | 'in_progress' | 'in progress' | 'completed' | string;
   teams: BracketTeam[];
   team1Id: number;
   team2Id: number;
