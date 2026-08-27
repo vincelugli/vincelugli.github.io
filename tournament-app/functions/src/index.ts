@@ -1098,6 +1098,40 @@ const updateStandings = async (
         logger.info(
           `Successfully updated bracket document for division '${division}'`
         );
+
+        // Synchronize all knockout match progressions into allMatches
+        for (const round of updatedBracket) {
+          for (const seed of round.seeds) {
+            const koMatchIndex = allMatches.findIndex((m: any) =>
+              m.id === `ko_${seed.id}` || String(m.id) === String(seed.id)
+            );
+            if (koMatchIndex !== -1) {
+              const existingMatch = allMatches[koMatchIndex];
+              allMatches[koMatchIndex] = {
+                ...existingMatch,
+                team1Id: seed.team1Id || existingMatch.team1Id || 0,
+                team2Id: seed.team2Id || existingMatch.team2Id || 0,
+                status: seed.status || existingMatch.status || "upcoming",
+                score: seed.score || existingMatch.score || "",
+                winnerId: seed.winnerId ?? existingMatch.winnerId ?? null,
+                tournamentCodes: Array.from(
+                  new Set([
+                    ...(existingMatch.tournamentCodes || []),
+                    ...(seed.tournamentCodes || []),
+                  ])
+                ),
+                isKnockout: true,
+                stage: round.title,
+                coinFlipResult:
+                  seed.coinFlipResult ?? existingMatch.coinFlipResult ?? null,
+                firstGameSideSelection:
+                  seed.firstGameSideSelection ??
+                  existingMatch.firstGameSideSelection ??
+                  null,
+              };
+            }
+          }
+        }
       }
     }
 

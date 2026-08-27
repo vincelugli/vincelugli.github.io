@@ -110,6 +110,127 @@ describe('Seeding and Double Elimination Bracket Logic', () => {
     expect(m5.teams[0].seed).toBe(6);
   });
 
+  it('correctly advances teams through round 2, 3, 4 and 5 of knockout bracket', () => {
+    const initialBracket: BracketRound[] = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          { id: 1, team1Id: 1, team2Id: 4, status: "completed", score: "2-0", winnerId: 1, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: [] },
+          { id: 2, team1Id: 2, team2Id: 3, status: "completed", score: "2-1", winnerId: 2, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: [] }
+        ]
+      },
+      {
+        title: "Winners Finals",
+        seeds: [
+          { id: 3, team1Id: 0, team2Id: 0, status: "completed", score: "2-1", winnerId: 1, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] }
+        ]
+      },
+      {
+        title: "Losers Round 1",
+        seeds: [
+          { id: 4, team1Id: 5, team2Id: 0, status: "completed", score: "2-0", winnerId: 5, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] },
+          { id: 5, team1Id: 6, team2Id: 0, status: "completed", score: "2-1", winnerId: 3, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] }
+        ]
+      },
+      {
+        title: "Losers Semifinals",
+        seeds: [
+          { id: 6, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 3, tournamentCodes: [], teams: [] }
+        ]
+      },
+      {
+        title: "Losers Finals",
+        seeds: [
+          { id: 7, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: [] }
+        ]
+      },
+      {
+        title: "Grand Finals",
+        seeds: [
+          { id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] },
+          { id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] }
+        ]
+      }
+    ];
+
+    const updated = updateDoubleEliminationBracket(initialBracket, mockTeams, mockMatches);
+
+    // After Round 1 & Round 2:
+    // M3 (Winners Finals): Team 1 vs Team 2 (Winner: 1, Loser: 2)
+    const m3 = updated[1].seeds[0];
+    expect(m3.team1Id).toBe(1);
+    expect(m3.team2Id).toBe(2);
+
+    // M4 (Losers R1 Match 1): Seed 5 (Team 5) vs Loser M1 (Team 4). Winner was Team 5.
+    const m4 = updated[2].seeds[0];
+    expect(m4.team1Id).toBe(5);
+    expect(m4.team2Id).toBe(4);
+
+    // M5 (Losers R1 Match 2): Seed 6 (Team 6) vs Loser M2 (Team 3). Winner was Team 3.
+    const m5 = updated[2].seeds[1];
+    expect(m5.team1Id).toBe(6);
+    expect(m5.team2Id).toBe(3);
+
+    // M6 (Losers Semifinals - Round 3): Winner M4 (Team 5) vs Winner M5 (Team 3)
+    const m6 = updated[3].seeds[0];
+    expect(m6.team1Id).toBe(5);
+    expect(m6.team2Id).toBe(3);
+
+    // M7 (Losers Finals - Round 4): Loser M3 (Team 2) vs Winner M6 (TBD)
+    const m7 = updated[4].seeds[0];
+    expect(m7.team1Id).toBe(2);
+    expect(m7.team2Id).toBe(0);
+
+    // M8 (Grand Finals - Round 5): Winner M3 (Team 1) vs Winner M7 (TBD)
+    const m8 = updated[5].seeds[0];
+    expect(m8.team1Id).toBe(1);
+    expect(m8.team2Id).toBe(0);
+  });
+
+  it('correctly returns placeholder labels for each knockout slot', () => {
+    const { getBracketPlaceholderName } = require('./index');
+    expect(getBracketPlaceholderName(1, 1)).toBe('Seed 1');
+    expect(getBracketPlaceholderName(1, 2)).toBe('Seed 4');
+    expect(getBracketPlaceholderName(2, 1)).toBe('Seed 2');
+    expect(getBracketPlaceholderName(2, 2)).toBe('Seed 3');
+    expect(getBracketPlaceholderName(3, 1)).toBe('Winner M1');
+    expect(getBracketPlaceholderName(3, 2)).toBe('Winner M2');
+    expect(getBracketPlaceholderName(4, 1)).toBe('Seed 5');
+    expect(getBracketPlaceholderName(4, 2)).toBe('Loser M1');
+    expect(getBracketPlaceholderName(5, 1)).toBe('Seed 6');
+    expect(getBracketPlaceholderName(5, 2)).toBe('Loser M2');
+    expect(getBracketPlaceholderName(6, 1)).toBe('Winner M4');
+    expect(getBracketPlaceholderName(6, 2)).toBe('Winner M5');
+    expect(getBracketPlaceholderName(7, 1)).toBe('Loser M3');
+    expect(getBracketPlaceholderName(7, 2)).toBe('Winner M6');
+    expect(getBracketPlaceholderName(8, 1)).toBe('Winner M3');
+    expect(getBracketPlaceholderName(8, 2)).toBe('Winner M7');
+    expect(getBracketPlaceholderName(9, 1)).toBe('Grand Finals Reset');
+  });
+
+  it('correctly handles Grand Finals Reset when lower bracket team wins GF match', () => {
+    const gfBracket: BracketRound[] = [
+      { title: "Winners Semifinals", seeds: [{ id: 1, team1Id: 1, team2Id: 4, status: "completed", score: "2-0", winnerId: 1, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: [] }, { id: 2, team1Id: 2, team2Id: 3, status: "completed", score: "2-1", winnerId: 2, isKnockout: true, weekPlayed: 1, tournamentCodes: [], teams: [] }] },
+      { title: "Winners Finals", seeds: [{ id: 3, team1Id: 1, team2Id: 2, status: "completed", score: "2-0", winnerId: 1, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] }] },
+      { title: "Losers Round 1", seeds: [{ id: 4, team1Id: 5, team2Id: 4, status: "completed", score: "2-0", winnerId: 5, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] }, { id: 5, team1Id: 6, team2Id: 3, status: "completed", score: "2-0", winnerId: 3, isKnockout: true, weekPlayed: 2, tournamentCodes: [], teams: [] }] },
+      { title: "Losers Semifinals", seeds: [{ id: 6, team1Id: 5, team2Id: 3, status: "completed", score: "2-1", winnerId: 5, isKnockout: true, weekPlayed: 3, tournamentCodes: [], teams: [] }] },
+      { title: "Losers Finals", seeds: [{ id: 7, team1Id: 2, team2Id: 5, status: "completed", score: "2-1", winnerId: 5, isKnockout: true, weekPlayed: 4, tournamentCodes: [], teams: [] }] },
+      {
+        title: "Grand Finals",
+        seeds: [
+          // Upper bracket winner (Team 1) vs Lower bracket winner (Team 5). Team 5 (team2Id) wins -> triggers GF Reset!
+          { id: 8, team1Id: 1, team2Id: 5, status: "completed", score: "1-2", winnerId: 5, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] },
+          { id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: [] }
+        ]
+      }
+    ];
+
+    const updated = updateDoubleEliminationBracket(gfBracket, mockTeams, mockMatches);
+    const gfResetSeed = updated[5].seeds[1];
+    expect(gfResetSeed.team1Id).toBe(1);
+    expect(gfResetSeed.team2Id).toBe(5);
+  });
+
   it('correctly provides detailed Adjusted Buchholz breakdown for playoff teams', () => {
     const { getPlayoffBuchholzBreakdown } = require('./index');
     const breakdown = getPlayoffBuchholzBreakdown(mockTeams, mockMatches);

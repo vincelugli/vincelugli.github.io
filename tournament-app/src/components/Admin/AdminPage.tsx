@@ -1705,7 +1705,43 @@ const AdminPage: React.FC = () => {
 
       const fullyUpdatedBracket = updateDoubleEliminationBracket(updatedBracket, teams, matches);
 
-      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket});
+      const existingKnockoutMatches = matches.filter(m => m.isKnockout);
+      const nonKnockoutMatches = matches.filter(m => !m.isKnockout);
+      const updatedKnockoutMatches: Match[] = [];
+
+      for (const r of fullyUpdatedBracket) {
+        for (const s of r.seeds) {
+          const matchId = `ko_${s.id}`;
+          const existing = existingKnockoutMatches.find(m => m.id === matchId || String(m.id) === String(s.id));
+          const mergedCodes = Array.from(new Set([
+            ...(s.tournamentCodes || []),
+            ...(existing?.tournamentCodes || [])
+          ]));
+
+          updatedKnockoutMatches.push({
+            id: matchId,
+            team1Id: (s.team1Id && s.team1Id > 0) ? s.team1Id : (existing?.team1Id || 0),
+            team2Id: (s.team2Id && s.team2Id > 0) ? s.team2Id : (existing?.team2Id || 0),
+            status: s.status || existing?.status || 'upcoming',
+            tournamentCodes: mergedCodes,
+            weekPlayed: s.weekPlayed || existing?.weekPlayed || 1,
+            isKnockout: true,
+            stage: r.title,
+            winnerId: s.winnerId ?? existing?.winnerId ?? null,
+            score: s.score || existing?.score || '',
+            scheduledTime: existing?.scheduledTime,
+            isCasted: existing?.isCasted,
+            twitchChannel: existing?.twitchChannel,
+            coinFlipResult: s.coinFlipResult ?? existing?.coinFlipResult ?? null,
+            firstGameSideSelection: s.firstGameSideSelection ?? existing?.firstGameSideSelection ?? (s.coinFlipResult ? 'blue' : null)
+          });
+        }
+      }
+
+      await Promise.all([
+        updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket}),
+        updateDoc(doc(db, 'matches', `${prefix}_${division}`), {matches: [...nonKnockoutMatches, ...updatedKnockoutMatches]})
+      ]);
       showStatus('success', `Bracket Round "${round.title}" seed #${seed.id} updated!`);
     } catch (err: any) {
       console.error(err);
@@ -1791,7 +1827,43 @@ const AdminPage: React.FC = () => {
       const seeding = getQualifyingSeeding(teams, matches);
       const qualified = seeding.filter((t): t is Team => t !== null && t.id > 0);
 
-      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket});
+      const existingKnockoutMatches = matches.filter(m => m.isKnockout);
+      const nonKnockoutMatches = matches.filter(m => !m.isKnockout);
+      const updatedKnockoutMatches: Match[] = [];
+
+      for (const round of fullyUpdatedBracket) {
+        for (const seed of round.seeds) {
+          const matchId = `ko_${seed.id}`;
+          const existing = existingKnockoutMatches.find(m => m.id === matchId || String(m.id) === String(seed.id));
+          const mergedCodes = Array.from(new Set([
+            ...(seed.tournamentCodes || []),
+            ...(existing?.tournamentCodes || [])
+          ]));
+
+          updatedKnockoutMatches.push({
+            id: matchId,
+            team1Id: (seed.team1Id && seed.team1Id > 0) ? seed.team1Id : (existing?.team1Id || 0),
+            team2Id: (seed.team2Id && seed.team2Id > 0) ? seed.team2Id : (existing?.team2Id || 0),
+            status: seed.status || existing?.status || 'upcoming',
+            tournamentCodes: mergedCodes,
+            weekPlayed: seed.weekPlayed || existing?.weekPlayed || 1,
+            isKnockout: true,
+            stage: round.title,
+            winnerId: seed.winnerId ?? existing?.winnerId ?? null,
+            score: seed.score || existing?.score || '',
+            scheduledTime: existing?.scheduledTime,
+            isCasted: existing?.isCasted,
+            twitchChannel: existing?.twitchChannel,
+            coinFlipResult: seed.coinFlipResult ?? existing?.coinFlipResult ?? null,
+            firstGameSideSelection: seed.firstGameSideSelection ?? existing?.firstGameSideSelection ?? (seed.coinFlipResult ? 'blue' : null)
+          });
+        }
+      }
+
+      await Promise.all([
+        updateDoc(doc(db, 'bracket', `${prefix}_${division}`), {bracket: fullyUpdatedBracket}),
+        updateDoc(doc(db, 'matches', `${prefix}_${division}`), {matches: [...nonKnockoutMatches, ...updatedKnockoutMatches]})
+      ]);
       showStatus('success', `Bracket progressions and seeds synced successfully! (${qualified.length}/6 qualified teams seeded)`);
     } catch (err: any) {
       console.error(err);

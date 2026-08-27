@@ -84,7 +84,10 @@ export const MatchProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const updateMatch = async (updatedMatch: Match) => {
     try {
       const prefix = getFirebasePrefix();
-      const updatedList = matches.map(m => m.id === updatedMatch.id ? updatedMatch : m);
+      const matchExists = matches.some(m => m.id === updatedMatch.id || String(m.id) === String(updatedMatch.id));
+      const updatedList = matchExists
+        ? matches.map(m => (m.id === updatedMatch.id || String(m.id) === String(updatedMatch.id)) ? updatedMatch : m)
+        : [...matches, updatedMatch];
       await updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedList });
       setMatches(updatedList);
     } catch (error) {
