@@ -589,12 +589,27 @@ export function getTeamSeedMap(
   return map;
 }
 
+export function getBracketPlaceholderName(seedId: number, slot: 1 | 2): string {
+  switch (seedId) {
+    case 1: return slot === 1 ? 'Seed 1' : 'Seed 4';
+    case 2: return slot === 1 ? 'Seed 2' : 'Seed 3';
+    case 3: return slot === 1 ? 'Winner M1' : 'Winner M2';
+    case 4: return slot === 1 ? 'Seed 5' : 'Loser M1';
+    case 5: return slot === 1 ? 'Seed 6' : 'Loser M2';
+    case 6: return slot === 1 ? 'Winner M4' : 'Winner M5';
+    case 7: return slot === 1 ? 'Loser M3' : 'Winner M6';
+    case 8: return slot === 1 ? 'Winner M3' : 'Winner M7';
+    case 9: return 'Grand Finals Reset';
+    default: return 'TBD';
+  }
+}
+
 export function updateDoubleEliminationBracket(
   currentBracket: BracketRound[],
   teams: Team[],
   matches: Match[]
 ): BracketRound[] {
-  if (currentBracket.length < 6) return currentBracket;
+  if (!currentBracket || currentBracket.length < 6) return currentBracket;
 
   const seeding = getQualifyingSeeding(teams, matches);
   const updatedBracket = JSON.parse(JSON.stringify(currentBracket)) as BracketRound[];
@@ -615,11 +630,27 @@ export function updateDoubleEliminationBracket(
 
   const getWinnerAndLoserOfSeed = (seedId: number): { winnerId: number; loserId: number } => {
     const seed = findSeedById(seedId);
-    if (!seed || seed.status !== 'completed' || !seed.winnerId) {
+    if (!seed) return { winnerId: 0, loserId: 0 };
+
+    let winnerId = seed.winnerId || null;
+    let isCompleted = seed.status === 'completed';
+
+    if (!winnerId || !isCompleted) {
+      const match = matches.find(m =>
+        m.id === `ko_${seedId}` ||
+        (m.isKnockout && (String(m.id) === String(seedId) || String(m.id).replace(/^ko_/, '') === String(seedId)))
+      );
+      if (match && (match.status === 'completed' || (match.winnerId && match.winnerId > 0))) {
+        winnerId = match.winnerId || getMatchWinnerId(match);
+        isCompleted = true;
+      }
+    }
+
+    if (!isCompleted || !winnerId) {
       return { winnerId: 0, loserId: 0 };
     }
-    const loserId = (seed.winnerId === seed.team1Id) ? seed.team2Id : seed.team1Id;
-    return { winnerId: seed.winnerId, loserId };
+    const loserId = (winnerId === seed.team1Id) ? seed.team2Id : seed.team1Id;
+    return { winnerId, loserId };
   };
 
   const resolveBracketTeam = (teamId: number): BracketTeam => {
@@ -634,72 +665,99 @@ export function updateDoubleEliminationBracket(
   // 1. Winners Semifinals (Match 1 & 2, seeds 1 and 2)
   const wsf1 = findSeedById(1);
   if (wsf1) {
-    wsf1.team1Id = seeding[0]?.id || 0;
-    wsf1.team2Id = seeding[3]?.id || 0;
+    if (wsf1.status !== 'completed' && wsf1.status !== 'in_progress' && wsf1.status !== 'in progress') {
+      wsf1.team1Id = seeding[0]?.id || wsf1.team1Id || 0;
+      wsf1.team2Id = seeding[3]?.id || wsf1.team2Id || 0;
+    }
     wsf1.teams = [resolveBracketTeam(wsf1.team1Id), resolveBracketTeam(wsf1.team2Id)];
   }
 
   const wsf2 = findSeedById(2);
   if (wsf2) {
-    wsf2.team1Id = seeding[1]?.id || 0;
-    wsf2.team2Id = seeding[2]?.id || 0;
+    if (wsf2.status !== 'completed' && wsf2.status !== 'in_progress' && wsf2.status !== 'in progress') {
+      wsf2.team1Id = seeding[1]?.id || wsf2.team1Id || 0;
+      wsf2.team2Id = seeding[2]?.id || wsf2.team2Id || 0;
+    }
     wsf2.teams = [resolveBracketTeam(wsf2.team1Id), resolveBracketTeam(wsf2.team2Id)];
   }
 
   // 2. Winners Finals (Match 3, seed 3)
   const wf = findSeedById(3);
   if (wf) {
-    wf.team1Id = getWinnerAndLoserOfSeed(1).winnerId;
-    wf.team2Id = getWinnerAndLoserOfSeed(2).winnerId;
+    const w1 = getWinnerAndLoserOfSeed(1).winnerId;
+    const w2 = getWinnerAndLoserOfSeed(2).winnerId;
+    if (w1 > 0) wf.team1Id = w1;
+    if (w2 > 0) wf.team2Id = w2;
     wf.teams = [resolveBracketTeam(wf.team1Id), resolveBracketTeam(wf.team2Id)];
   }
 
   // 3. Losers Round 1 (Match 4 & 5, seeds 4 and 5)
   const l1m1 = findSeedById(4);
   if (l1m1) {
-    l1m1.team1Id = seeding[4]?.id || 0;
-    l1m1.team2Id = getWinnerAndLoserOfSeed(1).loserId;
+    if (l1m1.status !== 'completed' && l1m1.status !== 'in_progress' && l1m1.status !== 'in progress') {
+      l1m1.team1Id = seeding[4]?.id || l1m1.team1Id || 0;
+    }
+    const l1 = getWinnerAndLoserOfSeed(1).loserId;
+    if (l1 > 0) l1m1.team2Id = l1;
     l1m1.teams = [resolveBracketTeam(l1m1.team1Id), resolveBracketTeam(l1m1.team2Id)];
   }
 
   const l1m2 = findSeedById(5);
   if (l1m2) {
-    l1m2.team1Id = seeding[5]?.id || 0;
-    l1m2.team2Id = getWinnerAndLoserOfSeed(2).loserId;
+    if (l1m2.status !== 'completed' && l1m2.status !== 'in_progress' && l1m2.status !== 'in progress') {
+      l1m2.team1Id = seeding[5]?.id || l1m2.team1Id || 0;
+    }
+    const l2 = getWinnerAndLoserOfSeed(2).loserId;
+    if (l2 > 0) l1m2.team2Id = l2;
     l1m2.teams = [resolveBracketTeam(l1m2.team1Id), resolveBracketTeam(l1m2.team2Id)];
   }
 
   // 4. Losers Semifinals (Match 6, seed 6)
   const lsf = findSeedById(6);
   if (lsf) {
-    lsf.team1Id = getWinnerAndLoserOfSeed(4).winnerId;
-    lsf.team2Id = getWinnerAndLoserOfSeed(5).winnerId;
+    const w4 = getWinnerAndLoserOfSeed(4).winnerId;
+    const w5 = getWinnerAndLoserOfSeed(5).winnerId;
+    if (w4 > 0) lsf.team1Id = w4;
+    if (w5 > 0) lsf.team2Id = w5;
     lsf.teams = [resolveBracketTeam(lsf.team1Id), resolveBracketTeam(lsf.team2Id)];
   }
 
   // 5. Losers Finals (Match 7, seed 7)
   const lf = findSeedById(7);
   if (lf) {
-    lf.team1Id = getWinnerAndLoserOfSeed(3).loserId;
-    lf.team2Id = getWinnerAndLoserOfSeed(6).winnerId;
+    const l3 = getWinnerAndLoserOfSeed(3).loserId;
+    const w6 = getWinnerAndLoserOfSeed(6).winnerId;
+    if (l3 > 0) lf.team1Id = l3;
+    if (w6 > 0) lf.team2Id = w6;
     lf.teams = [resolveBracketTeam(lf.team1Id), resolveBracketTeam(lf.team2Id)];
   }
 
   // 6. Grand Finals (Match 8 & 9, seeds 8 and 9)
   const gf = findSeedById(8);
   if (gf) {
-    gf.team1Id = getWinnerAndLoserOfSeed(3).winnerId;
-    gf.team2Id = getWinnerAndLoserOfSeed(7).winnerId;
+    const w3 = getWinnerAndLoserOfSeed(3).winnerId;
+    const w7 = getWinnerAndLoserOfSeed(7).winnerId;
+    if (w3 > 0) gf.team1Id = w3;
+    if (w7 > 0) gf.team2Id = w7;
     gf.teams = [resolveBracketTeam(gf.team1Id), resolveBracketTeam(gf.team2Id)];
   }
 
   const gfReset = findSeedById(9);
   if (gfReset) {
     const gfSeed = findSeedById(8);
-    if (gfSeed && gfSeed.status === 'completed' && gfSeed.winnerId === gfSeed.team2Id) {
+    const gfWinner = gfSeed ? (gfSeed.winnerId || getWinnerAndLoserOfSeed(8).winnerId) : 0;
+    if (
+      gfSeed &&
+      (gfSeed.status === 'completed' || gfWinner > 0) &&
+      gfWinner === gfSeed.team2Id
+    ) {
       gfReset.team1Id = gfSeed.team1Id;
       gfReset.team2Id = gfSeed.team2Id;
-    } else {
+    } else if (
+      gfReset.status !== 'completed' &&
+      gfReset.status !== 'in_progress' &&
+      gfReset.status !== 'in progress'
+    ) {
       gfReset.team1Id = 0;
       gfReset.team2Id = 0;
     }

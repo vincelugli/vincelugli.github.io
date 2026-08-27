@@ -278,12 +278,38 @@ export function updateDoubleEliminationBracket(
     seedId: number
   ): {winnerId: number; loserId: number} => {
     const seed = findSeedById(seedId);
-    if (!seed || seed.status !== "completed" || !seed.winnerId) {
+    if (!seed) {
+      return {winnerId: 0, loserId: 0};
+    }
+
+    let winnerId = seed.winnerId || null;
+    let isCompleted = seed.status === "completed";
+
+    if (!winnerId || !isCompleted) {
+      const match = matches.find((m) =>
+        m.id === `ko_${seedId}` ||
+        (m.isKnockout &&
+          (String(m.id) === String(seedId) ||
+            String(m.id).replace(/^ko_/, "") === String(seedId)))
+      );
+      if (
+        match &&
+        (match.status === "completed" ||
+          (match.winnerId !== undefined &&
+            match.winnerId !== null &&
+            match.winnerId > 0))
+      ) {
+        winnerId = match.winnerId || getMatchWinnerId(match);
+        isCompleted = true;
+      }
+    }
+
+    if (!isCompleted || !winnerId) {
       return {winnerId: 0, loserId: 0};
     }
     const loserId =
-      seed.winnerId === seed.team1Id ? seed.team2Id : seed.team1Id;
-    return {winnerId: seed.winnerId, loserId};
+      winnerId === seed.team1Id ? seed.team2Id : seed.team1Id;
+    return {winnerId, loserId};
   };
 
   const resolveBracketTeam = (teamId: number): BracketTeam => {

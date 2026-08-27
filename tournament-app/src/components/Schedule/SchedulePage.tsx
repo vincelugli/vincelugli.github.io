@@ -54,7 +54,7 @@ import { useTournament } from '../../context/TournamentContext';
 import { useAuth } from '../Common/AuthContext';
 import { usePlayers } from '../../context/PlayerContext';
 import { Match, Team } from '../../types';
-import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal, getTeamOrPlaceholder } from '../../utils';
+import { getYearFromHash, getNextSunday3PMPT, formatToPMPT, formatToLocal, getTeamOrPlaceholder, updateDoubleEliminationBracket, getBracketPlaceholderName } from '../../utils';
 import { FaTv } from 'react-icons/fa';
 
 
@@ -161,7 +161,7 @@ const tournamentStages2026 = [
     endDate: new Date("07/07/2026")
   },
   {
-    number: 1,
+    number: 3,
     title: "Practice",
     description: "Teams get to know each other and practice some comps.",
     link: null,
@@ -169,7 +169,7 @@ const tournamentStages2026 = [
     endDate: new Date("07/12/2026")
   },
   {
-    number: 3,
+    number: 4,
     title: "Swiss Stage",
     description: "Teams play in a swiss stage to determine top seeds.",
     link: "/swiss",
@@ -177,7 +177,7 @@ const tournamentStages2026 = [
     endDate: new Date("08/16/2026")
   },
   {
-    number: 4,
+    number: 5,
     title: "Knockout Stage",
     description: "The top teams from each group advance to a double-elimination bracket.",
     link: "/knockout",
@@ -185,7 +185,7 @@ const tournamentStages2026 = [
     endDate: new Date("09/13/2026")
   },
   {
-    number: 5,
+    number: 6,
     title: "Finals",
     description: "The Grand Finals determine the tournament champion.",
     link: null,
@@ -202,7 +202,7 @@ const SchedulePage: React.FC = () => {
   const is2026 = year === '2026';
 
   const { matches, loading: matchesLoading, updateMatch } = useGameMatches();
-  const { teams, loading: teamsLoading } = useTournament();
+  const { teams, bracket, loading: teamsLoading } = useTournament();
   const { currentUser, isAdmin, captainTeamId, authDivision, isCaster } = useAuth();
   const { getPlayerById } = usePlayers();
 
@@ -213,8 +213,74 @@ const SchedulePage: React.FC = () => {
   const [broadcastCastedValue, setBroadcastCastedValue] = useState<boolean>(false);
   const [broadcastChannelValue, setBroadcastChannelValue] = useState<string>('');
 
+  const isMatchTeamsAvailable = (match: Match): boolean => {
+    const t1Available = match.team1Id > 0 || match.team1Id === -1;
+    const t2Available = match.team2Id > 0 || match.team2Id === -1;
+    const hasRealTeam = match.team1Id > 0 || match.team2Id > 0;
+    return t1Available && t2Available && hasRealTeam;
+  };
 
+  const allScheduleMatches = React.useMemo(() => {
+    const updatedBracket = (bracket && bracket.length >= 6)
+      ? updateDoubleEliminationBracket(bracket, teams, matches)
+      : bracket;
 
+    const nonKnockoutMatches = matches.filter(m => !m.isKnockout);
+
+    let knockoutMatches: Match[] = [];
+
+    if (updatedBracket && updatedBracket.length > 0) {
+      const gfMatch = updatedBracket.find(r => r.title === 'Grand Finals')?.seeds.find(s => s.id === 8);
+      const isResetNeeded = gfMatch && gfMatch.status === 'completed' && gfMatch.winnerId === gfMatch.team2Id;
+
+      for (const round of updatedBracket) {
+        for (const seed of round.seeds) {
+          if (seed.id === 9 && !isResetNeeded && (!seed.team1Id || seed.team1Id <= 0)) {
+            continue;
+          }
+
+          const matchId = `ko_${seed.id}`;
+          const existing = matches.find(m => m.id === matchId || String(m.id) === String(seed.id));
+
+          const mergedCodes = Array.from(new Set([
+            ...(seed.tournamentCodes || []),
+            ...(existing?.tournamentCodes || [])
+          ]));
+
+          const resolvedMatch: Match = {
+            id: existing?.id || matchId,
+            team1Id: (seed.team1Id && seed.team1Id > 0) ? seed.team1Id : (existing?.team1Id || 0),
+            team2Id: (seed.team2Id && seed.team2Id > 0) ? seed.team2Id : (existing?.team2Id || 0),
+            status: seed.status || existing?.status || 'upcoming',
+            score: seed.score || existing?.score || '',
+            winnerId: seed.winnerId ?? existing?.winnerId ?? null,
+            tournamentCodes: mergedCodes,
+            weekPlayed: seed.weekPlayed || existing?.weekPlayed || 1,
+            isKnockout: true,
+            stage: round.title,
+            scheduledTime: existing?.scheduledTime,
+            isCasted: existing?.isCasted,
+            twitchChannel: existing?.twitchChannel,
+            coinFlipResult: seed.coinFlipResult ?? existing?.coinFlipResult ?? null,
+            firstGameSideSelection: seed.firstGameSideSelection ?? existing?.firstGameSideSelection ?? (seed.coinFlipResult ? 'blue' : null)
+          };
+
+          knockoutMatches.push(resolvedMatch);
+        }
+      }
+    } else {
+      knockoutMatches = matches.filter(m => m.isKnockout);
+    }
+
+    const combined = [...nonKnockoutMatches, ...knockoutMatches];
+    return combined.filter(isMatchTeamsAvailable);
+  }, [matches, bracket, teams]);
+
+  const getMatchSeedId = (match: Match): number | null => {
+    if (!match.isKnockout) return null;
+    const num = typeof match.id === 'string' ? parseInt(match.id.replace(/^ko_/, ''), 10) : Number(match.id);
+    return isNaN(num) ? null : num;
+  };
 
   const getIconContent = (startDate: Date, endDate: Date, number: number) => {
 
@@ -304,7 +370,7 @@ const SchedulePage: React.FC = () => {
 
   function getGroupedMatches() {
     const groups: { [key: string]: Match[] } = {};
-    matches.forEach(match => {
+    allScheduleMatches.forEach(match => {
       const groupName = match.isKnockout
         ? (match.stage || 'Knockout Stage')
         : `Swiss Round ${match.weekPlayed}`;
@@ -318,25 +384,34 @@ const SchedulePage: React.FC = () => {
   }
 
   function getStagePrecedence(name: string): number {
-    const lower = name.toLowerCase();
-    if (lower.includes('grand final') || lower === 'finals' || lower.includes('final')) {
+    const lower = name.toLowerCase().trim();
+    if (lower.includes('grand final') || lower === 'finals' || lower === 'grand finals') {
+      return 150;
+    }
+    if (lower.includes('losers final') || lower === 'losers finals') {
+      return 140;
+    }
+    if (lower.includes('losers semifinal') || lower === 'losers semifinals') {
+      return 130;
+    }
+    if (lower.includes('winners final') || lower === 'winners finals') {
+      return 120;
+    }
+    if (lower.includes('losers round 1') || lower.includes('losers r1')) {
+      return 110;
+    }
+    if (lower.includes('winners semifinal') || lower === 'winners semifinals') {
       return 100;
     }
-    if (lower.includes('semifinal') || lower.includes('semi')) {
+    if (lower.includes('knockout') || lower.includes('bracket')) {
       return 90;
     }
-    if (lower.includes('quarterfinal') || lower.includes('quarter')) {
-      return 80;
-    }
-    if (lower.includes('knockout') || lower.includes('bracket')) {
-      return 70;
-    }
-    if (lower.startsWith('swiss round')) {
-      const match = lower.match(/swiss round\s+(\d+)/);
+    if (lower.startsWith('swiss round') || lower.startsWith('round ')) {
+      const match = lower.match(/round\s+(\d+)/);
       if (match) {
-        return 10 + parseInt(match[1], 10);
+        return 50 + parseInt(match[1], 10);
       }
-      return 10;
+      return 50;
     }
     const numMatch = lower.match(/\d+/);
     if (numMatch) {
@@ -398,7 +473,7 @@ const SchedulePage: React.FC = () => {
         <MatchesContainer>
           {matchesLoading || teamsLoading ? (
             <p style={{ textAlign: 'center' }}>Loading matches schedule...</p>
-          ) : matches.length === 0 ? (
+          ) : allScheduleMatches.length === 0 ? (
             <p style={{ textAlign: 'center', color: '#888' }}>No matches have been generated yet.</p>
           ) : (
             sortedGroupKeys.map(groupName => (
@@ -406,17 +481,23 @@ const SchedulePage: React.FC = () => {
                 <RoundTitle>{groupName}</RoundTitle>
                 <ScheduleMatchList>
                   {groupedMatches[groupName].map(match => {
-                    const team1 = getTeamOrPlaceholder(match.team1Id, teams, matches);
-                    const team2 = getTeamOrPlaceholder(match.team2Id, teams, matches);
-                    const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : 'Unknown Team');
-                    const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : 'Unknown Team');
+                    const seedId = getMatchSeedId(match);
+                    const team1 = match.team1Id > 0
+                      ? teams.find(t => t.id === match.team1Id)
+                      : getTeamOrPlaceholder(match.team1Id, teams, matches);
+                    const team2 = match.team2Id > 0
+                      ? teams.find(t => t.id === match.team2Id)
+                      : getTeamOrPlaceholder(match.team2Id, teams, matches);
+
+                    const team1Name = team1?.name || (match.team1Id === -1 ? 'Bye' : (seedId ? getBracketPlaceholderName(seedId, 1) : 'Unknown Team'));
+                    const team2Name = team2?.name || (match.team2Id === -1 ? 'Bye' : (seedId ? getBracketPlaceholderName(seedId, 2) : 'Unknown Team'));
 
                     return (
                       <ScheduleMatchItem key={match.id}>
                         <MatchupInfoGroup>
                           <MatchTeams>
                             <TeamNameContainer align="right">
-                              {team1 ? (
+                              {team1 && match.team1Id > 0 ? (
                                 <ScheduleTeamNameLink to={`/teams/${team1.id}?division=${urlDivision}`}>{team1Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team1Name}</TeamNameSpan>
@@ -424,7 +505,7 @@ const SchedulePage: React.FC = () => {
                             </TeamNameContainer>
                             <VersusSpan>vs</VersusSpan>
                             <TeamNameContainer align="left">
-                              {team2 ? (
+                              {team2 && match.team2Id > 0 ? (
                                 <ScheduleTeamNameLink to={`/teams/${team2.id}?division=${urlDivision}`}>{team2Name}</ScheduleTeamNameLink>
                               ) : (
                                 <TeamNameSpan>{team2Name}</TeamNameSpan>
@@ -453,7 +534,7 @@ const SchedulePage: React.FC = () => {
                         <MatchTimeDetails>
                           {renderTimeDisplay(match)}
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {team1 && team2 && (isCaster || isAdmin) && (
+                            {team1 && team2 && match.team1Id > 0 && match.team2Id > 0 && (isCaster || isAdmin) && (
                               <CastingOverlayButton
                                 href={`/#/cast/${match.id}?division=${urlDivision || division}`}
                                 target="_blank"
