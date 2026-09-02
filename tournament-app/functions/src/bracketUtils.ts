@@ -104,6 +104,20 @@ export function getMatchWinnerId(match: Match): number | null {
 }
 
 /**
+ * Checks whether a match is a knockout stage match.
+ * @param {Match} m - The match object.
+ * @return {boolean} True if the match is from the knockout stage.
+ */
+export function isKnockoutMatch(m: Match): boolean {
+  if (m.isKnockout) return true;
+  if (typeof m.id === "string" && m.id.startsWith("ko_")) return true;
+  if (m.stage && /^(winners|losers|grand\s*finals?)/i.test(m.stage.trim())) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Calculates Swiss tournament statistics for all teams.
  * @param {Team[]} teams - List of teams.
  * @param {Match[]} matches - List of matches.
@@ -114,7 +128,7 @@ export function calculateSwissStats(
   matches: Match[]
 ): TeamStats[] {
   const swissMatches = matches.filter(
-    (m) => !m.isKnockout && m.status === "completed"
+    (m) => !isKnockoutMatch(m) && m.status === "completed"
   );
 
   const statsMap = new Map<number, TeamStats>();

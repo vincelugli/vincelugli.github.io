@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTournament } from '../../context/TournamentContext';
-import { calculateSwissStats } from '../../utils';
+import { calculateSwissStats, TeamStats } from '../../utils';
 import { useDivision } from '../../context/DivisionContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import {
@@ -27,38 +27,33 @@ const SwissStandings: React.FC = () => {
 
   const stats = calculateSwissStats(teams, matches);
 
-  const sortStats = (a: typeof teams[0], b: typeof teams[0]) => {
-    const sA = stats.find(s => s.team.id === a.id);
-    const sB = stats.find(s => s.team.id === b.id);
-    if (!sA || !sB) return 0;
-    
-    if (sA.matchWinPercentage !== sB.matchWinPercentage) {
-      return sB.matchWinPercentage - sA.matchWinPercentage;
+  const sortStats = (a: TeamStats, b: TeamStats) => {
+    if (a.matchWinPercentage !== b.matchWinPercentage) {
+      return b.matchWinPercentage - a.matchWinPercentage;
     }
-    if (sA.adjustedBuchholz !== sB.adjustedBuchholz) {
-      return sB.adjustedBuchholz - sA.adjustedBuchholz;
+    if (a.adjustedBuchholz !== b.adjustedBuchholz) {
+      return b.adjustedBuchholz - a.adjustedBuchholz;
     }
-    if (sA.gameWinPercentage !== sB.gameWinPercentage) {
-      return sB.gameWinPercentage - sA.gameWinPercentage;
+    if (a.gameWinPercentage !== b.gameWinPercentage) {
+      return b.gameWinPercentage - a.gameWinPercentage;
     }
-    return sA.team.id - sB.team.id;
+    return a.team.id - b.team.id;
   };
 
-  const advancedTeams = [...teams].filter(t => t.wins === 3).sort(sortStats);
-  const eliminatedTeams = [...teams].filter(t => t.losses === 3).sort(sortStats);
-  const activeTeams = [...teams].filter(t => t.wins < 3 && t.losses < 3).sort(sortStats);
-
+  const advancedStats = stats.filter(s => s.wins >= 3).sort(sortStats);
+  const eliminatedStats = stats.filter(s => s.losses >= 3).sort(sortStats);
+  const activeStats = stats.filter(s => s.wins < 3 && s.losses < 3).sort(sortStats);
 
   return (
     <SwissStandingsContainer>
-      {advancedTeams.length > 0 && (
+      {advancedStats.length > 0 && (
         <SwissStandingCard type="advanced">
           <SwissStandingCardTitle>Advanced to Bracket (3 Wins)</SwissStandingCardTitle>
           <SwissStandingTeamList>
-            {advancedTeams.map(t => (
-              <SwissStandingTeamItem key={t.id}>
-                <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
-                <span>{t.record || `${t.wins}-${t.losses}`}</span>
+            {advancedStats.map(s => (
+              <SwissStandingTeamItem key={s.team.id}>
+                <TeamName to={`/teams/${s.team.id}?division=${urlDivision}`}>{s.team.name}</TeamName>
+                <span>{`${s.wins}-${s.losses}`}</span>
               </SwissStandingTeamItem>
             ))}
           </SwissStandingTeamList>
@@ -68,23 +63,23 @@ const SwissStandings: React.FC = () => {
       <SwissStandingCard type="active">
         <SwissStandingCardTitle>Active Teams</SwissStandingCardTitle>
         <SwissStandingTeamList>
-          {activeTeams.map(t => (
-            <SwissStandingTeamItem key={t.id}>
-              <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
-              <span>{t.record || `${t.wins}-${t.losses}`}</span>
+          {activeStats.map(s => (
+            <SwissStandingTeamItem key={s.team.id}>
+              <TeamName to={`/teams/${s.team.id}?division=${urlDivision}`}>{s.team.name}</TeamName>
+              <span>{`${s.wins}-${s.losses}`}</span>
             </SwissStandingTeamItem>
           ))}
         </SwissStandingTeamList>
       </SwissStandingCard>
 
-      {eliminatedTeams.length > 0 && (
+      {eliminatedStats.length > 0 && (
         <SwissStandingCard type="eliminated">
           <SwissStandingCardTitle>Eliminated (3 Losses)</SwissStandingCardTitle>
           <SwissStandingTeamList>
-            {eliminatedTeams.map(t => (
-              <SwissStandingTeamItem key={t.id}>
-                <TeamName to={`/teams/${t.id}?division=${urlDivision}`}>{t.name}</TeamName>
-                <span>{t.record || `${t.wins}-${t.losses}`}</span>
+            {eliminatedStats.map(s => (
+              <SwissStandingTeamItem key={s.team.id}>
+                <TeamName to={`/teams/${s.team.id}?division=${urlDivision}`}>{s.team.name}</TeamName>
+                <span>{`${s.wins}-${s.losses}`}</span>
               </SwissStandingTeamItem>
             ))}
           </SwissStandingTeamList>

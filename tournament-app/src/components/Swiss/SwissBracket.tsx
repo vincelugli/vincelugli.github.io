@@ -4,7 +4,7 @@ import { Match } from '../../types';
 import { useTournament } from '../../context/TournamentContext';
 import { useGameMatches } from '../../context/MatchesContext';
 import { useDivision } from '../../context/DivisionContext';
-import { getTeamOrPlaceholder, getMatchWinnerId } from '../../utils';
+import { getTeamOrPlaceholder, getMatchWinnerId, isKnockoutMatch } from '../../utils';
 import {
   SwissBracketContainer,
   SwissRoundColumn,
@@ -85,7 +85,7 @@ const SwissBracket: React.FC = () => {
   }
 
   // Filter out any knockout matches
-  const swissMatches = matches.filter(m => !m.isKnockout);
+  const swissMatches = matches.filter(m => !isKnockoutMatch(m));
 
   // Dynamically calculate the maximum round or default to 5
   const maxRound = Math.max(5, ...swissMatches.map(m => m.weekPlayed || 0));

@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown} from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown, isKnockoutMatch} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins, FaInfoCircle, FaCalculator, FaChevronDown, FaChevronUp} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -202,7 +202,7 @@ const AdminPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [bracket, setBracket] = useState<BracketRound[]>([]);
 
-  const swissMatches = useMemo(() => matches.filter(m => !m.isKnockout), [matches]);
+  const swissMatches = useMemo(() => matches.filter(m => !isKnockoutMatch(m)), [matches]);
   const hasIncompleteSwissMatches = useMemo(() => swissMatches.some(m => m.status !== 'completed'), [swissMatches]);
   const nextRoundNum = useMemo(() => {
     const roundNums = swissMatches.map(m => {
@@ -999,6 +999,44 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleRecalculateSwissStandings = async () => {
+    if (!teams || teams.length === 0) {
+      showStatus('error', 'No teams found.');
+      return;
+    }
+    if (!window.confirm('Recalculate all team standings strictly from completed Swiss matches? This will exclude knockout matches.')) return;
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Recalculating Swiss standings from completed Swiss matches...');
+
+      const stats = calculateSwissStats(teams, matches);
+      const statsMap = new Map<number, typeof stats[0]>();
+      stats.forEach(s => statsMap.set(s.team.id, s));
+
+      const updatedTeams = teams.map(t => {
+        const st = statsMap.get(t.id);
+        if (!st) return t;
+        return {
+          ...t,
+          wins: st.wins,
+          losses: st.losses,
+          record: `${st.wins}-${st.losses}`,
+          gameWins: st.gameWins,
+          gameLosses: st.gameLosses,
+          gameRecord: `${st.gameWins}-${st.gameLosses}`
+        };
+      });
+
+      await updateDoc(doc(db, 'teams', `${prefix}_${division}`), { teams: updatedTeams });
+      setTeams(updatedTeams);
+      showStatus('success', 'Successfully recalculated Swiss standings from Swiss matches!');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to recalculate Swiss standings.');
+    }
+  };
+
   // 5. Create or Update matches
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1663,10 +1701,10 @@ const AdminPage: React.FC = () => {
     const seed = bracket[roundIndex]?.seeds[seedIndex];
     if (seed) {
       const matchId = `ko_${seed.id}`;
-      const matchExists = matches.some(m => m.id === matchId || String(m.id) === String(seed.id));
+      const matchExists = matches.some(m => m.id === matchId || (m.isKnockout && String(m.id) === String(seed.id)));
       if (matchExists) {
         const updatedMatches = matches.map(m => {
-          if (m.id === matchId || String(m.id) === String(seed.id)) {
+          if (m.id === matchId || (m.isKnockout && String(m.id) === String(seed.id))) {
             return {
               ...m,
               coinFlipResult: result,
@@ -2005,7 +2043,7 @@ const AdminPage: React.FC = () => {
       const matchId = `ko_${seedId}`;
       const year = prefix.replace('grumble', '');
 
-      const matchExists = matches.some(m => m.id === matchId || String(m.id) === String(seedId));
+      const matchExists = matches.some(m => m.id === matchId || (m.isKnockout && String(m.id) === String(seedId)));
       if (!matchExists) {
         await handleGenerateKnockoutMatches();
       }
@@ -2030,7 +2068,21 @@ const AdminPage: React.FC = () => {
           seed.tournamentCodes = Array.from(new Set([...(seed.tournamentCodes || []), ...newCodes]));
         }
       }
-      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket });
+
+      const updatedMatches = matches.map(m => {
+        if (m.id === matchId || (m.isKnockout && String(m.id) === String(seedId))) {
+          return {
+            ...m,
+            tournamentCodes: Array.from(new Set([...(m.tournamentCodes || []), ...newCodes]))
+          };
+        }
+        return m;
+      });
+
+      await Promise.all([
+        updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket }),
+        updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedMatches })
+      ]);
 
       showStatus('success', `Generated ${newCodes.length} tournament codes for Knockout Match #${seedId}: ${newCodes.join(', ')}`);
     } catch (err: any) {
@@ -2098,11 +2150,369 @@ const AdminPage: React.FC = () => {
         }
       }
 
-      await updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket });
+      const updatedMatches = matches.map(m => {
+        const foundRound = updatedBracket.find(r =>
+          r.seeds.some(s => `ko_${s.id}` === String(m.id) || (m.isKnockout && String(s.id) === String(m.id)))
+        );
+        const foundSeed = foundRound?.seeds.find(s => `ko_${s.id}` === String(m.id) || (m.isKnockout && String(s.id) === String(m.id)));
+        if (foundSeed && foundSeed.tournamentCodes) {
+          return {
+            ...m,
+            tournamentCodes: Array.from(new Set([...(m.tournamentCodes || []), ...foundSeed.tournamentCodes]))
+          };
+        }
+        return m;
+      });
+
+      await Promise.all([
+        updateDoc(doc(db, 'bracket', `${prefix}_${division}`), { bracket: updatedBracket }),
+        updateDoc(doc(db, 'matches', `${prefix}_${division}`), { matches: updatedMatches })
+      ]);
       showStatus('success', `Successfully generated ${totalGenerated} tournament codes across ${eligibleSeeds.length} knockout matches!`);
     } catch (err: any) {
       console.error(err);
       showStatus('error', err.message || 'Failed to bulk generate knockout tournament codes.');
+    }
+  };
+
+  // Sync bracket tournament codes to matches/grumble2026_{division}
+  const handleSyncBracketCodesToMatches = async (showToast: boolean = true) => {
+    if (!bracket || bracket.length === 0) {
+      if (showToast) showStatus('error', 'No bracket initialized yet.');
+      return;
+    }
+
+    try {
+      if (showToast) {
+        setStatus('loading');
+        setStatusMsg(`Syncing bracket tournament codes to matches/${prefix}_${division}...`);
+      }
+
+      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+      const matchesSnap = await getDoc(matchesRef);
+      const currentMatches: Match[] = matchesSnap.exists() ? (matchesSnap.data().matches || []) : [...matches];
+
+      let syncedCount = 0;
+      let totalCodesSynced = 0;
+
+      const updatedMatches = [...currentMatches];
+
+      for (const round of bracket) {
+        for (const seed of round.seeds || []) {
+          const matchId = `ko_${seed.id}`;
+          const seedCodes = seed.tournamentCodes || [];
+          if (seedCodes.length === 0) continue;
+
+          const matchIdx = updatedMatches.findIndex(m =>
+            m.id === matchId ||
+            (m.isKnockout && (
+              String(m.id) === String(seed.id) ||
+              String(m.id).replace(/^ko_/, '') === String(seed.id)
+            ))
+          );
+
+          if (matchIdx !== -1) {
+            const existingCodes = updatedMatches[matchIdx].tournamentCodes || [];
+            const mergedCodes = Array.from(new Set([...existingCodes, ...seedCodes]));
+            const diff = mergedCodes.length - existingCodes.length;
+            if (diff > 0) {
+              syncedCount++;
+              totalCodesSynced += diff;
+            }
+            updatedMatches[matchIdx] = {
+              ...updatedMatches[matchIdx],
+              tournamentCodes: mergedCodes,
+              isKnockout: true,
+            };
+          } else {
+            const newKoMatch: Match = {
+              id: matchId,
+              team1Id: seed.team1Id || 0,
+              team2Id: seed.team2Id || 0,
+              status: seed.status || 'upcoming',
+              score: seed.score || '',
+              winnerId: seed.winnerId ?? null,
+              tournamentCodes: [...seedCodes],
+              isKnockout: true,
+              stage: round.title,
+              weekPlayed: seed.weekPlayed || 1,
+              coinFlipResult: seed.coinFlipResult ?? null,
+              firstGameSideSelection: seed.firstGameSideSelection ?? null,
+            };
+            updatedMatches.push(newKoMatch);
+            syncedCount++;
+            totalCodesSynced += seedCodes.length;
+          }
+        }
+      }
+
+      await updateDoc(matchesRef, { matches: updatedMatches });
+      setMatches(updatedMatches);
+
+      if (showToast) {
+        showStatus('success', `Synced bracket tournament codes to matches! Updated ${syncedCount} match(es) with ${totalCodesSynced} new code(s).`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (showToast) {
+        showStatus('error', err.message || 'Failed to sync bracket codes to matches.');
+      }
+      throw err;
+    }
+  };
+
+  const handleSyncCodesForBracketSeed = async (seed: BracketSeed, roundTitle: string, showToast: boolean = true) => {
+    const seedCodes = seed.tournamentCodes || [];
+    if (seedCodes.length === 0) {
+      if (showToast) showStatus('error', `Knockout Match #${seed.id} has no tournament codes to sync.`);
+      return;
+    }
+
+    try {
+      if (showToast) {
+        setStatus('loading');
+        setStatusMsg(`Syncing tournament codes for Knockout Match #${seed.id} to matches...`);
+      }
+
+      const matchesRef = doc(db, 'matches', `${prefix}_${division}`);
+      const matchesSnap = await getDoc(matchesRef);
+      const currentMatches: Match[] = matchesSnap.exists() ? (matchesSnap.data().matches || []) : [...matches];
+
+      const matchId = `ko_${seed.id}`;
+      const matchIdx = currentMatches.findIndex(m =>
+        m.id === matchId ||
+        (m.isKnockout && (
+          String(m.id) === String(seed.id) ||
+          String(m.id).replace(/^ko_/, '') === String(seed.id)
+        ))
+      );
+
+      const updatedMatches = [...currentMatches];
+      if (matchIdx !== -1) {
+        const existingCodes = updatedMatches[matchIdx].tournamentCodes || [];
+        const mergedCodes = Array.from(new Set([...existingCodes, ...seedCodes]));
+        updatedMatches[matchIdx] = {
+          ...updatedMatches[matchIdx],
+          tournamentCodes: mergedCodes,
+          isKnockout: true,
+        };
+      } else {
+        const newKoMatch: Match = {
+          id: matchId,
+          team1Id: seed.team1Id || 0,
+          team2Id: seed.team2Id || 0,
+          status: seed.status || 'upcoming',
+          score: seed.score || '',
+          winnerId: seed.winnerId ?? null,
+          tournamentCodes: [...seedCodes],
+          isKnockout: true,
+          stage: roundTitle,
+          weekPlayed: seed.weekPlayed || 1,
+          coinFlipResult: seed.coinFlipResult ?? null,
+          firstGameSideSelection: seed.firstGameSideSelection ?? null,
+        };
+        updatedMatches.push(newKoMatch);
+      }
+
+      await updateDoc(matchesRef, { matches: updatedMatches });
+      setMatches(updatedMatches);
+
+      if (showToast) {
+        showStatus('success', `Synced ${seedCodes.length} tournament code(s) for Match #${seed.id} to matches/${prefix}_${division}!`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (showToast) {
+        showStatus('error', err.message || `Failed to sync codes for Match #${seed.id}.`);
+      }
+      throw err;
+    }
+  };
+
+  const handleSyncMatchStandingsFromResults = async (seed: BracketSeed, roundTitle?: string) => {
+    const seedCodes = seed.tournamentCodes || [];
+    if (seedCodes.length === 0) {
+      showStatus('error', `Knockout Match #${seed.id} has no tournament codes.`);
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg(`Checking reported match results for Match #${seed.id}...`);
+
+      // Ensure codes exist in matches document first
+      await handleSyncCodesForBracketSeed(seed, roundTitle || '', false);
+
+      const functions = getFunctions();
+      const updateStandingsFn = httpsCallable(functions, 'updateStandingsWithExistingMatchResult');
+
+      const reportedCodes: string[] = [];
+      for (const code of seedCodes) {
+        const resultSnap = await getDoc(doc(db, 'match_results', code));
+        if (resultSnap.exists()) {
+          reportedCodes.push(code);
+        }
+      }
+
+      if (reportedCodes.length === 0) {
+        showStatus('error', `No match results found in 'match_results' collection for any code in Match #${seed.id}.`);
+        return;
+      }
+
+      setStatusMsg(`Found ${reportedCodes.length} reported result(s). Syncing standings...`);
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < reportedCodes.length; i++) {
+        const code = reportedCodes[i];
+        setStatusMsg(`Syncing result ${i + 1}/${reportedCodes.length} (${code})...`);
+        try {
+          await updateStandingsFn({
+            shortCode: code,
+            division,
+            matchId: `ko_${seed.id}`,
+            isKnockout: true,
+          });
+          successCount++;
+        } catch (err: any) {
+          console.error(`Error syncing code ${code}:`, err);
+          errors.push(`${code}: ${err.message || 'Error'}`);
+        }
+      }
+
+      if (successCount > 0) {
+        showStatus('success', `Successfully synced standings for ${successCount}/${reportedCodes.length} reported result(s) on Match #${seed.id}!`);
+      } else {
+        showStatus('error', `Failed to sync standings: ${errors.join('; ')}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || `Failed to sync standings for Match #${seed.id}.`);
+    }
+  };
+
+  const handleSyncAllReportedBracketResults = async () => {
+    if (!bracket || bracket.length === 0) {
+      showStatus('error', 'No bracket initialized yet.');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg('First syncing all bracket codes to matches...');
+      await handleSyncBracketCodesToMatches(false);
+
+      setStatusMsg('Scanning for reported match results across all bracket matches...');
+
+      const functions = getFunctions();
+      const updateStandingsFn = httpsCallable(functions, 'updateStandingsWithExistingMatchResult');
+
+      const reportedItems: { code: string; seedId: number }[] = [];
+
+      for (const round of bracket) {
+        for (const seed of round.seeds || []) {
+          for (const code of seed.tournamentCodes || []) {
+            const resultSnap = await getDoc(doc(db, 'match_results', code));
+            if (resultSnap.exists()) {
+              reportedItems.push({ code, seedId: seed.id });
+            }
+          }
+        }
+      }
+
+      if (reportedItems.length === 0) {
+        showStatus('success', 'No reported match results found in match_results collection for any bracket codes.');
+        return;
+      }
+
+      setStatusMsg(`Found ${reportedItems.length} reported result(s). Syncing standings...`);
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < reportedItems.length; i++) {
+        const item = reportedItems[i];
+        setStatusMsg(`Syncing result ${i + 1}/${reportedItems.length} (Match #${item.seedId}, code: ${item.code})...`);
+        try {
+          await updateStandingsFn({
+            shortCode: item.code,
+            division,
+            matchId: `ko_${item.seedId}`,
+            isKnockout: true,
+          });
+          successCount++;
+        } catch (err: any) {
+          console.error(`Error syncing code ${item.code}:`, err);
+          errors.push(`${item.code}: ${err.message || 'Error'}`);
+        }
+      }
+
+      if (successCount > 0) {
+        showStatus('success', `Successfully synced standings for ${successCount}/${reportedItems.length} reported match result(s) across the bracket!`);
+      } else {
+        showStatus('error', `Failed to sync standings: ${errors.join('; ')}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to sync reported bracket results.');
+    }
+  };
+
+  const handleSyncMatchCodesStandings = async (match: Match) => {
+    const codes = match.tournamentCodes || [];
+    if (codes.length === 0) {
+      showStatus('error', `Match #${match.id} has no tournament codes.`);
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setStatusMsg(`Checking reported match results for Match #${match.id}...`);
+
+      const functions = getFunctions();
+      const updateStandingsFn = httpsCallable(functions, 'updateStandingsWithExistingMatchResult');
+
+      const reportedCodes: string[] = [];
+      for (const code of codes) {
+        const resultSnap = await getDoc(doc(db, 'match_results', code));
+        if (resultSnap.exists()) {
+          reportedCodes.push(code);
+        }
+      }
+
+      if (reportedCodes.length === 0) {
+        showStatus('error', `No match results found in 'match_results' for any of Match #${match.id}'s codes.`);
+        return;
+      }
+
+      setStatusMsg(`Found ${reportedCodes.length} reported result(s). Syncing standings...`);
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < reportedCodes.length; i++) {
+        const code = reportedCodes[i];
+        setStatusMsg(`Syncing result ${i + 1}/${reportedCodes.length} (${code})...`);
+        try {
+          await updateStandingsFn({
+            shortCode: code,
+            division,
+            matchId: match.id,
+            isKnockout: Boolean(match.isKnockout),
+          });
+          successCount++;
+        } catch (err: any) {
+          console.error(`Error syncing code ${code}:`, err);
+          errors.push(`${code}: ${err.message || 'Error'}`);
+        }
+      }
+
+      if (successCount > 0) {
+        showStatus('success', `Successfully synced standings for ${successCount}/${reportedCodes.length} reported result(s) on Match #${match.id}!`);
+      } else {
+        showStatus('error', `Failed to sync standings: ${errors.join('; ')}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || `Failed to sync standings for Match #${match.id}.`);
     }
   };
 
@@ -3057,6 +3467,9 @@ const AdminPage: React.FC = () => {
                   <AdminActionButton variant="secondary" onClick={handleSyncPlayerTeamIds}>
                     <FaSync /> Sync Player Team IDs
                   </AdminActionButton>
+                  <AdminActionButton variant="secondary" onClick={handleRecalculateSwissStandings}>
+                    <FaCalculator /> Recalculate Swiss Standings
+                  </AdminActionButton>
                 </div>
               </div>
 
@@ -3147,7 +3560,7 @@ const AdminPage: React.FC = () => {
                           )}
                         </AdminStyledTd>
                         <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
-                          {team ? (team.record || `${team.wins}-${team.losses}`) : '-'}
+                          {st ? `${st.wins}-${st.losses}` : (team ? (team.record || `${team.wins}-${team.losses}`) : '-')}
                         </AdminStyledTd>
                         <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
                           {st ? st.adjustedBuchholz : '-'}
@@ -3235,7 +3648,8 @@ const AdminPage: React.FC = () => {
                   <tbody>
                     {playoffBuchholzBreakdown.map(tb => {
                       const isExpanded = expandedBuchholzTeamId === tb.team.id;
-                      const teamRecord = tb.team.record || `${tb.team.wins}-${tb.team.losses}`;
+                      const teamStat = swissStats.find(s => s.team.id === tb.team.id);
+                      const teamRecord = teamStat ? `${teamStat.wins}-${teamStat.losses}` : (tb.team.record || `${tb.team.wins}-${tb.team.losses}`);
 
                       return (
                         <React.Fragment key={tb.team.id}>
@@ -3348,6 +3762,22 @@ const AdminPage: React.FC = () => {
             </AdminActionButton>
             <AdminActionButton variant="secondary" onClick={handleBulkFlipKnockoutCoins} disabled={status === 'loading'}>
               <FaCoins /> Flip All Knockout Coins
+            </AdminActionButton>
+            <AdminActionButton
+              variant="secondary"
+              onClick={() => handleSyncBracketCodesToMatches(true)}
+              disabled={status === 'loading'}
+              title="Copy all tournament codes from the bracket to matches document"
+            >
+              <FaLink /> Sync Bracket Codes to Matches
+            </AdminActionButton>
+            <AdminActionButton
+              variant="secondary"
+              onClick={handleSyncAllReportedBracketResults}
+              disabled={status === 'loading'}
+              title="Scan all bracket tournament codes and sync standings for each reported match result"
+            >
+              <FaSync /> Sync Standings from Reported Results
             </AdminActionButton>
 
             {/* Code count dropdown and bulk generate button */}
@@ -3539,6 +3969,28 @@ const AdminPage: React.FC = () => {
                                       style={{ padding: '2px 6px', fontSize: '0.75rem', opacity: 0.85 }}
                                     >
                                       <FaLink /> +{knockoutCodesCount} Codes
+                                    </AdminActionButton>
+                                  </div>
+                                )}
+                                {seed.tournamentCodes && seed.tournamentCodes.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                    <AdminActionButton
+                                      title={`Sync tournament codes of Match #${seed.id} to matches document`}
+                                      variant="secondary"
+                                      onClick={() => handleSyncCodesForBracketSeed(seed, round.title)}
+                                      disabled={status === 'loading'}
+                                      style={{ padding: '2px 6px', fontSize: '0.72rem', opacity: 0.9 }}
+                                    >
+                                      <FaLink /> Sync to Match
+                                    </AdminActionButton>
+                                    <AdminActionButton
+                                      title={`Check reported match results for Match #${seed.id}'s tournament codes and sync standings`}
+                                      variant="secondary"
+                                      onClick={() => handleSyncMatchStandingsFromResults(seed, round.title)}
+                                      disabled={status === 'loading'}
+                                      style={{ padding: '2px 6px', fontSize: '0.72rem', opacity: 0.9 }}
+                                    >
+                                      <FaSync /> Sync Standings
                                     </AdminActionButton>
                                   </div>
                                 )}
@@ -4169,6 +4621,19 @@ const AdminPage: React.FC = () => {
                                   </div>
                                 </div>
                               ))}
+                              {codes.length > 1 && (
+                                <div style={{ marginTop: '0.4rem' }}>
+                                  <AdminActionButton
+                                    onClick={() => handleSyncMatchCodesStandings(m)}
+                                    variant="secondary"
+                                    disabled={status === 'loading'}
+                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', width: 'auto' }}
+                                    title="Check all tournament codes for this match and sync standings for any reported results"
+                                  >
+                                    <FaSync /> Sync All Reported Results
+                                  </AdminActionButton>
+                                </div>
+                              )}
                             </div>
                           )}
                         </AdminStyledTd>

@@ -662,7 +662,7 @@ async function executeGameNotificationProcessing(
       `Document for shortCode '${notificationData.shortCode}' not found.`
     );
   }
-  const {division, matchId} = shortCodeDoc.data()!;
+  const {division, matchId, isKnockout} = shortCodeDoc.data()!;
   if (!division || !matchId) {
     throw new Error(
       `Document '${notificationData.shortCode}' ` +
@@ -824,11 +824,16 @@ async function executeGameNotificationProcessing(
   // ////////////////////
   // Update Standings //
   // ////////////////////
+  const isKo = Boolean(
+    isKnockout || (typeof matchId === "string" && matchId.startsWith("ko_"))
+  );
   await updateStandings(
     notificationData.shortCode || "grumble2026_unknown",
     winnerId || -1,
     division,
-    matchId);
+    matchId,
+    isKo
+  );
 }
 
 export const gameNotificationEndpoint = onRequest(
@@ -947,13 +952,18 @@ const updateStandings = async (
   shortCode: string,
   winnerId: number,
   division: string,
-  matchId: number | string
+  matchId: number | string,
+  isKnockout?: boolean
 ) => {
   logger.info(`Updating standings for ${shortCode}`);
 
   if (winnerId === -1) {
     throw new Error("Invalid winner id.");
   }
+
+  const isKo = typeof isKnockout === "boolean" ?
+    isKnockout :
+    (typeof matchId === "string" && matchId.startsWith("ko_"));
 
   await db.runTransaction(async (transaction) => {
     const divisionTeamsDocRef = db.doc(`teams/grumble2026_${division}`);
@@ -979,20 +989,101 @@ const updateStandings = async (
 
     const allMatches = divisionMatchesDoc.data()!.matches || [];
     const allTeams = divisionTeamsDoc.data()!.teams || [];
+    const cleanMatchId = String(matchId).replace(/^ko_/, "");
 
-    const currentMatchIndex = allMatches.findIndex((m: any) =>
-      m.id === matchId ||
-      String(m.id) === String(matchId) ||
-      (Array.isArray(m.tournamentCodes) &&
-        m.tournamentCodes.includes(shortCode)) ||
-      String(m.id).replace(/^ko_/, "") === String(matchId).replace(/^ko_/, "")
+    // 1. Try finding match by shortCode in tournamentCodes (most specific)
+    let currentMatchIndex = allMatches.findIndex((m: any) =>
+      Array.isArray(m.tournamentCodes) && m.tournamentCodes.includes(shortCode)
     );
+
+    // 2. If not found by shortCode, find by matchId respecting knockout stage
+    if (currentMatchIndex === -1) {
+      currentMatchIndex = allMatches.findIndex((m: any) => {
+        if (isKo) {
+          return (
+            m.isKnockout === true || String(m.id).startsWith("ko_")
+          ) && (
+            m.id === matchId ||
+            String(m.id) === String(matchId) ||
+            String(m.id) === cleanMatchId ||
+            String(m.id).replace(/^ko_/, "") === cleanMatchId
+          );
+        } else {
+          return (
+            !m.isKnockout && !String(m.id).startsWith("ko_")
+          ) && (
+            m.id === matchId || String(m.id) === String(matchId)
+          );
+        }
+      });
+    }
+
+    let targetBracketSeed: any = null;
+    let targetRoundTitle = "";
+    const rawBracket = (divisionBracketDoc && divisionBracketDoc.exists) ?
+      divisionBracketDoc.data()?.bracket : null;
+
+    if (Array.isArray(rawBracket)) {
+      for (const round of rawBracket) {
+        for (const seed of round.seeds || []) {
+          if (
+            (Array.isArray(seed.tournamentCodes) &&
+              seed.tournamentCodes.includes(shortCode)) ||
+            String(seed.id) === cleanMatchId ||
+            `ko_${seed.id}` === String(matchId)
+          ) {
+            targetBracketSeed = seed;
+            targetRoundTitle = round.title || "";
+            break;
+          }
+        }
+        if (targetBracketSeed) break;
+      }
+    }
+
+    // 3. If knockout match not in allMatches yet, add it from bracket seed
+    if (currentMatchIndex === -1 && isKo && targetBracketSeed) {
+      const newKoMatch: any = {
+        id: `ko_${targetBracketSeed.id}`,
+        team1Id: targetBracketSeed.team1Id || 0,
+        team2Id: targetBracketSeed.team2Id || 0,
+        status: targetBracketSeed.status || "upcoming",
+        score: targetBracketSeed.score || "",
+        winnerId: targetBracketSeed.winnerId ?? null,
+        tournamentCodes: Array.from(
+          new Set([...(targetBracketSeed.tournamentCodes || []), shortCode])
+        ),
+        isKnockout: true,
+        stage: targetRoundTitle,
+        weekPlayed: targetBracketSeed.weekPlayed || 1,
+      };
+      allMatches.push(newKoMatch);
+      currentMatchIndex = allMatches.length - 1;
+    }
 
     let currentMatch: any = null;
 
     if (currentMatchIndex !== -1) {
       currentMatch = allMatches[currentMatchIndex];
       logger.info(`Current match: ${JSON.stringify(currentMatch)}`);
+
+      if (!currentMatch.tournamentCodes) {
+        currentMatch.tournamentCodes = [];
+      }
+      if (shortCode && !currentMatch.tournamentCodes.includes(shortCode)) {
+        currentMatch.tournamentCodes.push(shortCode);
+      }
+
+      if (targetBracketSeed) {
+        if ((!currentMatch.team1Id || currentMatch.team1Id === 0) &&
+            targetBracketSeed.team1Id > 0) {
+          currentMatch.team1Id = targetBracketSeed.team1Id;
+        }
+        if ((!currentMatch.team2Id || currentMatch.team2Id === 0) &&
+            targetBracketSeed.team2Id > 0) {
+          currentMatch.team2Id = targetBracketSeed.team2Id;
+        }
+      }
 
       const {team1Id, team2Id} = currentMatch;
       currentMatch.results = currentMatch.results || {};
@@ -1026,28 +1117,41 @@ const updateStandings = async (
         const loserId = winnerId === team1Id ? team2Id : team1Id;
         const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
         const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
-        if (winnerIndex === -1 || loserIndex === -1) {
-          throw new Error(
-            `One or both teams (${winnerId}, ${loserId}) ` +
-            `not found in division '${division}'.`
-          );
-        }
 
-        allTeams[winnerIndex].gameWins += 1;
-        const winRecord =
-          `${allTeams[winnerIndex].gameWins}-` +
-          `${allTeams[winnerIndex].gameLosses}`;
-        allTeams[winnerIndex].gameRecord = winRecord;
-        allTeams[loserIndex].gameLosses += 1;
-        const loseRecord =
-          `${allTeams[loserIndex].gameWins}-` +
-          `${allTeams[loserIndex].gameLosses}`;
-        allTeams[loserIndex].gameRecord = loseRecord;
-        logger.info(
-          `Updated game records for match ${matchId}. ` +
-          `Winner: ${allTeams[winnerIndex].gameRecord}, ` +
-          `Loser: ${allTeams[loserIndex].gameRecord}`
+        const isMatchKo = Boolean(
+          isKo ||
+          currentMatch?.isKnockout ||
+          (typeof currentMatch?.id === "string" && currentMatch.id.startsWith("ko_")) ||
+          (currentMatch?.stage && /^(winners|losers|grand\s*finals?)/i.test(currentMatch.stage.trim()))
         );
+
+        if (!isMatchKo) {
+          if (winnerIndex !== -1 && loserIndex !== -1) {
+            allTeams[winnerIndex].gameWins =
+              (allTeams[winnerIndex].gameWins || 0) + 1;
+            const winRecord =
+              `${allTeams[winnerIndex].gameWins}-` +
+              `${allTeams[winnerIndex].gameLosses || 0}`;
+            allTeams[winnerIndex].gameRecord = winRecord;
+            allTeams[loserIndex].gameLosses =
+              (allTeams[loserIndex].gameLosses || 0) + 1;
+            const loseRecord =
+              `${allTeams[loserIndex].gameWins || 0}-` +
+              `${allTeams[loserIndex].gameLosses}`;
+            allTeams[loserIndex].gameRecord = loseRecord;
+            logger.info(
+              `Updated game records for match ${matchId}. ` +
+              `Winner: ${allTeams[winnerIndex].gameRecord}, ` +
+              `Loser: ${allTeams[loserIndex].gameRecord}`
+            );
+          } else {
+            logger.warn(
+              `Could not update team game records: winnerId=${winnerId} ` +
+              `(index: ${winnerIndex}), loserId=${loserId} ` +
+              `(index: ${loserIndex}) in division '${division}'.`
+            );
+          }
+        }
 
         // check if winner has enough games
         const newTotalWins = winnerId === team1Id ? team1Wins : team2Wins;
@@ -1056,12 +1160,19 @@ const updateStandings = async (
           logger.info(
             `Match win condition met for Team ${winnerId} in match ${matchId}!`
           );
-          allTeams[winnerIndex].wins += 1;
-          allTeams[winnerIndex].record =
-            `${allTeams[winnerIndex].wins}-${allTeams[winnerIndex].losses}`;
-          allTeams[loserIndex].losses += 1;
-          allTeams[loserIndex].record =
-            `${allTeams[loserIndex].wins}-${allTeams[loserIndex].losses}`;
+          if (!isMatchKo) {
+            if (winnerIndex !== -1 && loserIndex !== -1) {
+              allTeams[winnerIndex].wins = (allTeams[winnerIndex].wins || 0) + 1;
+              const wLosses = allTeams[winnerIndex].losses || 0;
+              allTeams[winnerIndex].record =
+                `${allTeams[winnerIndex].wins}-${wLosses}`;
+              allTeams[loserIndex].losses =
+                (allTeams[loserIndex].losses || 0) + 1;
+              const lWins = allTeams[loserIndex].wins || 0;
+              allTeams[loserIndex].record =
+                `${lWins}-${allTeams[loserIndex].losses}`;
+            }
+          }
           currentMatch.status = "completed";
           currentMatch.winnerId = winnerId;
         } else {
@@ -1103,14 +1214,22 @@ const updateStandings = async (
         for (const round of updatedBracket) {
           for (const seed of round.seeds) {
             const koMatchIndex = allMatches.findIndex((m: any) =>
-              m.id === `ko_${seed.id}` || String(m.id) === String(seed.id)
+              m.id === `ko_${seed.id}` ||
+              (m.isKnockout && (
+                String(m.id) === String(seed.id) ||
+                String(m.id).replace(/^ko_/, "") === String(seed.id)
+              ))
             );
             if (koMatchIndex !== -1) {
               const existingMatch = allMatches[koMatchIndex];
               allMatches[koMatchIndex] = {
                 ...existingMatch,
-                team1Id: seed.team1Id || existingMatch.team1Id || 0,
-                team2Id: seed.team2Id || existingMatch.team2Id || 0,
+                team1Id: (seed.team1Id && seed.team1Id > 0) ?
+                  seed.team1Id :
+                  (existingMatch.team1Id || 0),
+                team2Id: (seed.team2Id && seed.team2Id > 0) ?
+                  seed.team2Id :
+                  (existingMatch.team2Id || 0),
                 status: seed.status || existingMatch.status || "upcoming",
                 score: seed.score || existingMatch.score || "",
                 winnerId: seed.winnerId ?? existingMatch.winnerId ?? null,
@@ -1129,6 +1248,21 @@ const updateStandings = async (
                   existingMatch.firstGameSideSelection ??
                   null,
               };
+            } else {
+              allMatches.push({
+                id: `ko_${seed.id}`,
+                team1Id: seed.team1Id || 0,
+                team2Id: seed.team2Id || 0,
+                status: seed.status || "upcoming",
+                score: seed.score || "",
+                winnerId: seed.winnerId ?? null,
+                tournamentCodes: seed.tournamentCodes || [],
+                isKnockout: true,
+                stage: round.title,
+                weekPlayed: seed.weekPlayed || 1,
+                coinFlipResult: seed.coinFlipResult ?? null,
+                firstGameSideSelection: seed.firstGameSideSelection ?? null,
+              });
             }
           }
         }
@@ -1283,7 +1417,17 @@ export const updateStandingsWithExistingMatchResult = onCall(
       );
     }
 
-    const {shortCode} = request.data as {shortCode?: string};
+    const {
+      shortCode,
+      division: reqDivision,
+      matchId: reqMatchId,
+      isKnockout: reqIsKnockout,
+    } = request.data as {
+      shortCode?: string;
+      division?: string;
+      matchId?: string | number;
+      isKnockout?: boolean;
+    };
     if (!shortCode) {
       throw new HttpsError(
         "invalid-argument",
@@ -1308,30 +1452,53 @@ export const updateStandingsWithExistingMatchResult = onCall(
 
       const shortCodeDocRef = db.doc(`matches/${shortCode}`);
       const shortCodeDoc = await shortCodeDocRef.get();
-      if (!shortCodeDoc.exists) {
-        throw new HttpsError(
-          "not-found",
-          `Document for shortCode '${shortCode}' not found.`
-        );
+
+      let division = "";
+      let matchId: string | number = "";
+      let isKnockout = false;
+
+      if (shortCodeDoc.exists) {
+        const docData = shortCodeDoc.data()!;
+        division = docData.division;
+        matchId = docData.matchId;
+        isKnockout = Boolean(docData.isKnockout);
       }
-      const {division, matchId} = shortCodeDoc.data()!;
-      logger.info(`Found division ${division} and matchId ${matchId}`);
+
       if (!division || !matchId) {
-        throw new HttpsError(
-          "failed-precondition",
-          `Document '${shortCode}' is missing 'division' or 'matchId' field.`
-        );
+        if (reqDivision && reqMatchId) {
+          division = reqDivision;
+          matchId = reqMatchId;
+          isKnockout = Boolean(
+            reqIsKnockout ||
+            (typeof matchId === "string" && matchId.startsWith("ko_"))
+          );
+          await shortCodeDocRef.set({
+            division,
+            matchId,
+            isKnockout,
+          }, {merge: true});
+        } else {
+          throw new HttpsError(
+            "failed-precondition",
+            `Document '${shortCode}' missing 'division' or 'matchId' field.`
+          );
+        }
       }
       const winnerId = await findTeamIdByPlayerNames(
         winner === 100 ?
           blueTeam.players.map((p: any) => p.playerName) :
           redTeam.players.map((p: any) => p.playerName),
-        division);
+        division as "gold" | "master");
+      const isKo = Boolean(
+        isKnockout || (typeof matchId === "string" && matchId.startsWith("ko_"))
+      );
       await updateStandings(
         shortCode,
         winnerId || -1,
         division,
-        matchId);
+        matchId,
+        isKo
+      );
 
       return {success: true, message: "Standings updated successfully."};
     } catch (e: any) {
@@ -1431,10 +1598,14 @@ export const generateTournamentCodesForMatch = onCall(
 
       await batch.commit();
 
-      // Update matches document array
+      // Update matches document array and bracket
       const divisionMatchesRef = db.doc(`matches/${prefix}_${division}`);
+      const divisionBracketRef = db.doc(`bracket/${prefix}_${division}`);
       await db.runTransaction(async (transaction) => {
-        const matchesDoc = await transaction.get(divisionMatchesRef);
+        const [matchesDoc, bracketDoc] = await transaction.getAll(
+          divisionMatchesRef,
+          divisionBracketRef
+        );
         if (!matchesDoc.exists) {
           throw new Error(
             `Matches document '${prefix}_${division}' not found.`
@@ -1442,17 +1613,72 @@ export const generateTournamentCodesForMatch = onCall(
         }
 
         const allMatches = matchesDoc.data()!.matches || [];
-        const matchIndex = allMatches.findIndex((m: any) => m.id === matchId);
-        if (matchIndex === -1) {
+        const cleanMatchId = String(matchId).replace(/^ko_/, "");
+
+        let matchIndex = allMatches.findIndex((m: any) =>
+          m.id === matchId ||
+          String(m.id) === String(matchId) ||
+          (isKnockout && (
+            (m.isKnockout || String(m.id).startsWith("ko_")) && (
+              String(m.id) === cleanMatchId ||
+              String(m.id).replace(/^ko_/, "") === cleanMatchId
+            )
+          ))
+        );
+
+        const rawBracket = bracketDoc.exists ?
+          bracketDoc.data()?.bracket :
+          null;
+        let matchedSeed: any = null;
+        let matchedRoundTitle = "";
+
+        if (Array.isArray(rawBracket)) {
+          for (const r of rawBracket) {
+            const s = r.seeds?.find((sd: any) =>
+              sd.id === cleanMatchId ||
+              String(sd.id) === cleanMatchId ||
+              `ko_${sd.id}` === String(matchId)
+            );
+            if (s) {
+              matchedSeed = s;
+              matchedRoundTitle = r.title || "";
+              s.tournamentCodes = Array.from(
+                new Set([...(s.tournamentCodes || []), ...codes])
+              );
+            }
+          }
+          transaction.update(divisionBracketRef, {bracket: rawBracket});
+        }
+
+        if (matchIndex === -1 && isKnockout && matchedSeed) {
+          const newKoMatch: any = {
+            id: `ko_${matchedSeed.id}`,
+            team1Id: matchedSeed.team1Id || 0,
+            team2Id: matchedSeed.team2Id || 0,
+            status: matchedSeed.status || "upcoming",
+            score: matchedSeed.score || "",
+            winnerId: matchedSeed.winnerId ?? null,
+            tournamentCodes: [...codes],
+            isKnockout: true,
+            stage: matchedRoundTitle,
+            weekPlayed: matchedSeed.weekPlayed || 1,
+            coinFlipResult: matchedSeed.coinFlipResult ?? null,
+            firstGameSideSelection: matchedSeed.firstGameSideSelection ?? null,
+          };
+          allMatches.push(newKoMatch);
+          matchIndex = allMatches.length - 1;
+        } else if (matchIndex === -1 && !isKnockout) {
           throw new Error(
             `Match with ID '${matchId}' not found in matches list.`
           );
+        } else if (matchIndex !== -1) {
+          const currentMatch = allMatches[matchIndex];
+          const currentCodes = currentMatch.tournamentCodes || [];
+          currentMatch.tournamentCodes = Array.from(
+            new Set([...currentCodes, ...codes])
+          );
+          allMatches[matchIndex] = currentMatch;
         }
-
-        const currentMatch = allMatches[matchIndex];
-        const currentCodes = currentMatch.tournamentCodes || [];
-        currentMatch.tournamentCodes = [...currentCodes, ...codes];
-        allMatches[matchIndex] = currentMatch;
 
         transaction.update(divisionMatchesRef, {matches: allMatches});
       });

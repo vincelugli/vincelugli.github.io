@@ -89,7 +89,7 @@ jest.mock("../riotApiTransformer", () => ({
   })),
 }));
 
-import {gameNotificationEndpoint, processGameFromNotification} from "../index";
+import {gameNotificationEndpoint, processGameFromNotification, generateTournamentCodesForMatch} from "../index";
 
 const createMockReqRes = (body: unknown) => {
   const req = {
@@ -1067,6 +1067,260 @@ describe("processGameFromNotification Cloud Function", () => {
     // of seed 1 (Team 4)
     const seed4 = updatedBracket[2].seeds[0];
     expect(seed4.team2Id).toBe(4);
+
+    // Verify teams doc was NOT updated with knockout results (Swiss records remain untouched)
+    const teamsCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].teams !== undefined
+    );
+    expect(teamsCall).toBeDefined();
+    const updatedTeams = teamsCall[1].teams;
+    expect(updatedTeams[0].wins).toBe(0);
+    expect(updatedTeams[0].record).toBe("0-0");
+    expect(updatedTeams[0].gameWins).toBe(1);
+    expect(updatedTeams[1].losses).toBe(0);
+    expect(updatedTeams[1].record).toBe("0-0");
+  });
+
+  it("should handle knockout match when a Swiss match with the same numeric ID exists without confusing them and without error when team2Id is 0", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "ko-shortcode-zero-team",
+      gameId: 987654399,
+      region: "NA",
+    };
+
+    // 1. match_lock check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 2. match_results check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 3. Riot API
+    mockedAxios.get.mockResolvedValueOnce({data: {}});
+    // 4. match doc exists with isKnockout and matchId
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({division: "master", matchId: "ko_1", isKnockout: true}),
+    });
+    // 5. division teams doc - only Team 12 exists, team 0 does not!
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        teams: [
+          {
+            id: 12,
+            name: "Team 12",
+            players: [10],
+            gameWins: 0,
+            gameLosses: 0,
+            wins: 0,
+            losses: 0,
+          },
+        ],
+      }),
+    });
+    // 6. division players doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        players: [
+          {id: 10, name: "Player1"},
+        ],
+      }),
+    });
+    // 7. match_results duplicate check
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    const initialBracket = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 12,
+            team2Id: 0,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: ["ko-shortcode-zero-team"],
+            teams: [{id: 12, name: "Team 12"}, {id: 0, name: "TBD"}],
+          },
+        ],
+      },
+    ];
+
+    const mockTxUpdate = jest.fn();
+    mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+      const mockTx = {
+        getAll: jest.fn().mockResolvedValueOnce([
+          {
+            exists: true,
+            data: () => ({
+              matches: [
+                // Swiss match 1 has numeric ID 1 and team2Id: 0 (BYE)
+                {
+                  id: 1,
+                  team1Id: 12,
+                  team2Id: 0,
+                  status: "completed",
+                  score: "BYE",
+                  isKnockout: false,
+                  tournamentCodes: ["swiss-code-1"],
+                },
+                // Knockout match 1 has string ID "ko_1" and team2Id: 0
+                {
+                  id: "ko_1",
+                  team1Id: 12,
+                  team2Id: 0,
+                  status: "upcoming",
+                  score: "",
+                  isKnockout: true,
+                  tournamentCodes: ["ko-shortcode-zero-team"],
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              teams: [
+                {
+                  id: 12,
+                  name: "Team 12",
+                  gameWins: 0,
+                  gameLosses: 0,
+                  wins: 0,
+                  losses: 0,
+                  record: "0-0",
+                  gameRecord: "0-0",
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              bracket: initialBracket,
+            }),
+          },
+        ]),
+        update: mockTxUpdate,
+      };
+      await updateFn(mockTx);
+    });
+
+    const {req, res} = createMockReqRes(notificationPayload);
+    await gameNotificationEndpoint(req as any, res as any);
+
+    // It should succeed with 201 without throwing error for missing team 0
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    // Verify Swiss match 1 was NOT modified to be knockout or updated with knockout score
+    const matchesUpdateCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].matches !== undefined
+    );
+    expect(matchesUpdateCall).toBeDefined();
+    const updatedMatches = matchesUpdateCall[1].matches;
+    const swissMatch = updatedMatches.find((m: any) => m.id === 1);
+    expect(swissMatch.isKnockout).toBe(false);
+    expect(swissMatch.score).toBe("BYE");
+
+    const koMatch = updatedMatches.find((m: any) => m.id === "ko_1");
+    expect(koMatch.isKnockout).toBe(true);
+    expect(koMatch.score).toBe("1-0");
+  });
+
+  it("should generate tournament codes and sync to both matches and bracket documents", async () => {
+    // 1. metadata doc get
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        grumble2026_tournamentId: "riot-tourney-123",
+      }),
+    });
+
+    // 2. Riot API post
+    mockedAxios.post.mockResolvedValueOnce({
+      data: ["NEW-CODE-1", "NEW-CODE-2", "NEW-CODE-3"],
+    });
+
+    const initialBracket = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 12,
+            team2Id: 5,
+            status: "upcoming",
+            tournamentCodes: [],
+          },
+        ],
+      },
+    ];
+
+    const mockTxUpdate = jest.fn();
+    mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+      const mockTx = {
+        getAll: jest.fn().mockResolvedValueOnce([
+          {
+            exists: true,
+            data: () => ({
+              // Only Swiss matches initially in matches doc!
+              matches: [
+                {id: 1, team1Id: 1, team2Id: 2, isKnockout: false, tournamentCodes: []},
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              bracket: initialBracket,
+            }),
+          },
+        ]),
+        update: mockTxUpdate,
+      };
+      await updateFn(mockTx);
+    });
+
+    const req = {
+      auth: {token: {adminId: "admin-user"}},
+      data: {
+        division: "master",
+        matchId: "ko_1",
+        count: 3,
+        isKnockout: true,
+        year: "2026",
+      },
+    };
+
+    const result = await (generateTournamentCodesForMatch as any)(req);
+    expect(result).toEqual({codes: ["NEW-CODE-1", "NEW-CODE-2", "NEW-CODE-3"]});
+
+    // Verify bracket was updated with codes
+    const bracketCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].bracket !== undefined
+    );
+    expect(bracketCall).toBeDefined();
+    expect(bracketCall[1].bracket[0].seeds[0].tournamentCodes).toEqual([
+      "NEW-CODE-1",
+      "NEW-CODE-2",
+      "NEW-CODE-3",
+    ]);
+
+    // Verify matches was updated with new knockout match containing codes
+    const matchesCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].matches !== undefined
+    );
+    expect(matchesCall).toBeDefined();
+    const koMatch = matchesCall[1].matches.find((m: any) => m.id === "ko_1");
+    expect(koMatch).toBeDefined();
+    expect(koMatch.tournamentCodes).toEqual([
+      "NEW-CODE-1",
+      "NEW-CODE-2",
+      "NEW-CODE-3",
+    ]);
   });
 });
 
