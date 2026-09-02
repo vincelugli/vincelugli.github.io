@@ -104,7 +104,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     const filteredKnockouts = upcomingKnockoutMatches.filter(km => 
       !rawMatches.some(m => 
         String(m.id) === `ko_${km.id}` || 
-        String(m.id) === String(km.id) ||
+        (m.isKnockout && String(m.id) === String(km.id)) ||
         (m.isKnockout && ((m.team1Id === km.team1Id && m.team2Id === km.team2Id) || (m.team1Id === km.team2Id && m.team2Id === km.team1Id)))
       )
     );
@@ -121,7 +121,7 @@ const TeamPage: React.FC<TeamPageProps> = ({ matches }) => {
     const filteredKnockouts = completedKnockoutMatches.filter(km => 
       !rawMatches.some(m => 
         String(m.id) === `ko_${km.id}` || 
-        String(m.id) === String(km.id) ||
+        (m.isKnockout && String(m.id) === String(km.id)) ||
         (m.isKnockout && ((m.team1Id === km.team1Id && m.team2Id === km.team2Id) || (m.team1Id === km.team2Id && m.team2Id === km.team1Id)))
       )
     );

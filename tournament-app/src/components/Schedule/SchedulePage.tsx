@@ -240,7 +240,7 @@ const SchedulePage: React.FC = () => {
           }
 
           const matchId = `ko_${seed.id}`;
-          const existing = matches.find(m => m.id === matchId || String(m.id) === String(seed.id));
+          const existing = matches.find(m => m.id === matchId || (m.isKnockout && String(m.id) === String(seed.id)));
 
           const mergedCodes = Array.from(new Set([
             ...(seed.tournamentCodes || []),
