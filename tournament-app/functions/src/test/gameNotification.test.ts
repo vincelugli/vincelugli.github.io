@@ -1067,6 +1067,18 @@ describe("processGameFromNotification Cloud Function", () => {
     // of seed 1 (Team 4)
     const seed4 = updatedBracket[2].seeds[0];
     expect(seed4.team2Id).toBe(4);
+
+    // Verify teams doc was NOT updated with knockout results (Swiss records remain untouched)
+    const teamsCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].teams !== undefined
+    );
+    expect(teamsCall).toBeDefined();
+    const updatedTeams = teamsCall[1].teams;
+    expect(updatedTeams[0].wins).toBe(0);
+    expect(updatedTeams[0].record).toBe("0-0");
+    expect(updatedTeams[0].gameWins).toBe(1);
+    expect(updatedTeams[1].losses).toBe(0);
+    expect(updatedTeams[1].record).toBe("0-0");
   });
 
   it("should handle knockout match when a Swiss match with the same numeric ID exists without confusing them and without error when team2Id is 0", async () => {

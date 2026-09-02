@@ -1,5 +1,5 @@
 import { Team, Match, BracketRound } from '../types';
-import { getQualifyingSeeding, getTeamSeedMap, updateDoubleEliminationBracket } from './index';
+import { getQualifyingSeeding, getTeamSeedMap, updateDoubleEliminationBracket, calculateSwissStats, isKnockoutMatch, TeamStats } from './index';
 
 describe('Seeding and Double Elimination Bracket Logic', () => {
   const mockTeams: Team[] = [
@@ -239,5 +239,53 @@ describe('Seeding and Double Elimination Bracket Logic', () => {
     expect(breakdown[0].opponents.length).toBeGreaterThan(0);
     expect(breakdown[0].calculationString).toBeDefined();
     expect(typeof breakdown[0].adjustedBuchholz).toBe('number');
+  });
+
+  describe('Swiss matches vs Knockout matches filtering', () => {
+
+    it('correctly identifies knockout matches', () => {
+      expect(isKnockoutMatch({ id: 1, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, isKnockout: true })).toBe(true);
+      expect(isKnockoutMatch({ id: 'ko_1', team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1 })).toBe(true);
+      expect(isKnockoutMatch({ id: 10, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, stage: 'Winners Semifinals' })).toBe(true);
+      expect(isKnockoutMatch({ id: 11, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, stage: 'Losers Round 1' })).toBe(true);
+      expect(isKnockoutMatch({ id: 12, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, stage: 'Grand Finals' })).toBe(true);
+
+      // Swiss matches should return false
+      expect(isKnockoutMatch({ id: 1, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, isKnockout: false })).toBe(false);
+      expect(isKnockoutMatch({ id: 'swiss_1', team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 1, stage: 'Round 1' })).toBe(false);
+      expect(isKnockoutMatch({ id: 2, team1Id: 1, team2Id: 2, status: 'completed', tournamentCodes: [], weekPlayed: 2, stage: 'Round 2' })).toBe(false);
+    });
+
+    it('calculateSwissStats ignores all knockout matches and only includes Swiss matches', () => {
+      const teams: Team[] = [
+        { id: 1, name: 'Team 1', captainId: 1, players: [1], wins: 0, losses: 0, gameWins: 0, gameLosses: 0 },
+        { id: 2, name: 'Team 2', captainId: 2, players: [2], wins: 0, losses: 0, gameWins: 0, gameLosses: 0 },
+      ];
+
+      const mixedMatches: Match[] = [
+        // Swiss match 1: Team 1 wins 2-0
+        { id: 'swiss_1', team1Id: 1, team2Id: 2, status: 'completed', winnerId: 1, score: '2-0', team1Wins: 2, team2Wins: 0, weekPlayed: 1, stage: 'Round 1', tournamentCodes: [] },
+        // Knockout match 1: Team 2 wins 2-0 (marked with isKnockout: true)
+        { id: 101, team1Id: 1, team2Id: 2, status: 'completed', winnerId: 2, score: '0-2', team1Wins: 0, team2Wins: 2, weekPlayed: 6, isKnockout: true, stage: 'Winners Semifinals', tournamentCodes: [] },
+        // Knockout match 2: Team 2 wins 2-0 (marked with id: 'ko_2')
+        { id: 'ko_2', team1Id: 1, team2Id: 2, status: 'completed', winnerId: 2, score: '0-2', team1Wins: 0, team2Wins: 2, weekPlayed: 7, stage: 'Winners Finals', tournamentCodes: [] },
+      ];
+
+      const stats = calculateSwissStats(teams, mixedMatches);
+      const team1Stat = stats.find((s: TeamStats) => s.team.id === 1);
+      const team2Stat = stats.find((s: TeamStats) => s.team.id === 2);
+
+      // Team 1 should ONLY have 1 Swiss win and 0 Swiss losses
+      expect(team1Stat?.wins).toBe(1);
+      expect(team1Stat?.losses).toBe(0);
+      expect(team1Stat?.gameWins).toBe(2);
+      expect(team1Stat?.gameLosses).toBe(0);
+
+      // Team 2 should ONLY have 0 Swiss wins and 1 Swiss loss
+      expect(team2Stat?.wins).toBe(0);
+      expect(team2Stat?.losses).toBe(1);
+      expect(team2Stat?.gameWins).toBe(0);
+      expect(team2Stat?.gameLosses).toBe(2);
+    });
   });
 });

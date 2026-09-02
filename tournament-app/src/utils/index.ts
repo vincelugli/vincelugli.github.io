@@ -335,8 +335,15 @@ export interface TeamStats {
   opponents: number[];
 }
 
+export const isKnockoutMatch = (m: Match): boolean => {
+  if (m.isKnockout) return true;
+  if (typeof m.id === 'string' && m.id.startsWith('ko_')) return true;
+  if (m.stage && /^(winners|losers|grand\s*finals?)/i.test(m.stage.trim())) return true;
+  return false;
+};
+
 export function calculateSwissStats(teams: Team[], matches: Match[]): TeamStats[] {
-  const swissMatches = matches.filter(m => !m.isKnockout && m.status === 'completed');
+  const swissMatches = matches.filter(m => !isKnockoutMatch(m) && m.status === 'completed');
   
   const statsMap = new Map<number, TeamStats>();
   
@@ -478,7 +485,7 @@ export function getPlayoffBuchholzBreakdown(
 ): TeamBuchholzBreakdown[] {
   const stats = calculateSwissStats(teams, matches);
   const seeding = getQualifyingSeeding(teams, matches);
-  const swissMatches = matches.filter(m => !m.isKnockout && m.status === 'completed');
+  const swissMatches = matches.filter(m => !isKnockoutMatch(m) && m.status === 'completed');
 
   const statsMap = new Map<number, TeamStats>();
   stats.forEach(s => statsMap.set(s.team.id, s));

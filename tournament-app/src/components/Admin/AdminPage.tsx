@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
-import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown} from '../../utils';
+import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown, isKnockoutMatch} from '../../utils';
 import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins, FaInfoCircle, FaCalculator, FaChevronDown, FaChevronUp} from 'react-icons/fa';
 import {
   AdminPageContainer,
@@ -202,7 +202,7 @@ const AdminPage: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [bracket, setBracket] = useState<BracketRound[]>([]);
 
-  const swissMatches = useMemo(() => matches.filter(m => !m.isKnockout), [matches]);
+  const swissMatches = useMemo(() => matches.filter(m => !isKnockoutMatch(m)), [matches]);
   const hasIncompleteSwissMatches = useMemo(() => swissMatches.some(m => m.status !== 'completed'), [swissMatches]);
   const nextRoundNum = useMemo(() => {
     const roundNums = swissMatches.map(m => {
@@ -996,6 +996,44 @@ const AdminPage: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       showStatus('error', 'Failed to update team details.');
+    }
+  };
+
+  const handleRecalculateSwissStandings = async () => {
+    if (!teams || teams.length === 0) {
+      showStatus('error', 'No teams found.');
+      return;
+    }
+    if (!window.confirm('Recalculate all team standings strictly from completed Swiss matches? This will exclude knockout matches.')) return;
+
+    try {
+      setStatus('loading');
+      setStatusMsg('Recalculating Swiss standings from completed Swiss matches...');
+
+      const stats = calculateSwissStats(teams, matches);
+      const statsMap = new Map<number, typeof stats[0]>();
+      stats.forEach(s => statsMap.set(s.team.id, s));
+
+      const updatedTeams = teams.map(t => {
+        const st = statsMap.get(t.id);
+        if (!st) return t;
+        return {
+          ...t,
+          wins: st.wins,
+          losses: st.losses,
+          record: `${st.wins}-${st.losses}`,
+          gameWins: st.gameWins,
+          gameLosses: st.gameLosses,
+          gameRecord: `${st.gameWins}-${st.gameLosses}`
+        };
+      });
+
+      await updateDoc(doc(db, 'teams', `${prefix}_${division}`), { teams: updatedTeams });
+      setTeams(updatedTeams);
+      showStatus('success', 'Successfully recalculated Swiss standings from Swiss matches!');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to recalculate Swiss standings.');
     }
   };
 
@@ -3429,6 +3467,9 @@ const AdminPage: React.FC = () => {
                   <AdminActionButton variant="secondary" onClick={handleSyncPlayerTeamIds}>
                     <FaSync /> Sync Player Team IDs
                   </AdminActionButton>
+                  <AdminActionButton variant="secondary" onClick={handleRecalculateSwissStandings}>
+                    <FaCalculator /> Recalculate Swiss Standings
+                  </AdminActionButton>
                 </div>
               </div>
 
@@ -3519,7 +3560,7 @@ const AdminPage: React.FC = () => {
                           )}
                         </AdminStyledTd>
                         <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
-                          {team ? (team.record || `${team.wins}-${team.losses}`) : '-'}
+                          {st ? `${st.wins}-${st.losses}` : (team ? (team.record || `${team.wins}-${team.losses}`) : '-')}
                         </AdminStyledTd>
                         <AdminStyledTd style={{ whiteSpace: 'nowrap' }}>
                           {st ? st.adjustedBuchholz : '-'}
@@ -3607,7 +3648,8 @@ const AdminPage: React.FC = () => {
                   <tbody>
                     {playoffBuchholzBreakdown.map(tb => {
                       const isExpanded = expandedBuchholzTeamId === tb.team.id;
-                      const teamRecord = tb.team.record || `${tb.team.wins}-${tb.team.losses}`;
+                      const teamStat = swissStats.find(s => s.team.id === tb.team.id);
+                      const teamRecord = teamStat ? `${teamStat.wins}-${teamStat.losses}` : (tb.team.record || `${tb.team.wins}-${tb.team.losses}`);
 
                       return (
                         <React.Fragment key={tb.team.id}>

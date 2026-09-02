@@ -1118,30 +1118,39 @@ const updateStandings = async (
         const winnerIndex = allTeams.findIndex((t: any) => t.id === winnerId);
         const loserIndex = allTeams.findIndex((t: any) => t.id === loserId);
 
-        if (winnerIndex !== -1 && loserIndex !== -1) {
-          allTeams[winnerIndex].gameWins =
-            (allTeams[winnerIndex].gameWins || 0) + 1;
-          const winRecord =
-            `${allTeams[winnerIndex].gameWins}-` +
-            `${allTeams[winnerIndex].gameLosses || 0}`;
-          allTeams[winnerIndex].gameRecord = winRecord;
-          allTeams[loserIndex].gameLosses =
-            (allTeams[loserIndex].gameLosses || 0) + 1;
-          const loseRecord =
-            `${allTeams[loserIndex].gameWins || 0}-` +
-            `${allTeams[loserIndex].gameLosses}`;
-          allTeams[loserIndex].gameRecord = loseRecord;
-          logger.info(
-            `Updated game records for match ${matchId}. ` +
-            `Winner: ${allTeams[winnerIndex].gameRecord}, ` +
-            `Loser: ${allTeams[loserIndex].gameRecord}`
-          );
-        } else {
-          logger.warn(
-            `Could not update team game records: winnerId=${winnerId} ` +
-            `(index: ${winnerIndex}), loserId=${loserId} ` +
-            `(index: ${loserIndex}) in division '${division}'.`
-          );
+        const isMatchKo = Boolean(
+          isKo ||
+          currentMatch?.isKnockout ||
+          (typeof currentMatch?.id === "string" && currentMatch.id.startsWith("ko_")) ||
+          (currentMatch?.stage && /^(winners|losers|grand\s*finals?)/i.test(currentMatch.stage.trim()))
+        );
+
+        if (!isMatchKo) {
+          if (winnerIndex !== -1 && loserIndex !== -1) {
+            allTeams[winnerIndex].gameWins =
+              (allTeams[winnerIndex].gameWins || 0) + 1;
+            const winRecord =
+              `${allTeams[winnerIndex].gameWins}-` +
+              `${allTeams[winnerIndex].gameLosses || 0}`;
+            allTeams[winnerIndex].gameRecord = winRecord;
+            allTeams[loserIndex].gameLosses =
+              (allTeams[loserIndex].gameLosses || 0) + 1;
+            const loseRecord =
+              `${allTeams[loserIndex].gameWins || 0}-` +
+              `${allTeams[loserIndex].gameLosses}`;
+            allTeams[loserIndex].gameRecord = loseRecord;
+            logger.info(
+              `Updated game records for match ${matchId}. ` +
+              `Winner: ${allTeams[winnerIndex].gameRecord}, ` +
+              `Loser: ${allTeams[loserIndex].gameRecord}`
+            );
+          } else {
+            logger.warn(
+              `Could not update team game records: winnerId=${winnerId} ` +
+              `(index: ${winnerIndex}), loserId=${loserId} ` +
+              `(index: ${loserIndex}) in division '${division}'.`
+            );
+          }
         }
 
         // check if winner has enough games
@@ -1151,16 +1160,18 @@ const updateStandings = async (
           logger.info(
             `Match win condition met for Team ${winnerId} in match ${matchId}!`
           );
-          if (winnerIndex !== -1 && loserIndex !== -1) {
-            allTeams[winnerIndex].wins = (allTeams[winnerIndex].wins || 0) + 1;
-            const wLosses = allTeams[winnerIndex].losses || 0;
-            allTeams[winnerIndex].record =
-              `${allTeams[winnerIndex].wins}-${wLosses}`;
-            allTeams[loserIndex].losses =
-              (allTeams[loserIndex].losses || 0) + 1;
-            const lWins = allTeams[loserIndex].wins || 0;
-            allTeams[loserIndex].record =
-              `${lWins}-${allTeams[loserIndex].losses}`;
+          if (!isMatchKo) {
+            if (winnerIndex !== -1 && loserIndex !== -1) {
+              allTeams[winnerIndex].wins = (allTeams[winnerIndex].wins || 0) + 1;
+              const wLosses = allTeams[winnerIndex].losses || 0;
+              allTeams[winnerIndex].record =
+                `${allTeams[winnerIndex].wins}-${wLosses}`;
+              allTeams[loserIndex].losses =
+                (allTeams[loserIndex].losses || 0) + 1;
+              const lWins = allTeams[loserIndex].wins || 0;
+              allTeams[loserIndex].record =
+                `${lWins}-${allTeams[loserIndex].losses}`;
+            }
           }
           currentMatch.status = "completed";
           currentMatch.winnerId = winnerId;
