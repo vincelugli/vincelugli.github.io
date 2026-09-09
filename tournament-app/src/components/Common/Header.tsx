@@ -147,6 +147,7 @@ const Header: React.FC = () => {
               <SubMenuItem to="/draft-access">Draft</SubMenuItem>
               <SubMenuItem to="/swiss">{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</SubMenuItem>
               <SubMenuItem to="/knockout">Knockout Stage</SubMenuItem>
+              <SubMenuItem to="/catharsis">GRumble Catharsis</SubMenuItem>
             </SubMenu>
           </NavItem>
 
@@ -211,6 +212,7 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/players" onClick={closeAllMenus}>Players</MobileSubMenuItem>
             <MobileSubMenuItem to="/teams" onClick={closeAllMenus}>Teams</MobileSubMenuItem>
             <MobileSubMenuItem to="/power-rankings" onClick={closeAllMenus}>Power Rankings</MobileSubMenuItem>
+            <MobileSubMenuItem to="/catharsis" onClick={closeAllMenus}>GRumble Catharsis</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
 
@@ -222,6 +224,7 @@ const Header: React.FC = () => {
             <MobileSubMenuItem to="/draft-access" onClick={closeAllMenus}>Draft Lobby</MobileSubMenuItem>
             <MobileSubMenuItem to="/swiss" onClick={closeAllMenus}>{logoText === 'GRumble 2026' ? 'Swiss Stage' : 'Round Robin'}</MobileSubMenuItem>
             <MobileSubMenuItem to="/knockout" onClick={closeAllMenus}>Knockout Stage</MobileSubMenuItem>
+            <MobileSubMenuItem to="/catharsis" onClick={closeAllMenus}>GRumble Catharsis</MobileSubMenuItem>
           </MobileSubMenu>
         </MobileNavItem>
 

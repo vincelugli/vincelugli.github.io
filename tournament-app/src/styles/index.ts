@@ -89,7 +89,9 @@ export const HeaderContainer = styled.header`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative; /* Needed for positioning the mobile menu */
+  position: sticky;
+  top: 0;
+  z-index: 100;
 
   @media (max-width: 600px) {
     padding: 1rem;
@@ -278,6 +280,7 @@ export const MobileMenu = styled.nav<{ isOpen: boolean }>`
   left: 0;
   width: 100%;
   height: 100vh; /* Full screen height */
+  overflow-y: auto;
 
   /* Animate the menu sliding in from the top */
   transition: transform 0.3s ease-in-out;
@@ -746,7 +749,7 @@ export const PoolContainer = styled.div`
   padding: 1.5rem;
   box-shadow: 0 4px 8px ${({ theme }) => theme.boxShadow};
   position: sticky;
-  top: 2rem;
+  top: 6rem;
 `;
 
 export const PoolHeader = styled.h3`
@@ -3822,7 +3825,7 @@ export const AdminSearchInput = styled(AdminTextInput)`
   max-width: 320px;
 `;
 
-export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'danger' | 'warning' }>`
+export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'danger' | 'warning' | 'secondary' }>`
   display: inline-block;
   white-space: nowrap;
   padding: 0.25rem 0.5rem;
@@ -3835,6 +3838,7 @@ export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'dange
       case 'success': return theme.success + '22';
       case 'danger': return theme.danger + '22';
       case 'warning': return '#ffc10722';
+      case 'secondary': return 'rgba(156, 163, 175, 0.18)';
       case 'primary':
       default: return theme.primary + '22';
     }
@@ -3844,6 +3848,7 @@ export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'dange
       case 'success': return theme.success;
       case 'danger': return theme.danger;
       case 'warning': return '#ffc107';
+      case 'secondary': return theme.textAlt || '#9ca3af';
       case 'primary':
       default: return theme.primary;
     }
@@ -3853,6 +3858,7 @@ export const AdminBadge = styled.span<{ variant?: 'primary' | 'success' | 'dange
       case 'success': return theme.success;
       case 'danger': return theme.danger;
       case 'warning': return '#ffc107';
+      case 'secondary': return 'rgba(156, 163, 175, 0.35)';
       case 'primary':
       default: return theme.primary;
     }
@@ -4635,6 +4641,4 @@ export const SideSelectButton = styled.button<{ selected?: boolean; side: 'blue'
   }
 `;
 
-
-
-
+export * from './catharsisStyles';

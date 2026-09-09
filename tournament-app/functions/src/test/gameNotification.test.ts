@@ -89,7 +89,12 @@ jest.mock("../riotApiTransformer", () => ({
   })),
 }));
 
-import {gameNotificationEndpoint, processGameFromNotification, generateTournamentCodesForMatch} from "../index";
+import {
+  gameNotificationEndpoint,
+  processGameFromNotification,
+  generateTournamentCodesForMatch,
+  generateAdhocTournamentCodes
+} from "../index";
 
 const createMockReqRes = (body: unknown) => {
   const req = {
@@ -1321,6 +1326,114 @@ describe("processGameFromNotification Cloud Function", () => {
       "NEW-CODE-2",
       "NEW-CODE-3",
     ]);
+  });
+
+  it("should process adhoc showmatch notification and store match result without updating standings", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "NA04f69-ADHOC-TEST",
+      gameId: 999999,
+      region: "NA",
+    };
+
+    // 1. Check match_lock/NA04f69-ADHOC-TEST -> does not exist
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 2. Check match_results/NA04f69-ADHOC-TEST (endpoint duplicate check) -> does not exist
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 3. Axios Riot API match details
+    mockedAxios.get.mockResolvedValueOnce({data: {}});
+    // 4. Mock match doc for shortCode with isAdhoc: true
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        division: "elemental",
+        matchId: "catharsis_g1",
+        title: "GRumble Catharsis Showmatch - Game 1",
+        isAdhoc: true,
+        isStandalone: true,
+        skipStandings: true,
+      }),
+    });
+    // 5. Teams doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        teams: [
+          {id: 1, name: "Working From Homeguard V2", players: [10]},
+        ],
+      }),
+    });
+    // 6. Players doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        players: [{id: 10, name: "Player1"}],
+      }),
+    });
+    // 7. Check match_results/NA04f69-ADHOC-TEST in executeGameNotificationProcessing -> does not exist
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    const {req, res} = createMockReqRes(notificationPayload);
+    await (gameNotificationEndpoint as any)(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    // Verify match result was stored with isAdhoc: true
+    const resultCall = mockSet.mock.calls.find(
+      (call: any[]) =>
+        (call[1] && call[1].isAdhoc === true) ||
+        (call[0] && call[0].isAdhoc === true)
+    );
+    expect(resultCall).toBeDefined();
+    const resultData = resultCall[1] || resultCall[0];
+    expect(resultData.skipStandings).toBe(true);
+    expect(resultData.title).toBe("GRumble Catharsis Showmatch - Game 1");
+
+    // Verify match status was updated to completed
+    const matchUpdateCall = mockUpdate.mock.calls.find(
+      (call: any[]) =>
+        (call[1] && call[1].status === "completed") ||
+        (call[0] && call[0].status === "completed")
+    );
+    expect(matchUpdateCall).toBeDefined();
+
+    // Verify transaction (which updates standings) was NOT called!
+    expect(mockRunTransaction).not.toHaveBeenCalled();
+  });
+
+  it("should generate adhoc tournament codes and store in matches and adhocTournamentCodes", async () => {
+    mockedAxios.post.mockResolvedValueOnce({
+      data: ["NA04f69-CATHARSIS-1", "NA04f69-CATHARSIS-2"],
+    });
+    // tournamentMetadata doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({grumble2026_tournamentId: "12345"}),
+    });
+
+    const mockRequest = {
+      auth: {token: {adminId: "superadmin"}},
+      data: {
+        title: "GRumble Catharsis",
+        division: "elemental",
+        matchId: "catharsis_bo5",
+        count: 2,
+      },
+    };
+
+    const result = await (generateAdhocTournamentCodes as any)(mockRequest);
+    expect(result.success).toBe(true);
+    expect(result.codes).toEqual(["NA04f69-CATHARSIS-1", "NA04f69-CATHARSIS-2"]);
+
+    // Verify batch set was called for both matches and adhocTournamentCodes
+    const setCalls = mockSet.mock.calls.filter(
+      (call: any[]) =>
+        (call[1] && call[1].isAdhoc === true) ||
+        (call[0] && call[0].isAdhoc === true)
+    );
+    expect(setCalls.length).toBe(4); // 2 codes * (matches + adhocTournamentCodes)
+    const record = setCalls[0][1] || setCalls[0][0];
+    expect(record.skipStandings).toBe(true);
   });
 });
 

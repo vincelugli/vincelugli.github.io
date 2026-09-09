@@ -222,4 +222,20 @@ export interface WeeklyPowerRanking {
   rankings: PowerRankingItem[];
 }
 
+export interface AdhocTournamentCode {
+  code: string;
+  title: string;
+  matchId?: string | number;
+  division?: string;
+  isAdhoc: boolean;
+  isStandalone: boolean;
+  skipStandings: boolean;
+  status: 'active' | 'completed' | string;
+  createdAt?: any;
+  completedAt?: any;
+  winner?: number;
+  winnerId?: number;
+  gameId?: number;
+}
+
 
