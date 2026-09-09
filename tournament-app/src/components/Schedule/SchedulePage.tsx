@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FaCalendarAlt, FaEdit, FaTimes, FaClock, FaTwitch } from 'react-icons/fa';
 import {
   SchedulePageContainer,
@@ -437,6 +438,55 @@ const SchedulePage: React.FC = () => {
     <SchedulePageContainer>
       <ScheduleTitle>Tournament Schedule</ScheduleTitle>
       
+      <div style={{
+        background: 'rgba(255, 71, 87, 0.08)',
+        border: '1px solid rgba(255, 71, 87, 0.3)',
+        borderRadius: '12px',
+        padding: '1rem 1.25rem',
+        marginBottom: '1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '0.75rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <span style={{
+            background: '#ff4757',
+            color: '#fff',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '999px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Special Showmatch
+          </span>
+          <div>
+            <strong style={{ fontSize: '1rem' }}>GRumble Catharsis</strong>
+            <span style={{ margin: '0 0.5rem', opacity: 0.5 }}>•</span>
+            <span style={{ fontSize: '0.9rem', opacity: 0.85 }}>Friday, Sept 11 @ 6:00 PM PST</span>
+            <span style={{ margin: '0 0.5rem', opacity: 0.5 }}>•</span>
+            <span style={{ fontSize: '0.85rem', opacity: 0.75 }}>Working From Homeguard V2 vs Platinum Digger V2 (Bo5 Fearless)</span>
+          </div>
+        </div>
+        <Link
+          to="/catharsis"
+          style={{
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            color: '#ff4757',
+            textDecoration: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.3rem'
+          }}
+        >
+          Event Details & Rosters →
+        </Link>
+      </div>
+
       <TabHeader>
         <TabButton active={activeTab === 'matches'} onClick={() => setActiveTab('matches')}>
           Match Schedule

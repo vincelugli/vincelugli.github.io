@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { doc, getDoc, updateDoc, writeBatch, setDoc, onSnapshot, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, writeBatch, setDoc, onSnapshot, arrayUnion, collection, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {getFunctions, httpsCallable} from 'firebase/functions';
-import { BracketRound, BracketSeed, Player, Team, Match, DraftState, DraftTeam } from '../../types';
+import { BracketRound, BracketSeed, Player, Team, Match, DraftState, DraftTeam, AdhocTournamentCode } from '../../types';
 import Button from '../Common/Button';
 import { useNavigate } from 'react-router-dom';
 import { useDivision } from '../../context/DivisionContext';
 import { z } from 'zod';
 import { useAuth } from '../Common/AuthContext';
 import {getFirebasePrefix, compareRanks, rankTierToShortName, convertRankToElo, isPlayerCaptain, getTeamOrPlaceholder, getMatchWinnerId, cleanTeamName, updateDoubleEliminationBracket, getQualifyingSeeding, calculateSwissStats, getTeamSeedMap, getPlayoffBuchholzBreakdown, isKnockoutMatch} from '../../utils';
-import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins, FaInfoCircle, FaCalculator, FaChevronDown, FaChevronUp} from 'react-icons/fa';
+import {FaUndo, FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaSpinner, FaTools, FaUsers, FaTrophy, FaCalendarAlt, FaLink, FaCopy, FaCheck, FaSync, FaCoins, FaInfoCircle, FaCalculator, FaChevronDown, FaChevronUp, FaGamepad, FaEye, FaShieldAlt} from 'react-icons/fa';
 import {
   AdminPageContainer,
   AdminTitle,
@@ -51,7 +51,7 @@ const RANK_TIERS = ["Challenger", "Grandmaster", "Master", "Diamond", "Emerald",
 const ROLES = ["top", "jungle", "mid", "adc", "support", "fill"];
 const DIVISIONS = [1, 2, 3, 4, -1];
 
-type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'casters' | 'bulk' | 'powerrankings';
+type TabType = 'draft' | 'players' | 'teams' | 'bracket' | 'matches' | 'codes' | 'adhoc' | 'casters' | 'bulk' | 'powerrankings';
 type DataType = 'players' | 'teams' | 'groups' | 'bracket' | 'subs' | 'exportTeams' | 'matches' | 'matchCodes' | 'matchResults';
 
 // Placeholder definitions for bulk JSON
@@ -298,6 +298,18 @@ const AdminPage: React.FC = () => {
   const [manualProcessGameId, setManualProcessGameId] = useState('');
   const [manualProcessRegion, setManualProcessRegion] = useState('NA');
 
+  // Adhoc showmatch tournament codes state
+  const [adhocCodes, setAdhocCodes] = useState<AdhocTournamentCode[]>([]);
+  const [adhocTitle, setAdhocTitle] = useState('GRumble Catharsis Showmatch');
+  const [adhocDivision, setAdhocDivision] = useState('elemental');
+  const [adhocMatchId, setAdhocMatchId] = useState('catharsis_bo5');
+  const [adhocCount, setAdhocCount] = useState(5);
+  const [adhocCustomCodesText, setAdhocCustomCodesText] = useState('');
+  const [adhocSearchQuery, setAdhocSearchQuery] = useState('');
+  const [copiedAdhocCode, setCopiedAdhocCode] = useState<string | null>(null);
+  const [selectedResultDetails, setSelectedResultDetails] = useState<any | null>(null);
+  const [loadingResultCode, setLoadingResultCode] = useState<string | null>(null);
+
   const prefix = getFirebasePrefix();
 
   // Casters state
@@ -375,6 +387,22 @@ const AdminPage: React.FC = () => {
       }
     });
 
+    const adhocCollectionRef = collection(db, 'adhocTournamentCodes');
+    const unsubscribeAdhoc = onSnapshot(adhocCollectionRef, (snapshot) => {
+      const list: AdhocTournamentCode[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ ...docSnap.data() as AdhocTournamentCode, code: docSnap.id });
+      });
+      list.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : (typeof a.createdAt === 'number' ? a.createdAt : 0));
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : (typeof b.createdAt === 'number' ? b.createdAt : 0));
+        return timeB - timeA;
+      });
+      setAdhocCodes(list);
+    }, (err) => {
+      console.warn('Error subscribing to adhocTournamentCodes:', err);
+    });
+
     setStatus('idle');
     setStatusMsg('');
 
@@ -385,6 +413,7 @@ const AdminPage: React.FC = () => {
       unsubscribeMatches();
       unsubscribeBracket();
       unsubscribeCastersCodes();
+      unsubscribeAdhoc();
     };
   }, [division, prefix, isAdmin]);
 
@@ -397,6 +426,115 @@ const AdminPage: React.FC = () => {
       setStatus('idle');
       setStatusMsg('');
     }, 5000);
+  };
+
+  const handleCreateAdhocCodes = async (e?: React.FormEvent, presetCount?: number) => {
+    if (e) e.preventDefault();
+    const countToGenerate = presetCount || adhocCount;
+
+    try {
+      setStatus('loading');
+      setStatusMsg(`Generating ${countToGenerate} adhoc tournament codes for "${adhocTitle}"...`);
+
+      const functions = getFunctions();
+      const generateAdhocFn = httpsCallable(functions, 'generateAdhocTournamentCodes');
+      const year = prefix.replace('grumble', '') || '2026';
+
+      const customList = adhocCustomCodesText
+        .split(/[\n,]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      try {
+        const result = await generateAdhocFn({
+          title: adhocTitle,
+          division: adhocDivision || division,
+          matchId: adhocMatchId,
+          count: countToGenerate,
+          year,
+          customCodes: customList.length > 0 ? customList : undefined
+        });
+
+        const createdCodes = (result.data as any).codes || [];
+        showStatus('success', `Created ${createdCodes.length} adhoc tournament codes! Stored in database.`);
+      } catch (fnErr: any) {
+        console.warn('Cloud function error, falling back to direct Firestore database storage:', fnErr);
+        const batch = writeBatch(db);
+        const generatedCodes: string[] = [];
+
+        for (let i = 0; i < countToGenerate; i++) {
+          const randSuffix = Array.from({ length: 4 }, () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)).join('-');
+          const code = customList[i] || `NA04f69-ADHOC-${randSuffix}`.toUpperCase();
+          generatedCodes.push(code);
+          const specificTitle = countToGenerate > 1 ? `${adhocTitle} - Game ${i + 1}` : adhocTitle;
+          const specificMatchId = countToGenerate > 1 ? `${adhocMatchId}_g${i + 1}` : adhocMatchId;
+
+          const record = {
+            code,
+            title: specificTitle,
+            matchId: specificMatchId,
+            division: adhocDivision || division,
+            isAdhoc: true,
+            isStandalone: true,
+            skipStandings: true,
+            status: 'active',
+            createdAt: new Date(),
+            tournamentCodes: [code]
+          };
+
+          batch.set(doc(db, 'matches', code), record);
+          batch.set(doc(db, 'adhocTournamentCodes', code), record);
+        }
+
+        await batch.commit();
+        showStatus('success', `Created & stored ${generatedCodes.length} adhoc tournament codes directly in database.`);
+      }
+
+      setAdhocCustomCodesText('');
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to create adhoc tournament codes.');
+    }
+  };
+
+  const handleDeleteAdhocCode = async (code: string) => {
+    if (!window.confirm(`Are you sure you want to delete adhoc tournament code ${code} from the database?`)) return;
+    try {
+      setStatus('loading');
+      setStatusMsg(`Deleting adhoc code ${code}...`);
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'matches', code));
+      batch.delete(doc(db, 'adhocTournamentCodes', code));
+      batch.delete(doc(db, 'match_results', code));
+      await batch.commit();
+      showStatus('success', `Adhoc code ${code} deleted from database.`);
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to delete adhoc code.');
+    }
+  };
+
+  const handleCopyAdhocCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedAdhocCode(code);
+    setTimeout(() => setCopiedAdhocCode(null), 2000);
+  };
+
+  const handleViewAdhocResult = async (code: string) => {
+    try {
+      setLoadingResultCode(code);
+      const resultDocSnap = await getDoc(doc(db, 'match_results', code));
+      if (resultDocSnap.exists()) {
+        setSelectedResultDetails({ code, ...resultDocSnap.data() });
+      } else {
+        showStatus('error', `No match result data found in database for code: ${code}. The game may not have completed yet or notification has not arrived.`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showStatus('error', err.message || 'Failed to fetch match result.');
+    } finally {
+      setLoadingResultCode(null);
+    }
   };
 
   const handleCreateCasterCode = async (e: React.FormEvent) => {
@@ -2817,6 +2955,9 @@ const AdminPage: React.FC = () => {
         <AdminTabButton active={activeTab === 'codes'} onClick={() => setActiveTab('codes')}>
           <FaLink /> Tournament Codes
         </AdminTabButton>
+        <AdminTabButton active={activeTab === 'adhoc'} onClick={() => setActiveTab('adhoc')}>
+          <FaGamepad /> Adhoc Showmatches
+        </AdminTabButton>
         <AdminTabButton active={activeTab === 'casters'} onClick={() => setActiveTab('casters')}>
           <FaUsers /> Caster Codes
         </AdminTabButton>
@@ -4400,6 +4541,19 @@ const AdminPage: React.FC = () => {
       {/* --- TAB: TOURNAMENT CODES --- */}
       {activeTab === 'codes' && (
         <AdminGrid columns="1fr">
+          {/* Banner linking to Adhoc codes */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59, 130, 246, 0.08)', padding: '0.75rem 1.25rem', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <strong>Need standalone showmatch codes (e.g. GRumble Catharsis)?</strong>
+              <div style={{ fontSize: '0.82rem', color: '#adb5bd' }}>
+                Create adhoc tournament codes that store match results without modifying standings.
+              </div>
+            </div>
+            <AdminActionButton type="button" variant="primary" onClick={() => setActiveTab('adhoc')}>
+              <FaGamepad /> Open Adhoc Showmatch Codes
+            </AdminActionButton>
+          </div>
+
           {/* Form to generate tournament codes */}
           <AdminCard>
             <AdminCardTitle>Generate Riot Tournament Codes</AdminCardTitle>
@@ -4645,6 +4799,389 @@ const AdminPage: React.FC = () => {
             </AdminTableContainer>
           </AdminCard>
         </AdminGrid>
+      )}
+
+      {/* --- TAB: ADHOC & SHOWMATCH TOURNAMENT CODES --- */}
+      {activeTab === 'adhoc' && (
+        <AdminGrid columns="1fr">
+          {/* Top Banner / Explanation Card */}
+          <AdminCard>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <AdminCardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FaGamepad style={{ color: '#3b82f6' }} /> Adhoc & Showmatch Tournament Codes
+                </AdminCardTitle>
+                <p style={{ margin: '0.25rem 0 0.75rem', color: '#adb5bd', maxWidth: '800px', lineHeight: 1.5 }}>
+                  Create and manage standalone Riot tournament codes for exhibition showmatches like <strong>GRumble Catharsis</strong>.
+                  These codes are stored in the database (<code>matches</code> and <code>adhocTournamentCodes</code>).
+                  When a game finishes, Riot's game-end webhook will automatically fetch and store full player stats in <code>match_results</code>,
+                  <strong>without updating tournament division standings</strong>.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <AdminBadge variant="primary">Total: {adhocCodes.length}</AdminBadge>
+                <AdminBadge variant="success">Active: {adhocCodes.filter(c => c.status !== 'completed').length}</AdminBadge>
+                <AdminBadge variant="secondary">Completed: {adhocCodes.filter(c => c.status === 'completed').length}</AdminBadge>
+              </div>
+            </div>
+
+            {/* Quick Presets */}
+            <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.5rem', color: '#60a5fa' }}>
+                ⚡ Quick Presets:
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <AdminActionButton
+                  type="button"
+                  variant="primary"
+                  disabled={status === 'loading'}
+                  onClick={() => {
+                    setAdhocTitle('GRumble Catharsis Showmatch');
+                    setAdhocDivision('elemental');
+                    setAdhocMatchId('catharsis_bo5');
+                    setAdhocCount(5);
+                    handleCreateAdhocCodes(undefined, 5);
+                  }}
+                  title="Generate 5 adhoc codes for GRumble Catharsis Bo5"
+                >
+                  <FaTrophy /> Create 5 Codes for GRumble Catharsis (Bo5)
+                </AdminActionButton>
+
+                <AdminActionButton
+                  type="button"
+                  variant="secondary"
+                  disabled={status === 'loading'}
+                  onClick={() => {
+                    setAdhocTitle('Exhibition Showmatch');
+                    setAdhocDivision('elemental');
+                    setAdhocMatchId(`showmatch_${Date.now()}`);
+                    setAdhocCount(1);
+                    handleCreateAdhocCodes(undefined, 1);
+                  }}
+                  title="Generate 1 standalone showmatch code"
+                >
+                  <FaPlus /> Create 1 Standalone Code
+                </AdminActionButton>
+              </div>
+            </div>
+          </AdminCard>
+
+          {/* Form to create adhoc codes */}
+          <AdminCard>
+            <AdminCardTitle>Create Adhoc Tournament Codes</AdminCardTitle>
+            <form onSubmit={(e) => handleCreateAdhocCodes(e)}>
+              <AdminFormLayout>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                  <AdminFormGroup>
+                    <AdminFormLabel>Showmatch / Event Title</AdminFormLabel>
+                    <AdminTextInput
+                      type="text"
+                      value={adhocTitle}
+                      onChange={(e) => setAdhocTitle(e.target.value)}
+                      placeholder="e.g. GRumble Catharsis Showmatch"
+                      required
+                    />
+                  </AdminFormGroup>
+
+                  <AdminFormGroup>
+                    <AdminFormLabel>Division</AdminFormLabel>
+                    <AdminSelectInput
+                      value={adhocDivision}
+                      onChange={(e) => setAdhocDivision(e.target.value)}
+                    >
+                      <option value="elemental">Elemental Division</option>
+                      <option value="gold">Gold Division</option>
+                      <option value="master">Master Division</option>
+                      <option value="showmatch">Showmatch / Standalone</option>
+                    </AdminSelectInput>
+                  </AdminFormGroup>
+
+                  <AdminFormGroup>
+                    <AdminFormLabel>Match Identifier (Match ID)</AdminFormLabel>
+                    <AdminTextInput
+                      type="text"
+                      value={adhocMatchId}
+                      onChange={(e) => setAdhocMatchId(e.target.value)}
+                      placeholder="e.g. catharsis_bo5"
+                      required
+                    />
+                  </AdminFormGroup>
+
+                  <AdminFormGroup>
+                    <AdminFormLabel>Number of Codes to Generate (1-10)</AdminFormLabel>
+                    <AdminTextInput
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={adhocCount}
+                      onChange={(e) => setAdhocCount(Math.min(10, Math.max(1, Number(e.target.value))))}
+                      required
+                    />
+                  </AdminFormGroup>
+                </div>
+
+                <AdminFormGroup>
+                  <AdminFormLabel>
+                    Optional: Register Existing Riot Tournament Codes (comma or line separated)
+                  </AdminFormLabel>
+                  <TextArea
+                    rows={2}
+                    placeholder="Leave blank to generate fresh Riot codes via API, or paste existing codes here..."
+                    value={adhocCustomCodesText}
+                    onChange={(e) => setAdhocCustomCodesText(e.target.value)}
+                  />
+                  <span style={{ fontSize: '0.78rem', color: '#adb5bd' }}>
+                    If provided, these exact codes will be registered in the database as standalone showmatch codes.
+                  </span>
+                </AdminFormGroup>
+
+                <AdminButtonGroup style={{ marginTop: '0.75rem' }}>
+                  <AdminActionButton type="submit" variant="primary" disabled={status === 'loading'}>
+                    {status === 'loading' ? <FaSpinner className="spin" /> : <FaPlus />} Generate & Save Adhoc Codes
+                  </AdminActionButton>
+                </AdminButtonGroup>
+              </AdminFormLayout>
+            </form>
+          </AdminCard>
+
+          {/* Database Table of Adhoc Codes */}
+          <AdminCard>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+              <AdminCardTitle style={{ margin: 0 }}>
+                Adhoc Tournament Codes in Database ({adhocCodes.length})
+              </AdminCardTitle>
+              <AdminSearchInput
+                type="text"
+                placeholder="Search by code, title, or division..."
+                value={adhocSearchQuery}
+                onChange={(e) => setAdhocSearchQuery(e.target.value)}
+                style={{ maxWidth: '300px' }}
+              />
+            </div>
+
+            {adhocCodes.length === 0 ? (
+              <p style={{ fontStyle: 'italic', color: '#888', margin: '1rem 0' }}>
+                No adhoc tournament codes found in the database. Use the generator above to create codes.
+              </p>
+            ) : (
+              <AdminTableContainer>
+                <AdminStyledTable>
+                  <thead>
+                    <tr>
+                      <AdminStyledTh>Tournament Code</AdminStyledTh>
+                      <AdminStyledTh>Title / Match</AdminStyledTh>
+                      <AdminStyledTh>Division</AdminStyledTh>
+                      <AdminStyledTh>Status</AdminStyledTh>
+                      <AdminStyledTh>Standings Policy</AdminStyledTh>
+                      <AdminStyledTh>Created</AdminStyledTh>
+                      <AdminStyledTh style={{ textAlign: 'right' }}>Actions</AdminStyledTh>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adhocCodes
+                      .filter(item => {
+                        if (!adhocSearchQuery) return true;
+                        const q = adhocSearchQuery.toLowerCase();
+                        return (
+                          item.code.toLowerCase().includes(q) ||
+                          (item.title && item.title.toLowerCase().includes(q)) ||
+                          (item.matchId && String(item.matchId).toLowerCase().includes(q)) ||
+                          (item.division && item.division.toLowerCase().includes(q))
+                        );
+                      })
+                      .map((item) => {
+                        const isCompleted = item.status === 'completed';
+                        const createdStr = item.createdAt?.toDate
+                          ? item.createdAt.toDate().toLocaleString()
+                          : (item.createdAt instanceof Date ? item.createdAt.toLocaleString() : 'N/A');
+
+                        return (
+                          <tr key={item.code}>
+                            <AdminStyledTd>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <code style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: '#60a5fa' }}>
+                                  {item.code}
+                                </code>
+                                <AdminIconButton
+                                  onClick={() => handleCopyAdhocCode(item.code)}
+                                  title="Copy tournament code"
+                                  style={{ padding: '0.2rem', color: copiedAdhocCode === item.code ? '#2ed573' : undefined }}
+                                >
+                                  {copiedAdhocCode === item.code ? <FaCheck /> : <FaCopy />}
+                                </AdminIconButton>
+                              </div>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <strong>{item.title || item.matchId || 'Adhoc Showmatch'}</strong>
+                              {item.matchId && (
+                                <div style={{ fontSize: '0.75rem', color: '#adb5bd' }}>
+                                  ID: {item.matchId}
+                                </div>
+                              )}
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminBadge variant="primary">{item.division || 'elemental'}</AdminBadge>
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              {isCompleted ? (
+                                <AdminBadge variant="success">Completed</AdminBadge>
+                              ) : (
+                                <AdminBadge variant="primary">Active</AdminBadge>
+                              )}
+                            </AdminStyledTd>
+                            <AdminStyledTd>
+                              <AdminBadge variant="secondary">Standalone (No Standings)</AdminBadge>
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ fontSize: '0.8rem', color: '#adb5bd' }}>
+                              {createdStr}
+                            </AdminStyledTd>
+                            <AdminStyledTd style={{ textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
+                                <AdminActionButton
+                                  type="button"
+                                  variant="secondary"
+                                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                  disabled={loadingResultCode === item.code}
+                                  onClick={() => handleViewAdhocResult(item.code)}
+                                  title="View recorded match result data"
+                                >
+                                  {loadingResultCode === item.code ? <FaSpinner className="spin" /> : <FaEye />} View Result
+                                </AdminActionButton>
+
+                                <AdminIconButton
+                                  onClick={() => handleDeleteAdhocCode(item.code)}
+                                  title="Delete from database"
+                                  style={{ color: '#ef4444' }}
+                                >
+                                  <FaTrash />
+                                </AdminIconButton>
+                              </div>
+                            </AdminStyledTd>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </AdminStyledTable>
+              </AdminTableContainer>
+            )}
+          </AdminCard>
+        </AdminGrid>
+      )}
+
+      {/* --- MATCH RESULT MODAL --- */}
+      {selectedResultDetails && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+          onClick={() => setSelectedResultDetails(null)}
+        >
+          <div
+            style={{
+              background: '#1a1f2e',
+              border: '1px solid #374151',
+              borderRadius: '12px',
+              maxWidth: '750px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '1.75rem',
+              color: '#ffffff',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#f3f4f6' }}>
+                  Match Result Data
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
+                  Code: <code style={{ color: '#60a5fa' }}>{selectedResultDetails.code}</code>
+                </span>
+              </div>
+              <AdminIconButton onClick={() => setSelectedResultDetails(null)} style={{ fontSize: '1.2rem' }}>
+                <FaTimes />
+              </AdminIconButton>
+            </div>
+
+            <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', background: '#111827', borderRadius: '8px', border: '1px solid #374151' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase' }}>Winner</span>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 700, color: selectedResultDetails.winner === 100 ? '#3b82f6' : '#ef4444' }}>
+                    {selectedResultDetails.winner === 100 ? 'Blue Team (100)' : selectedResultDetails.winner === 200 ? 'Red Team (200)' : 'Not determined'}
+                  </div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase' }}>Riot Game ID</span>
+                  <div style={{ fontSize: '1rem', fontWeight: 600 }}>{selectedResultDetails.gameId || 'N/A'}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase' }}>Standings Status</span>
+                  <div><AdminBadge variant="secondary">Standings Not Updated (Standalone)</AdminBadge></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Blue Team Roster */}
+            {selectedResultDetails.blueTeam && (
+              <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <h4 style={{ margin: '0 0 0.5rem', color: '#60a5fa', fontSize: '0.95rem' }}>
+                  Blue Team {selectedResultDetails.blueTeam.teamName ? `(${selectedResultDetails.blueTeam.teamName})` : ''} {selectedResultDetails.winner === 100 ? '🏆 WINNER' : ''}
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {selectedResultDetails.blueTeam.players?.map((p: any, idx: number) => (
+                    <span key={idx} style={{ padding: '0.2rem 0.6rem', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.15)', fontSize: '0.8rem' }}>
+                      {p.playerName || `Player ${idx + 1}`} {p.championName ? `(${p.championName})` : ''}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Red Team Roster */}
+            {selectedResultDetails.redTeam && (
+              <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.08)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <h4 style={{ margin: '0 0 0.5rem', color: '#f87171', fontSize: '0.95rem' }}>
+                  Red Team {selectedResultDetails.redTeam.teamName ? `(${selectedResultDetails.redTeam.teamName})` : ''} {selectedResultDetails.winner === 200 ? '🏆 WINNER' : ''}
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {selectedResultDetails.redTeam.players?.map((p: any, idx: number) => (
+                    <span key={idx} style={{ padding: '0.2rem 0.6rem', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', fontSize: '0.8rem' }}>
+                      {p.playerName || `Player ${idx + 1}`} {p.championName ? `(${p.championName})` : ''}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Raw JSON Data Preview */}
+            <details style={{ marginTop: '1rem' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#9ca3af' }}>View Raw Result JSON</summary>
+              <pre style={{ marginTop: '0.5rem', padding: '0.75rem', background: '#111827', borderRadius: '6px', fontSize: '0.75rem', overflowX: 'auto' }}>
+                {JSON.stringify(selectedResultDetails, null, 2)}
+              </pre>
+            </details>
+
+            <div style={{ marginTop: '1.25rem', textAlign: 'right' }}>
+              <AdminActionButton type="button" variant="secondary" onClick={() => setSelectedResultDetails(null)}>
+                Close
+              </AdminActionButton>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* --- TAB: CASTER ACCESS CODES --- */}

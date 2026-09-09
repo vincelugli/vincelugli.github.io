@@ -31,6 +31,7 @@ import PlayerProfilePage from './components/Players/PlayerProfilePage';
 import { getYearFromHash } from './utils';
 import PowerRankingsPage from './components/PowerRankings/PowerRankingsPage';
 import CastingPage from './components/Casting/CastingPage';
+import CatharsisPage from './components/Catharsis/CatharsisPage';
 
 const AppContentInner: React.FC<{ year: string; urlDivision: string | null; matches: any[] }> = ({ year, urlDivision, matches }) => {
   const { currentUser: user } = useAuth();
@@ -74,6 +75,8 @@ const AppContentInner: React.FC<{ year: string; urlDivision: string | null; matc
           <Route path="/match/:matchId" element={<MatchResultPage />} />
           <Route path="/players/:playerId" element={<PlayerProfilePage />} />
           <Route path="/power-rankings" element={<PowerRankingsPage />} />
+          <Route path="/catharsis" element={<CatharsisPage />} />
+          <Route path="/showmatch" element={<CatharsisPage />} />
         </Routes>
       </MainContent>
       <Footer />

@@ -662,15 +662,22 @@ async function executeGameNotificationProcessing(
       `Document for shortCode '${notificationData.shortCode}' not found.`
     );
   }
-  const {division, matchId, isKnockout} = shortCodeDoc.data()!;
-  if (!division || !matchId) {
+  const matchDocData = shortCodeDoc.data() || {};
+  const {division, matchId, isKnockout} = matchDocData;
+  const isAdhoc = Boolean(
+    matchDocData.isAdhoc ||
+    matchDocData.isStandalone ||
+    matchDocData.skipStandings
+  );
+  if (!isAdhoc && (!division || !matchId)) {
     throw new Error(
       `Document '${notificationData.shortCode}' ` +
       "is missing 'division' or 'matchId' field."
     );
   }
   logger.debug(
-    `Fetched match metadata: division=${division}, matchId=${matchId}`
+    `Fetched match metadata: division=${division}, matchId=${matchId}, ` +
+    `isAdhoc=${isAdhoc}`
   );
 
   logger.info(`Proceeding with processing for match ${matchId}.`);
@@ -710,24 +717,33 @@ async function executeGameNotificationProcessing(
   }
 
   // Fetch teams and players once
-  const teamsDocRef = db.doc(`teams/grumble2026_${division}`);
-  const playersDocRef = db.doc(`players/grumble2026_${division}`);
+  const effectiveDivision = division || "elemental";
+  const teamsDocRef = db.doc(`teams/grumble2026_${effectiveDivision}`);
+  const playersDocRef = db.doc(`players/grumble2026_${effectiveDivision}`);
   const [teamsDocSnap, playersDocSnap] = await Promise.all([
     teamsDocRef.get(),
     playersDocRef.get(),
   ]);
 
-  if (!teamsDocSnap.exists) {
-    throw new Error(`Teams document 'grumble2026_${division}' not found.`);
-  }
-  if (!playersDocSnap.exists) {
-    throw new Error(
-      `Players document 'grumble2026_${division}' not found.`
-    );
+  if (!isAdhoc) {
+    if (!teamsDocSnap.exists) {
+      throw new Error(
+        `Teams document 'grumble2026_${effectiveDivision}' not found.`
+      );
+    }
+    if (!playersDocSnap.exists) {
+      throw new Error(
+        `Players document 'grumble2026_${effectiveDivision}' not found.`
+      );
+    }
   }
 
-  const allTeams = teamsDocSnap.data()!.teams || [];
-  const allPlayers = playersDocSnap.data()!.players || [];
+  const allTeams = teamsDocSnap.exists ?
+    (teamsDocSnap.data()!.teams || []) :
+    [];
+  const allPlayers = playersDocSnap.exists ?
+    (playersDocSnap.data()!.players || []) :
+    [];
 
   // Resolve side team names
   const bluePlayerNames =
@@ -784,6 +800,10 @@ async function executeGameNotificationProcessing(
   const resultPayload = {
     ...notificationData,
     ...matchResultData,
+    isAdhoc,
+    isStandalone: isAdhoc,
+    skipStandings: isAdhoc,
+    title: matchDocData.title || undefined,
     submittedAt: Timestamp.now(),
   };
 
@@ -814,6 +834,23 @@ async function executeGameNotificationProcessing(
     winnerId: winnerId || -1,
   });
 
+  if (isAdhoc && notificationData.shortCode) {
+    const adhocRef = db
+      .collection("adhocTournamentCodes")
+      .doc(notificationData.shortCode);
+    batch.set(
+      adhocRef,
+      {
+        status: "completed",
+        completedAt: Timestamp.now(),
+        winner: matchResultData.winner,
+        winnerId: winnerId || -1,
+        gameId: notificationData.gameId || null,
+      },
+      {merge: true}
+    );
+  }
+
   logger.debug(
     `Writing to Firestore batch: matchRef=${matchRef.path}, ` +
     `resultRef=${resultRef.path}, winnerId=${winnerId}`
@@ -824,6 +861,14 @@ async function executeGameNotificationProcessing(
   // ////////////////////
   // Update Standings //
   // ////////////////////
+  if (isAdhoc) {
+    logger.info(
+      `Match ${notificationData.shortCode} is a standalone showmatch. ` +
+      "Result stored successfully; skipping standings update."
+    );
+    return;
+  }
+
   const isKo = Boolean(
     isKnockout || (typeof matchId === "string" && matchId.startsWith("ko_"))
   );
@@ -1459,6 +1504,13 @@ export const updateStandingsWithExistingMatchResult = onCall(
 
       if (shortCodeDoc.exists) {
         const docData = shortCodeDoc.data()!;
+        if (docData.isAdhoc || docData.isStandalone || docData.skipStandings) {
+          return {
+            success: true,
+            message: "Match is an adhoc / standalone showmatch. " +
+              "Standings update skipped.",
+          };
+        }
         division = docData.division;
         matchId = docData.matchId;
         isKnockout = Boolean(docData.isKnockout);
@@ -1695,5 +1747,186 @@ export const generateTournamentCodesForMatch = onCall(
         `Riot API error: ${errMsg}`
       );
     }
+  }
+);
+
+export const generateAdhocTournamentCodes = onCall(
+  {secrets: [riotApiKey]},
+  async (request) => {
+    if (!request.auth || !request.auth.token.adminId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Must be an administrator to perform this action."
+      );
+    }
+
+    const {
+      title,
+      division,
+      matchId,
+      count,
+      year,
+      pickType,
+      mapType,
+      spectatorType,
+      customCodes,
+    } = request.data as {
+      title?: string;
+      division?: string;
+      matchId?: string | number;
+      count?: number;
+      year?: string;
+      pickType?: string;
+      mapType?: string;
+      spectatorType?: string;
+      customCodes?: string[];
+    };
+
+    const numCodes = Math.min(Math.max(1, count || 1), 10);
+    const activeDivision = division || "elemental";
+    const activeYear = year || "2026";
+    const prefix = `grumble${activeYear}`;
+    const codeTitle = title || "GRumble Catharsis Showmatch";
+    const baseMatchId = matchId || `catharsis_${Date.now()}`;
+
+    let codes: string[] = [];
+
+    // If custom codes were explicitly provided
+    if (customCodes && Array.isArray(customCodes) && customCodes.length > 0) {
+      codes = customCodes.map((c) => String(c).trim()).filter(Boolean);
+    } else {
+      try {
+        const metadataDocRef = db
+          .collection("tournamentMetadata")
+          .doc("grumble");
+        const metadataDoc = await metadataDocRef.get();
+        const tournamentId = metadataDoc.data()?.[
+          `${prefix}_tournamentId` || "grumble2026_tournamentId"
+        ];
+
+        if (tournamentId && riotApiKey.value()) {
+          const riotResponse = await axios.post(
+            "https://americas.api.riotgames.com/lol/tournament/v5/codes" +
+            `?tournamentId=${tournamentId}&count=${numCodes}`,
+            {
+              pickType: pickType || "TOURNAMENT_DRAFT",
+              mapType: mapType || "SUMMONERS_RIFT",
+              spectatorType: spectatorType || "ALL",
+              teamSize: 5,
+              metadata: JSON.stringify({
+                prefix,
+                division: activeDivision,
+                matchId: baseMatchId,
+                title: codeTitle,
+                isAdhoc: true,
+                skipStandings: true,
+              }),
+            },
+            {
+              headers: {
+                "X-Riot-Token": riotApiKey.value(),
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (
+            Array.isArray(riotResponse.data) &&
+            riotResponse.data.length > 0
+          ) {
+            codes = riotResponse.data as string[];
+          }
+        }
+      } catch (err: any) {
+        logger.warn(
+          "Riot API code generation unavailable for adhoc code, " +
+          "generating local adhoc codes:",
+          err.response?.data || err.message
+        );
+      }
+
+      // Fallback: if Riot API returned no codes, generate formatted adhoc codes
+      if (codes.length === 0) {
+        for (let i = 0; i < numCodes; i++) {
+          const randHex = Array.from({length: 4}, () =>
+            Math.floor((1 + Math.random()) * 0x10000)
+              .toString(16)
+              .substring(1)
+          ).join("-");
+          codes.push(`NA04f69-ADHOC-${randHex}`.toUpperCase());
+        }
+      }
+    }
+
+    if (codes.length === 0) {
+      throw new HttpsError(
+        "internal",
+        "Failed to generate any tournament codes."
+      );
+    }
+
+    // Write to Firestore in batch
+    const batch = db.batch();
+    for (let i = 0; i < codes.length; i++) {
+      const code = codes[i];
+      const specificMatchId = numCodes > 1 ?
+        `${baseMatchId}_g${i + 1}` :
+        `${baseMatchId}`;
+      const specificTitle = numCodes > 1 ?
+        `${codeTitle} - Game ${i + 1}` :
+        codeTitle;
+
+      const adhocRecord = {
+        code,
+        matchId: specificMatchId,
+        division: activeDivision,
+        title: specificTitle,
+        isAdhoc: true,
+        isStandalone: true,
+        skipStandings: true,
+        status: "active",
+        createdAt: Timestamp.now(),
+        tournamentCodes: [code],
+      };
+
+      // 1. matches/{code} (for notification lookup)
+      batch.set(db.collection("matches").doc(code), adhocRecord);
+
+      // 2. adhocTournamentCodes/{code} (for admin listing)
+      batch.set(db.collection("adhocTournamentCodes").doc(code), adhocRecord);
+    }
+
+    await batch.commit();
+
+    return {
+      success: true,
+      codes,
+      matchId: baseMatchId,
+      title: codeTitle,
+    };
+  }
+);
+
+export const deleteAdhocTournamentCode = onCall(
+  async (request) => {
+    if (!request.auth || !request.auth.token.adminId) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Must be an administrator to perform this action."
+      );
+    }
+
+    const {code} = request.data as {code?: string};
+    if (!code) {
+      throw new HttpsError("invalid-argument", "Missing 'code' parameter.");
+    }
+
+    const batch = db.batch();
+    batch.delete(db.collection("matches").doc(code));
+    batch.delete(db.collection("adhocTournamentCodes").doc(code));
+    batch.delete(db.collection("match_results").doc(code));
+    await batch.commit();
+
+    return {success: true, message: `Adhoc code ${code} deleted.`};
   }
 );
