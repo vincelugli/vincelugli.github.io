@@ -1166,8 +1166,12 @@ const updateStandings = async (
         const isMatchKo = Boolean(
           isKo ||
           currentMatch?.isKnockout ||
-          (typeof currentMatch?.id === "string" && currentMatch.id.startsWith("ko_")) ||
-          (currentMatch?.stage && /^(winners|losers|grand\s*finals?)/i.test(currentMatch.stage.trim()))
+          (typeof currentMatch?.id === "string" &&
+            currentMatch.id.startsWith("ko_")) ||
+          (currentMatch?.stage &&
+            /^(winners|losers|grand\s*finals?)/i.test(
+              currentMatch.stage.trim()
+            ))
         );
 
         if (!isMatchKo) {
@@ -1207,7 +1211,8 @@ const updateStandings = async (
           );
           if (!isMatchKo) {
             if (winnerIndex !== -1 && loserIndex !== -1) {
-              allTeams[winnerIndex].wins = (allTeams[winnerIndex].wins || 0) + 1;
+              allTeams[winnerIndex].wins =
+                (allTeams[winnerIndex].wins || 0) + 1;
               const wLosses = allTeams[winnerIndex].losses || 0;
               allTeams[winnerIndex].record =
                 `${allTeams[winnerIndex].wins}-${wLosses}`;
@@ -1847,14 +1852,7 @@ export const generateAdhocTournamentCodes = onCall(
 
       // Fallback: if Riot API returned no codes, generate formatted adhoc codes
       if (codes.length === 0) {
-        for (let i = 0; i < numCodes; i++) {
-          const randHex = Array.from({length: 4}, () =>
-            Math.floor((1 + Math.random()) * 0x10000)
-              .toString(16)
-              .substring(1)
-          ).join("-");
-          codes.push(`NA04f69-ADHOC-${randHex}`.toUpperCase());
-        }
+        logger.warn("Unable to generate codes");
       }
     }
 

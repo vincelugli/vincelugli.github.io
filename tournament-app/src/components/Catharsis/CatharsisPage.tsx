@@ -1,4 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { AdhocTournamentCode } from '../../types';
 import {
   FaCalendarAlt,
   FaClock,
@@ -16,7 +20,11 @@ import {
   FaUsers,
   FaGamepad,
   FaCrown,
-  FaArrowRight
+  FaArrowRight,
+  FaKey,
+  FaCopy,
+  FaCheck,
+  FaCheckCircle
 } from 'react-icons/fa';
 import {
   CatharsisPageContainer,
@@ -110,7 +118,19 @@ import {
   DiscordCalloutTitle,
   DiscordCalloutText,
   BackNavigationRow,
-  NavBackLink
+  NavBackLink,
+  TournamentCodesSection,
+  TournamentCodesGrid,
+  TournamentCodeCard,
+  CodeCardTopRow,
+  CodeGameTitle,
+  CodeStatusBadge,
+  CodeBoxWrapper,
+  CodeText,
+  CopyCodeButton,
+  CodeCardFooter,
+  SeriesScoreBanner,
+  EmptyCodesCard
 } from '../../styles/catharsisStyles';
 import { createOpGgUrl, createOpGgMultiSearchUrl } from '../../utils';
 
@@ -253,19 +273,47 @@ const TEAM_2_ROSTER: PlayerData[] = [
 // Target event time: Friday, September 11, 2026, 6:00 PM PDT (UTC-7) / 9:00 PM EDT (UTC-4)
 const TARGET_EVENT_DATE = new Date('2026-09-11T18:00:00-07:00');
 
-// Curated pool of signature champions for Fearless Draft showcase
+// All League of Legends champions pool for Fearless Draft showcase
 const SIGNATURE_CHAMPIONS = [
-  'Aatrox', 'Ahri', 'Akali', 'Amumu', 'Ashe', 'Blitzcrank', 'Camille', 'Darius',
-  'Diana', 'Draven', 'Ezreal', 'Fiora', 'Garen', 'Gnar', 'Graves', 'Hecarim',
-  'Janna', 'JarvanIV', 'Jax', 'Jhin', 'Jinx', 'Kaisa', 'Karma', 'Kassadin',
-  'Katarina', 'Kayn', 'LeeSin', 'Leona', 'Lillia', 'Lucian', 'Lulu', 'Lux',
-  'Malphite', 'Maokai', 'Milio', 'MissFortune', 'Morgana', 'Nami', 'Nautilus',
-  'Nocturne', 'Orianna', 'Ornn', 'Pantheon', 'Pyke', 'Rakan', 'Renekton',
-  'Riven', 'Samira', 'Sejuani', 'Seraphine', 'Sett', 'Shen', 'Sion', 'Sivir',
-  'Sona', 'Sylas', 'Syndra', 'Thresh', 'Tristana', 'TwistedFate', 'Varus',
-  'Vayne', 'Vi', 'Viego', 'Viktor', 'Volibear', 'Warwick', 'Wukong', 'Xayah',
-  'XinZhao', 'Yasuo', 'Yone', 'Zac', 'Zed', 'Zeri', 'Ziggs', 'Zilean'
+  'Aatrox', 'Ahri', 'Akali', 'Akshan', 'Alistar', 'Ambessa', 'Amumu', 'Anivia',
+  'Annie', 'Aphelios', 'Ashe', 'Aurelion Sol', 'Aurora', 'Azir', 'Bard', "Bel'Veth",
+  'Blitzcrank', 'Brand', 'Braum', 'Briar', 'Caitlyn', 'Camille', 'Cassiopeia',
+  "Cho'Gath", 'Corki', 'Darius', 'Diana', 'Dr. Mundo', 'Draven', 'Ekko', 'Elise',
+  'Evelynn', 'Ezreal', 'Fiddlesticks', 'Fiora', 'Fizz', 'Galio', 'Gangplank',
+  'Garen', 'Gnar', 'Gragas', 'Graves', 'Gwen', 'Hecarim', 'Heimerdinger', 'Hwei',
+  'Illaoi', 'Irelia', 'Ivern', 'Janna', 'Jarvan IV', 'Jax', 'Jayce', 'Jhin',
+  'Jinx', "K'Sante", "Kai'Sa", 'Kalista', 'Karma', 'Karthus', 'Kassadin',
+  'Katarina', 'Kayle', 'Kayn', 'Kennen', "Kha'Zix", 'Kindred', 'Kled', "Kog'Maw",
+  'LeBlanc', 'Lee Sin', 'Leona', 'Lillia', 'Lissandra', 'Locke', 'Lucian', 'Lulu',
+  'Lux', 'Malphite', 'Malzahar', 'Maokai', 'Master Yi', 'Mel', 'Milio',
+  'Miss Fortune', 'Mordekaiser', 'Morgana', 'Naafiri', 'Nami', 'Nasus', 'Nautilus',
+  'Neeko', 'Nidalee', 'Nilah', 'Nocturne', 'Nunu & Willump', 'Olaf', 'Orianna',
+  'Ornn', 'Pantheon', 'Poppy', 'Pyke', 'Qiyana', 'Quinn', 'Rakan', 'Rammus',
+  "Rek'Sai", 'Rell', 'Renata Glasc', 'Renekton', 'Rengar', 'Riven', 'Rumble',
+  'Ryze', 'Samira', 'Sejuani', 'Senna', 'Seraphine', 'Sett', 'Shaco', 'Shen',
+  'Shyvana', 'Singed', 'Sion', 'Sivir', 'Skarner', 'Smolder', 'Sona', 'Soraka',
+  'Swain', 'Sylas', 'Syndra', 'Tahm Kench', 'Taliyah', 'Talon', 'Taric', 'Teemo',
+  'Thresh', 'Tristana', 'Trundle', 'Tryndamere', 'Twisted Fate', 'Twitch', 'Udyr',
+  'Urgot', 'Varus', 'Vayne', 'Veigar', "Vel'Koz", 'Vex', 'Vi', 'Viego', 'Viktor',
+  'Vladimir', 'Volibear', 'Warwick', 'Wukong', 'Xayah', 'Xerath', 'Xin Zhao',
+  'Yasuo', 'Yone', 'Yorick', 'Yunara', 'Yuumi', 'Zaahen', 'Zac', 'Zed', 'Zeri',
+  'Ziggs', 'Zilean', 'Zoe', 'Zyra'
 ];
+
+const formatChampNameForDdragon = (name: string): string => {
+  const clean = name.trim();
+  const lower = clean.toLowerCase();
+  if (lower === 'wukong') return 'MonkeyKing';
+  if (lower === 'nunu & willump') return 'Nunu';
+  if (lower === 'renata glasc') return 'Renata';
+  if (lower === 'leblanc') return 'Leblanc';
+  if (lower === 'khazix' || lower === "kha'zix") return 'Khazix';
+  if (lower === 'chogath' || lower === "cho'gath") return 'Chogath';
+  if (lower === 'kaisa' || lower === "kai'sa") return 'Kaisa';
+  if (lower === 'velkoz' || lower === "vel'koz") return 'Velkoz';
+  if (lower === 'belveth' || lower === "bel'veth") return 'Belveth';
+  return clean.replace(/[\s'.]/g, '');
+};
 
 const getRoleIcon = (role: string) => {
   switch (role) {
@@ -318,6 +366,8 @@ const CatharsisPage: React.FC = () => {
   const [selectedGameTab, setSelectedGameTab] = useState<number>(1);
   const [userLocalTime, setUserLocalTime] = useState<string>('');
   const [userTimeZone, setUserTimeZone] = useState<string>('');
+  const [adhocCodes, setAdhocCodes] = useState<AdhocTournamentCode[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string>('');
 
   // Randomized fearless draft order across series (10 random picks per round)
   const [randomPicksOrder, setRandomPicksOrder] = useState<string[]>(() =>
@@ -326,6 +376,102 @@ const CatharsisPage: React.FC = () => {
 
   const handleReroll = () => {
     setRandomPicksOrder(shuffleChampions(SIGNATURE_CHAMPIONS));
+  };
+
+  // Real-time Firestore subscription to adhoc tournament codes
+  useEffect(() => {
+    try {
+      const adhocRef = collection(db, 'adhocTournamentCodes');
+      const unsubscribe = onSnapshot(
+        adhocRef,
+        (snapshot) => {
+          const list: AdhocTournamentCode[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ ...docSnap.data() as AdhocTournamentCode, code: docSnap.id });
+          });
+          setAdhocCodes(list);
+        },
+        (err) => {
+          console.warn('Error subscribing to adhoc tournament codes:', err);
+        }
+      );
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn('Failed to initialize adhoc codes subscription:', e);
+    }
+  }, []);
+
+  // Filter and sort codes relevant to the Catharsis showmatch
+  const catharsisCodes = useMemo(() => {
+    const specific = adhocCodes.filter((c) => {
+      const matchId = String(c.matchId || '').toLowerCase();
+      const title = String(c.title || '').toLowerCase();
+      const division = String(c.division || '').toLowerCase();
+      return (
+        matchId.includes('catharsis') ||
+        title.includes('catharsis') ||
+        division === 'showmatch' ||
+        division === 'catharsis'
+      );
+    });
+
+    const list = specific.length > 0 ? specific : adhocCodes;
+
+    return [...list].sort((a, b) => {
+      const extractNum = (item: AdhocTournamentCode) => {
+        const m = String(item.matchId || '').match(/_g(\d+)/i) ||
+          String(item.title || '').match(/Game\s*(\d+)/i);
+        return m ? parseInt(m[1], 10) : 999;
+      };
+      const numA = extractNum(a);
+      const numB = extractNum(b);
+      if (numA !== numB) return numA - numB;
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+      return timeA - timeB;
+    });
+  }, [adhocCodes]);
+
+  // Derive series win scores from completed games
+  const seriesScore = useMemo(() => {
+    let team1Wins = 0; // Working From Homeguard V2 (Blue)
+    let team2Wins = 0; // Platinum Digger V2 (Red)
+
+    catharsisCodes.forEach((c) => {
+      if (c.status === 'completed' && c.winner) {
+        const w = String(c.winner).toLowerCase();
+        if (w.includes('blue') || w.includes('homeguard') || c.winnerId === 1) {
+          team1Wins++;
+        } else if (w.includes('red') || w.includes('digger') || c.winnerId === 2) {
+          team2Wins++;
+        }
+      }
+    });
+
+    return {
+      team1Wins,
+      team2Wins,
+      hasGamesCompleted: team1Wins > 0 || team2Wins > 0
+    };
+  }, [catharsisCodes]);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => {
+      setCopiedCode('');
+    }, 2000);
+  };
+
+  const handleCopyAllCodes = () => {
+    const text = catharsisCodes
+      .map((c, i) => `Game ${i + 1}: ${c.code}`)
+      .join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedCode('ALL');
+    setTimeout(() => {
+      setCopiedCode('');
+    }, 2000);
   };
 
   // Live countdown effect
@@ -400,6 +546,21 @@ const CatharsisPage: React.FC = () => {
           <FormatBadge>
             <FaGamepad /> Best of 5 Fearless • No Bans
           </FormatBadge>
+          {catharsisCodes.length > 0 && (
+            <FormatBadge
+              as="a"
+              href="#tournament-codes"
+              style={{
+                textDecoration: 'none',
+                cursor: 'pointer',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                color: '#f59e0b',
+                borderColor: 'rgba(245, 158, 11, 0.4)'
+              }}
+            >
+              <FaKey /> {catharsisCodes.length} Tournament Codes Ready
+            </FormatBadge>
+          )}
           {timeLeft.isPast && (
             <LiveIndicatorBadge>
               ● LIVE OR CONCLUDED
@@ -692,6 +853,176 @@ const CatharsisPage: React.FC = () => {
         </TeamsGrid>
       </TeamsVersusContainer>
 
+      {/* --- TOURNAMENT CODES SECTION --- */}
+      <TournamentCodesSection id="tournament-codes">
+        <SectionHeader>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
+            <div>
+              <SectionHeading>
+                <FaKey style={{ color: '#f59e0b' }} />
+                Official Tournament Codes
+              </SectionHeading>
+              <SectionDescription>
+                Riot custom lobby codes for all 5 games of the Fearless Best of 5 series. Paste into your League client to enter each match lobby.
+              </SectionDescription>
+            </div>
+
+            {catharsisCodes.length > 1 && (
+              <ActionButton
+                onClick={handleCopyAllCodes}
+                variant="secondary"
+                style={{ fontSize: '0.82rem', padding: '0.45rem 0.9rem' }}
+                title="Copy all tournament codes"
+              >
+                {copiedCode === 'ALL' ? (
+                  <>
+                    <FaCheck style={{ color: '#2ed573' }} /> All Codes Copied!
+                  </>
+                ) : (
+                  <>
+                    <FaCopy /> Copy All Codes
+                  </>
+                )}
+              </ActionButton>
+            )}
+          </div>
+        </SectionHeader>
+
+        {seriesScore.hasGamesCompleted && (
+          <SeriesScoreBanner>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontWeight: 800, color: '#3b82f6', fontSize: '1.05rem' }}>
+                Working From Homeguard V2:
+              </span>
+              <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#3b82f6' }}>
+                {seriesScore.team1Wins}
+              </span>
+            </div>
+            <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#6b7280' }}>—</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '1.3rem', fontWeight: 900, color: '#f59e0b' }}>
+                {seriesScore.team2Wins}
+              </span>
+              <span style={{ fontWeight: 800, color: '#f59e0b', fontSize: '1.05rem' }}>
+                Platinum Digger V2
+              </span>
+            </div>
+            <div style={{ width: '100%', fontSize: '0.8rem', color: '#94a3b8' }}>
+              First team to 3 wins takes the Catharsis title
+            </div>
+          </SeriesScoreBanner>
+        )}
+
+        {catharsisCodes.length > 0 ? (
+          <TournamentCodesGrid>
+            {catharsisCodes.map((item, index) => {
+              const gameNumber = index + 1;
+              const isCompleted = item.status === 'completed';
+              const isCopied = copiedCode === item.code;
+              const isCurrentSelectedTab = selectedGameTab === gameNumber;
+
+              return (
+                <TournamentCodeCard
+                  key={item.code}
+                  $isCompleted={isCompleted}
+                  $isActive={isCurrentSelectedTab}
+                >
+                  <CodeCardTopRow>
+                    <CodeGameTitle>
+                      <FaGamepad style={{ color: isCompleted ? '#2ed573' : '#3b82f6' }} />
+                      <span>{item.title || `Game ${gameNumber}`}</span>
+                    </CodeGameTitle>
+                    <CodeStatusBadge $status={item.status || 'active'}>
+                      {isCompleted ? (
+                        <>
+                          <FaCheckCircle size={11} /> Completed
+                        </>
+                      ) : (
+                        'Ready to Play'
+                      )}
+                    </CodeStatusBadge>
+                  </CodeCardTopRow>
+
+                  <CodeBoxWrapper>
+                    <CodeText title={item.code}>{item.code}</CodeText>
+                    <CopyCodeButton
+                      onClick={() => handleCopyCode(item.code)}
+                      $copied={isCopied}
+                      title="Copy tournament code to clipboard"
+                    >
+                      {isCopied ? (
+                        <>
+                          <FaCheck size={12} /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <FaCopy size={12} /> Copy
+                        </>
+                      )}
+                    </CopyCodeButton>
+                  </CodeBoxWrapper>
+
+                  <CodeCardFooter>
+                    {isCompleted ? (
+                      <span style={{ color: '#2ed573', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <FaCrown size={12} style={{ color: '#f59e0b' }} />
+                        Winner: {item.winner ? (String(item.winner).toUpperCase() === 'BLUE' ? 'Team 1 (Blue)' : String(item.winner).toUpperCase() === 'RED' ? 'Team 2 (Red)' : item.winner) : 'Recorded'}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#94a3b8' }}>
+                        Draft: Tournament Draft • 0 Bans
+                      </span>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedGameTab(gameNumber)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: isCurrentSelectedTab ? '#3b82f6' : '#94a3b8',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0
+                      }}
+                      title={`View banned champion simulation for Game ${gameNumber}`}
+                    >
+                      {isCurrentSelectedTab ? '• Viewing Pool' : 'View Draft Pool →'}
+                    </button>
+                  </CodeCardFooter>
+                </TournamentCodeCard>
+              );
+            })}
+          </TournamentCodesGrid>
+        ) : (
+          <EmptyCodesCard>
+            <FaKey size={36} style={{ color: '#f59e0b', marginBottom: '0.75rem', opacity: 0.8 }} />
+            <h4 style={{ margin: '0 0 0.5rem', fontWeight: 700 }}>
+              Tournament Codes Pending Generation
+            </h4>
+            <p style={{ margin: '0 auto 1.25rem', maxWidth: '500px', fontSize: '0.88rem', color: '#94a3b8' }}>
+              Official Riot tournament codes for Games 1 through 5 will appear here before match time.
+              Players will be able to copy codes with 1 click to automatically join each game lobby.
+            </p>
+            <Link
+              to="/admin"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.82rem',
+                color: '#3b82f6',
+                textDecoration: 'none',
+                fontWeight: 600
+              }}
+            >
+              Admins: Generate Codes in Admin Panel →
+            </Link>
+          </EmptyCodesCard>
+        )}
+      </TournamentCodesSection>
+
       {/* --- AGENDA & TIMELINE SECTION --- */}
       <AgendaContainer>
         <SectionHeader>
@@ -856,6 +1187,68 @@ const CatharsisPage: React.FC = () => {
           ))}
         </GameTabsContainer>
 
+        {catharsisCodes[selectedGameTab - 1] && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.65rem 1rem',
+              background: 'rgba(0, 123, 255, 0.08)',
+              borderRadius: '8px',
+              marginBottom: '1rem',
+              border: '1px solid rgba(0, 123, 255, 0.25)',
+              flexWrap: 'wrap',
+              gap: '0.6rem'
+            }}
+          >
+            <span style={{ fontSize: '0.88rem', color: '#e2e8f0', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FaKey style={{ color: '#f59e0b' }} />
+              <strong>Game {selectedGameTab} Tournament Code:</strong>
+              <code
+                style={{
+                  color: '#60a5fa',
+                  fontWeight: 700,
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace'
+                }}
+              >
+                {catharsisCodes[selectedGameTab - 1].code}
+              </code>
+            </span>
+            <button
+              onClick={() => handleCopyCode(catharsisCodes[selectedGameTab - 1].code)}
+              style={{
+                background: copiedCode === catharsisCodes[selectedGameTab - 1].code ? '#2ed573' : '#007BFF',
+                color: '#fff',
+                border: 'none',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                transition: 'all 0.2s'
+              }}
+              title="Copy code for current game"
+            >
+              {copiedCode === catharsisCodes[selectedGameTab - 1].code ? (
+                <>
+                  <FaCheck size={12} /> Copied!
+                </>
+              ) : (
+                <>
+                  <FaCopy size={12} /> Copy Code
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         <FearlessInfoBanner>
           <LockCountDisplay>
             <LockNumber>{lockedCountForTab}</LockNumber>
@@ -949,7 +1342,7 @@ const CatharsisPage: React.FC = () => {
                 title={isLocked ? `${champ} (Locked in Game ${gamePlayed})` : `${champ} (Available)`}
               >
                 <ChampIcon
-                  src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${champ}.png`}
+                  src={`https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/${formatChampNameForDdragon(champ)}.png`}
                   alt={champ}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://ddragon.leagueoflegends.com/cdn/15.18.1/img/champion/Aatrox.png';

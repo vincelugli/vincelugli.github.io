@@ -1077,3 +1077,208 @@ export const NavBackLink = styled(Link)`
     border-color: ${({ theme }) => theme.primary};
   }
 `;
+
+export const TournamentCodesSection = styled.section`
+  background: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 20px ${({ theme }) => theme.boxShadow};
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
+`;
+
+export const TournamentCodesGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const TournamentCodeCard = styled.div<{ $isCompleted?: boolean; $isActive?: boolean }>`
+  background: ${({ theme, $isCompleted }) =>
+    $isCompleted ? 'rgba(46, 213, 115, 0.05)' : theme.backgroundTwo};
+  border: 1px solid ${({ theme, $isCompleted, $isActive }) =>
+    $isCompleted ? 'rgba(46, 213, 115, 0.4)' :
+    $isActive ? theme.primary : theme.border};
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px ${({ theme }) => theme.boxShadow};
+  }
+`;
+
+export const CodeCardTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+export const CodeGameTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.text};
+`;
+
+export const CodeStatusBadge = styled.span<{ $status?: string }>`
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  ${({ $status }) => {
+    switch ($status) {
+      case 'completed':
+        return `
+          background: rgba(46, 213, 115, 0.15);
+          color: #2ed573;
+          border: 1px solid rgba(46, 213, 115, 0.3);
+        `;
+      case 'in_progress':
+      case 'active':
+        return `
+          background: rgba(30, 144, 255, 0.15);
+          color: #1e90ff;
+          border: 1px solid rgba(30, 144, 255, 0.3);
+        `;
+      default:
+        return `
+          background: rgba(255, 165, 2, 0.15);
+          color: #ffa502;
+          border: 1px solid rgba(255, 165, 2, 0.3);
+        `;
+    }
+  }}
+`;
+
+export const CodeBoxWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  background: ${({ theme }) => theme.background};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 0.35rem 0.5rem 0.35rem 0.85rem;
+  gap: 0.5rem;
+`;
+
+export const CodeText = styled.code`
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.88rem;
+  color: ${({ theme }) => theme.text};
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const CopyCodeButton = styled.button<{ $copied?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: ${({ $copied, theme }) => ($copied ? '#2ed573' : theme.primary)};
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
+export const CodeCardFooter = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: ${({ theme }) => theme.secondaryText};
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+export const CodeInstructionsCallout = styled.div`
+  margin-top: 1.5rem;
+  background: rgba(0, 123, 255, 0.06);
+  border: 1px dashed rgba(0, 123, 255, 0.35);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.secondaryText};
+  line-height: 1.5;
+
+  strong {
+    color: ${({ theme }) => theme.text};
+  }
+
+  ol {
+    margin: 0.4rem 0 0;
+    padding-left: 1.25rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+`;
+
+export const SeriesScoreBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  text-align: center;
+`;
+
+export const EmptyCodesCard = styled.div`
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  background: ${({ theme }) => theme.backgroundTwo};
+  border: 1px dashed ${({ theme }) => theme.border};
+  border-radius: 12px;
+  margin-top: 1.5rem;
+`;
+
