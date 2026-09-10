@@ -231,7 +231,8 @@ const TEAM_2_ROSTER: PlayerData[] = [
     roleName: 'Top / Flex',
     rankTier: 'Gold',
     rankColor: '#f59e0b',
-    note: 'Platinum Digger frontliner'
+    accolade: '2025 Gold Winner (Sub)',
+    note: '2025 Gold Champion sub & frontliner'
   },
   {
     discord: '@GuoooooJing',
@@ -685,8 +686,9 @@ const CatharsisPage: React.FC = () => {
               Championship Pedigree
             </StoryCardTitle>
             <StoryCardText>
-              This isn't an amateur scrap. <strong>@Chonky Chip</strong> and <strong>@GuoooooJing</strong> are reigning
-              GRumble 2025 Gold Winners, while <strong>@Christmas13</strong> boasts a 2024 GRumble Championship.
+              This isn't an amateur scrap. <strong>@Chonky Chip</strong>, <strong>@GuoooooJing</strong>,
+              <strong> @conanjoey</strong>, and <strong>@jeremy</strong> (Mister Pander, sub) were all on the
+              GRumble 2025 Gold Winning team, while <strong>@Christmas13</strong> boasts a 2024 GRumble Championship.
               High-stakes pride and bragging rights are fully on the line.
             </StoryCardText>
           </StoryCard>
