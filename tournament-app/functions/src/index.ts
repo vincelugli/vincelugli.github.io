@@ -39,6 +39,13 @@ admin.initializeApp({
   serviceAccountId: "grumble-5885f@appspot.gserviceaccount.com",
 });
 const db = admin.firestore();
+if (typeof db.settings === "function") {
+  try {
+    db.settings({ignoreUndefinedProperties: true});
+  } catch (e) {
+    logger.warn("Could not set Firestore settings:", e);
+  }
+}
 const tasksClient = new CloudTasksClient();
 
 interface AuthData {
@@ -803,7 +810,7 @@ async function executeGameNotificationProcessing(
     isAdhoc,
     isStandalone: isAdhoc,
     skipStandings: isAdhoc,
-    title: matchDocData.title || undefined,
+    ...(matchDocData.title ? {title: matchDocData.title} : {}),
     submittedAt: Timestamp.now(),
   };
 

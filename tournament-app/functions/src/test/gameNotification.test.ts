@@ -2,7 +2,20 @@ import axios from "axios";
 
 const mockUpdate = jest.fn();
 const mockGet = jest.fn();
-const mockSet = jest.fn();
+const mockSet = jest.fn((...args: any[]) => {
+  const data = (args[0] && typeof args[0] === "object" && ("collection" in args[0] || "get" in args[0] || "doc" in args[0] || "path" in args[0])) ?
+    args[1] :
+    args[0];
+  if (data && typeof data === "object") {
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) {
+        throw new Error(
+          `Value for argument "data" is not a valid Firestore document. Cannot use "undefined" as a Firestore value (found in field "${key}").`
+        );
+      }
+    }
+  }
+});
 const mockCommit = jest.fn();
 const mockRunTransaction = jest.fn();
 const mockDelete = jest.fn();
@@ -220,6 +233,14 @@ describe("gameNotificationEndpoint Cloud Function", () => {
     });
     expect(mockedAxios.get).toHaveBeenCalledTimes(1);
     expect(mockCommit).toHaveBeenCalledTimes(1);
+
+    const matchResultSetCall = mockSet.mock.calls.find(
+      (call: any[]) =>
+        call[1] &&
+        call[1].gameId === notificationPayload.gameId
+    );
+    expect(matchResultSetCall).toBeDefined();
+    expect("title" in matchResultSetCall![1]).toBe(false);
   });
 
   it("should return 200 OK if shortcode already exists", async () => {
@@ -1385,7 +1406,7 @@ describe("processGameFromNotification Cloud Function", () => {
         (call[0] && call[0].isAdhoc === true)
     );
     expect(resultCall).toBeDefined();
-    const resultData = resultCall[1] || resultCall[0];
+    const resultData = resultCall![1] || resultCall![0];
     expect(resultData.skipStandings).toBe(true);
     expect(resultData.title).toBe("GRumble Catharsis Showmatch - Game 1");
 
