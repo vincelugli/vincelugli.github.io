@@ -39,6 +39,13 @@ admin.initializeApp({
   serviceAccountId: "grumble-5885f@appspot.gserviceaccount.com",
 });
 const db = admin.firestore();
+if (typeof db.settings === "function") {
+  try {
+    db.settings({ignoreUndefinedProperties: true});
+  } catch (e) {
+    logger.warn("Could not set Firestore settings:", e);
+  }
+}
 const tasksClient = new CloudTasksClient();
 
 interface AuthData {
@@ -803,7 +810,7 @@ async function executeGameNotificationProcessing(
     isAdhoc,
     isStandalone: isAdhoc,
     skipStandings: isAdhoc,
-    title: matchDocData.title || undefined,
+    ...(matchDocData.title ? {title: matchDocData.title} : {}),
     submittedAt: Timestamp.now(),
   };
 
@@ -1063,47 +1070,156 @@ const updateStandings = async (
       });
     }
 
+    // Safeguard: If matched match in allMatches is completed, don't pick a
+    // completed match if an uncompleted match with the same teams exists
+    if (
+      currentMatchIndex !== -1 &&
+      allMatches[currentMatchIndex].status === "completed"
+    ) {
+      const matched = allMatches[currentMatchIndex];
+      const t1 = matched.team1Id;
+      const t2 = matched.team2Id;
+      const alreadyInResults = !!(
+        matched.results && matched.results[shortCode]
+      );
+      if (t1 && t2 && t1 > 0 && t2 > 0 && !alreadyInResults) {
+        const uncompletedIndex = allMatches.findIndex((m: any, idx: number) => {
+          if (idx === currentMatchIndex) return false;
+          if (m.status === "completed") return false;
+          const stageMatches = isKo ?
+            (m.isKnockout || String(m.id).startsWith("ko_")) :
+            (!m.isKnockout && !String(m.id).startsWith("ko_"));
+          if (!stageMatches) return false;
+          return (
+            (m.team1Id === t1 && m.team2Id === t2) ||
+            (m.team1Id === t2 && m.team2Id === t1)
+          );
+        });
+        if (uncompletedIndex !== -1) {
+          logger.info(
+            `Matched match ${matched.id} is already completed. ` +
+            "Switching to uncompleted match " +
+            `${allMatches[uncompletedIndex].id} ` +
+            `between the same teams (${t1} vs ${t2}).`
+          );
+          currentMatchIndex = uncompletedIndex;
+        }
+      }
+    }
+
     let targetBracketSeed: any = null;
     let targetRoundTitle = "";
     const rawBracket = (divisionBracketDoc && divisionBracketDoc.exists) ?
       divisionBracketDoc.data()?.bracket : null;
 
     if (Array.isArray(rawBracket)) {
-      for (const round of rawBracket) {
-        for (const seed of round.seeds || []) {
-          if (
-            (Array.isArray(seed.tournamentCodes) &&
-              seed.tournamentCodes.includes(shortCode)) ||
-            String(seed.id) === cleanMatchId ||
-            `ko_${seed.id}` === String(matchId)
-          ) {
-            targetBracketSeed = seed;
-            targetRoundTitle = round.title || "";
-            break;
+      if (shortCode) {
+        for (const round of rawBracket) {
+          for (const seed of round.seeds || []) {
+            if (
+              Array.isArray(seed.tournamentCodes) &&
+              seed.tournamentCodes.includes(shortCode)
+            ) {
+              targetBracketSeed = seed;
+              targetRoundTitle = round.title || "";
+              break;
+            }
+          }
+          if (targetBracketSeed) break;
+        }
+      }
+
+      if (
+        !targetBracketSeed &&
+        matchId !== undefined &&
+        matchId !== null &&
+        matchId !== ""
+      ) {
+        for (const round of rawBracket) {
+          for (const seed of round.seeds || []) {
+            if (
+              String(seed.id) === cleanMatchId ||
+              `ko_${seed.id}` === String(matchId)
+            ) {
+              targetBracketSeed = seed;
+              targetRoundTitle = round.title || "";
+              break;
+            }
+          }
+          if (targetBracketSeed) break;
+        }
+      }
+
+      // Safeguard: If targetBracketSeed is completed, check if there is an
+      // uncompleted seed with the same teams
+      if (targetBracketSeed && targetBracketSeed.status === "completed") {
+        const t1 = targetBracketSeed.team1Id;
+        const t2 = targetBracketSeed.team2Id;
+        if (t1 && t2 && t1 > 0 && t2 > 0) {
+          let uncompletedSeed: any = null;
+          let uncompletedRoundTitle = "";
+          for (const round of rawBracket) {
+            for (const seed of round.seeds || []) {
+              if (seed.id === targetBracketSeed.id) continue;
+              if (seed.status === "completed") continue;
+              const isSame =
+                (seed.team1Id === t1 && seed.team2Id === t2) ||
+                (seed.team1Id === t2 && seed.team2Id === t1);
+              if (isSame) {
+                uncompletedSeed = seed;
+                uncompletedRoundTitle = round.title || "";
+                break;
+              }
+            }
+            if (uncompletedSeed) break;
+          }
+          if (uncompletedSeed) {
+            logger.info(
+              `Target bracket seed ${targetBracketSeed.id} is already ` +
+              "completed. Switching to uncompleted seed " +
+              `${uncompletedSeed.id} between teams ${t1} and ${t2}.`
+            );
+            targetBracketSeed = uncompletedSeed;
+            targetRoundTitle = uncompletedRoundTitle;
           }
         }
-        if (targetBracketSeed) break;
       }
     }
 
-    // 3. If knockout match not in allMatches yet, add it from bracket seed
-    if (currentMatchIndex === -1 && isKo && targetBracketSeed) {
-      const newKoMatch: any = {
-        id: `ko_${targetBracketSeed.id}`,
-        team1Id: targetBracketSeed.team1Id || 0,
-        team2Id: targetBracketSeed.team2Id || 0,
-        status: targetBracketSeed.status || "upcoming",
-        score: targetBracketSeed.score || "",
-        winnerId: targetBracketSeed.winnerId ?? null,
-        tournamentCodes: Array.from(
-          new Set([...(targetBracketSeed.tournamentCodes || []), shortCode])
-        ),
-        isKnockout: true,
-        stage: targetRoundTitle,
-        weekPlayed: targetBracketSeed.weekPlayed || 1,
-      };
-      allMatches.push(newKoMatch);
-      currentMatchIndex = allMatches.length - 1;
+    // 3. If knockout match not in allMatches yet, add or link from bracket seed
+    if (isKo && targetBracketSeed) {
+      const existingKoIndex = allMatches.findIndex((m: any) =>
+        m.id === `ko_${targetBracketSeed.id}` ||
+        (m.isKnockout && (
+          String(m.id) === String(targetBracketSeed.id) ||
+          String(m.id).replace(/^ko_/, "") === String(targetBracketSeed.id)
+        ))
+      );
+      if (existingKoIndex !== -1) {
+        if (
+          currentMatchIndex === -1 ||
+          allMatches[currentMatchIndex].status === "completed"
+        ) {
+          currentMatchIndex = existingKoIndex;
+        }
+      } else if (currentMatchIndex === -1) {
+        const newKoMatch: any = {
+          id: `ko_${targetBracketSeed.id}`,
+          team1Id: targetBracketSeed.team1Id || 0,
+          team2Id: targetBracketSeed.team2Id || 0,
+          status: targetBracketSeed.status || "upcoming",
+          score: targetBracketSeed.score || "",
+          winnerId: targetBracketSeed.winnerId ?? null,
+          tournamentCodes: Array.from(
+            new Set([...(targetBracketSeed.tournamentCodes || []), shortCode])
+          ),
+          isKnockout: true,
+          stage: targetRoundTitle,
+          weekPlayed: targetBracketSeed.weekPlayed || 1,
+        };
+        allMatches.push(newKoMatch);
+        currentMatchIndex = allMatches.length - 1;
+      }
     }
 
     let currentMatch: any = null;

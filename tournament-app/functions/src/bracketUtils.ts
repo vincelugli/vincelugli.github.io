@@ -274,6 +274,10 @@ export function updateDoubleEliminationBracket(
     JSON.stringify(currentBracket)
   ) as BracketRound[];
 
+  for (const round of updatedBracket) {
+    round.seeds = round.seeds.filter((s) => s.id !== 9);
+  }
+
   const getTeamSeedNumber = (teamId: number): number | undefined => {
     if (teamId <= 0) return undefined;
     const idx = seeding.findIndex((t) => t?.id === teamId);
@@ -442,7 +446,7 @@ export function updateDoubleEliminationBracket(
     ];
   }
 
-  // 6. Grand Finals (Match 8 & 9, seeds 8 and 9)
+  // 6. Grand Finals (Match 8, seed 8)
   const gf = findSeedById(8);
   if (gf) {
     const w3 = getWinnerAndLoserOfSeed(3).winnerId;
@@ -452,30 +456,6 @@ export function updateDoubleEliminationBracket(
     gf.teams = [
       resolveBracketTeam(gf.team1Id),
       resolveBracketTeam(gf.team2Id),
-    ];
-  }
-
-  const gfReset = findSeedById(9);
-  if (gfReset) {
-    const gfSeed = findSeedById(8);
-    if (
-      gfSeed &&
-      gfSeed.status === "completed" &&
-      gfSeed.winnerId === gfSeed.team2Id
-    ) {
-      gfReset.team1Id = gfSeed.team1Id;
-      gfReset.team2Id = gfSeed.team2Id;
-    } else if (
-      gfReset.status !== "completed" &&
-      gfReset.status !== "in_progress" &&
-      gfReset.status !== "in progress"
-    ) {
-      gfReset.team1Id = 0;
-      gfReset.team2Id = 0;
-    }
-    gfReset.teams = [
-      resolveBracketTeam(gfReset.team1Id),
-      resolveBracketTeam(gfReset.team2Id),
     ];
   }
 
@@ -512,42 +492,97 @@ export function updateBracketForGameResult(
   // Locate the seed matching this game/match
   let targetSeed: BracketSeed | null = null;
 
-  for (const round of updatedBracket) {
-    for (const seed of round.seeds) {
-      // 1. Match by tournamentCode
-      if (
-        Array.isArray(seed.tournamentCodes) &&
-        seed.tournamentCodes.includes(shortCode)
-      ) {
-        targetSeed = seed;
-        break;
+  // 1. Match by tournamentCode across all rounds and seeds
+  if (shortCode) {
+    for (const round of updatedBracket) {
+      for (const seed of round.seeds) {
+        if (
+          Array.isArray(seed.tournamentCodes) &&
+          seed.tournamentCodes.includes(shortCode)
+        ) {
+          targetSeed = seed;
+          break;
+        }
       }
-      // 2. Match by matchId
-      const cleanMatchId = String(matchId).replace(/^ko_/, "");
-      if (
-        String(seed.id) === cleanMatchId ||
-        `ko_${seed.id}` === String(matchId)
-      ) {
-        targetSeed = seed;
-        break;
+      if (targetSeed) break;
+    }
+  }
+
+  // 2. Match by matchId across all rounds and seeds
+  if (
+    !targetSeed &&
+    matchId !== undefined &&
+    matchId !== null &&
+    matchId !== ""
+  ) {
+    const cleanMatchId = String(matchId).replace(/^ko_/, "");
+    for (const round of updatedBracket) {
+      for (const seed of round.seeds) {
+        if (
+          String(seed.id) === cleanMatchId ||
+          `ko_${seed.id}` === String(matchId)
+        ) {
+          targetSeed = seed;
+          break;
+        }
       }
-      // 3. Match by currentMatch teams if available and isKnockout
-      if (
-        currentMatch &&
-        (currentMatch.isKnockout || String(currentMatch.id).startsWith("ko_"))
-      ) {
+      if (targetSeed) break;
+    }
+  }
+
+  // 3. Match by currentMatch teams if available and isKnockout.
+  // Don't pick a match if the status is "completed".
+  if (
+    !targetSeed &&
+    currentMatch &&
+    (currentMatch.isKnockout || String(currentMatch.id).startsWith("ko_")) &&
+    (currentMatch.team1Id || 0) > 0 &&
+    (currentMatch.team2Id || 0) > 0
+  ) {
+    for (const round of updatedBracket) {
+      for (const seed of round.seeds) {
+        if (seed.status === "completed") continue;
         const isSamePair =
-          (seed.team1Id === currentMatch.team1Id &&
+          seed.team1Id > 0 &&
+          seed.team2Id > 0 &&
+          ((seed.team1Id === currentMatch.team1Id &&
             seed.team2Id === currentMatch.team2Id) ||
           (seed.team1Id === currentMatch.team2Id &&
-            seed.team2Id === currentMatch.team1Id);
+            seed.team2Id === currentMatch.team1Id));
         if (isSamePair) {
           targetSeed = seed;
           break;
         }
       }
+      if (targetSeed) break;
     }
-    if (targetSeed) break;
+  }
+
+  // Safeguard: If targetSeed is completed, check if there is an
+  // uncompleted seed with the same teams
+  if (targetSeed && targetSeed.status === "completed") {
+    const t1 = targetSeed.team1Id;
+    const t2 = targetSeed.team2Id;
+    if (t1 > 0 && t2 > 0) {
+      let uncompletedSeed: BracketSeed | null = null;
+      for (const round of updatedBracket) {
+        for (const seed of round.seeds) {
+          if (seed.id === targetSeed.id) continue;
+          if (seed.status === "completed") continue;
+          const isSamePair =
+            (seed.team1Id === t1 && seed.team2Id === t2) ||
+            (seed.team1Id === t2 && seed.team2Id === t1);
+          if (isSamePair) {
+            uncompletedSeed = seed;
+            break;
+          }
+        }
+        if (uncompletedSeed) break;
+      }
+      if (uncompletedSeed) {
+        targetSeed = uncompletedSeed;
+      }
+    }
   }
 
   if (targetSeed) {

@@ -231,12 +231,9 @@ const SchedulePage: React.FC = () => {
     let knockoutMatches: Match[] = [];
 
     if (updatedBracket && updatedBracket.length > 0) {
-      const gfMatch = updatedBracket.find(r => r.title === 'Grand Finals')?.seeds.find(s => s.id === 8);
-      const isResetNeeded = gfMatch && gfMatch.status === 'completed' && gfMatch.winnerId === gfMatch.team2Id;
-
       for (const round of updatedBracket) {
         for (const seed of round.seeds) {
-          if (seed.id === 9 && !isResetNeeded && (!seed.team1Id || seed.team1Id <= 0)) {
+          if (seed.id === 9) {
             continue;
           }
 

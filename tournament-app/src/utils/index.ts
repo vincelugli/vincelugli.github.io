@@ -606,7 +606,6 @@ export function getBracketPlaceholderName(seedId: number, slot: 1 | 2): string {
     case 6: return slot === 1 ? 'Winner M4' : 'Winner M5';
     case 7: return slot === 1 ? 'Loser M3' : 'Winner M6';
     case 8: return slot === 1 ? 'Winner M3' : 'Winner M7';
-    case 9: return 'Grand Finals Reset';
     default: return 'TBD';
   }
 }
@@ -620,6 +619,10 @@ export function updateDoubleEliminationBracket(
 
   const seeding = getQualifyingSeeding(teams, matches);
   const updatedBracket = JSON.parse(JSON.stringify(currentBracket)) as BracketRound[];
+
+  for (const round of updatedBracket) {
+    round.seeds = round.seeds.filter(s => s.id !== 9);
+  }
 
   const getTeamSeedNumber = (teamId: number): number | undefined => {
     if (teamId <= 0) return undefined;
@@ -739,7 +742,7 @@ export function updateDoubleEliminationBracket(
     lf.teams = [resolveBracketTeam(lf.team1Id), resolveBracketTeam(lf.team2Id)];
   }
 
-  // 6. Grand Finals (Match 8 & 9, seeds 8 and 9)
+  // 6. Grand Finals (Match 8, seed 8)
   const gf = findSeedById(8);
   if (gf) {
     const w3 = getWinnerAndLoserOfSeed(3).winnerId;
@@ -747,28 +750,6 @@ export function updateDoubleEliminationBracket(
     if (w3 > 0) gf.team1Id = w3;
     if (w7 > 0) gf.team2Id = w7;
     gf.teams = [resolveBracketTeam(gf.team1Id), resolveBracketTeam(gf.team2Id)];
-  }
-
-  const gfReset = findSeedById(9);
-  if (gfReset) {
-    const gfSeed = findSeedById(8);
-    const gfWinner = gfSeed ? (gfSeed.winnerId || getWinnerAndLoserOfSeed(8).winnerId) : 0;
-    if (
-      gfSeed &&
-      (gfSeed.status === 'completed' || gfWinner > 0) &&
-      gfWinner === gfSeed.team2Id
-    ) {
-      gfReset.team1Id = gfSeed.team1Id;
-      gfReset.team2Id = gfSeed.team2Id;
-    } else if (
-      gfReset.status !== 'completed' &&
-      gfReset.status !== 'in_progress' &&
-      gfReset.status !== 'in progress'
-    ) {
-      gfReset.team1Id = 0;
-      gfReset.team2Id = 0;
-    }
-    gfReset.teams = [resolveBracketTeam(gfReset.team1Id), resolveBracketTeam(gfReset.team2Id)];
   }
 
   return updatedBracket;

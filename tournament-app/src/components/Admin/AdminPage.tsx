@@ -229,7 +229,6 @@ const AdminPage: React.FC = () => {
       case 6: return slot === 1 ? 'Winner M4' : 'Winner M5';
       case 7: return slot === 1 ? 'Loser M3' : 'Winner M6';
       case 8: return slot === 1 ? 'Winner M3' : 'Winner M7';
-      case 9: return slot === 1 ? 'GF Winner' : 'GF Runner-up';
       default: return 'TBD';
     }
   };
@@ -1968,8 +1967,7 @@ const AdminPage: React.FC = () => {
         {
           title: "Grand Finals",
           seeds: [
-            {id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: []},
-            {id: 9, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: []}
+            {id: 8, team1Id: 0, team2Id: 0, status: "upcoming", score: "", winnerId: null, isKnockout: true, weekPlayed: 5, tournamentCodes: [], teams: []}
           ]
         }
       ];
