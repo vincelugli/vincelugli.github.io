@@ -391,10 +391,7 @@ const DoubleEliminationBracket: React.FC = () => {
 
       // Connect to Grand Finals
       {from: 3, fromSlot: 1, to: 8, toSlot: 1, type: 'winner'},
-      {from: 7, fromSlot: 1, to: 8, toSlot: 2, type: 'winner'},
-
-      // Grand Finals Reset
-      {from: 8, fromSlot: 1, to: 9, toSlot: 1, type: 'reset'}
+      {from: 7, fromSlot: 1, to: 8, toSlot: 2, type: 'winner'}
     ];
 
     connections.forEach(conn => {
@@ -412,7 +409,7 @@ const DoubleEliminationBracket: React.FC = () => {
         const midX = startX + (endX - startX) * 0.45;
         const d = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
 
-        const isPathActive = isConnActive(conn) || (hoveredMatchId === conn.from && (conn.type === 'winner' || conn.type === 'reset'));
+        const isPathActive = isConnActive(conn) || (hoveredMatchId === conn.from && conn.type === 'winner');
 
         newPaths.push({d, isActive: isPathActive});
       }
@@ -450,7 +447,6 @@ const DoubleEliminationBracket: React.FC = () => {
       case 6: return slot === 1 ? 'Winner M4' : 'Winner M5';
       case 7: return slot === 1 ? 'Loser M3' : 'Winner M6';
       case 8: return slot === 1 ? 'Winner M3' : 'Winner M7';
-      case 9: return 'Grand Finals Reset';
       default: return 'TBD';
     }
   };
@@ -541,9 +537,6 @@ const DoubleEliminationBracket: React.FC = () => {
   const lF = [findSeedById(7)].filter((x): x is BracketSeed => x !== null);
 
   const gfMatch = findSeedById(8);
-  const gfResetMatch = findSeedById(9);
-
-  const isResetNeeded = gfMatch && gfMatch.status === 'completed' && gfMatch.winnerId === gfMatch.team2Id;
 
   return (
     <BracketWrapper>
@@ -611,15 +604,6 @@ const DoubleEliminationBracket: React.FC = () => {
                 {gfMatch && renderSeedCard(gfMatch)}
               </MatchupsList>
             </RoundColumn>
-
-            {(isResetNeeded || (gfResetMatch && gfResetMatch.team1Id > 0)) && (
-              <RoundColumn style={{maxWidth: '320px'}}>
-                <RoundTitle>GF Reset (If Needed)</RoundTitle>
-                <MatchupsList style={{justifyContent: 'center', minHeight: '340px'}}>
-                  {gfResetMatch && renderSeedCard(gfResetMatch)}
-                </MatchupsList>
-              </RoundColumn>
-            )}
           </RightSection>
         </ColumnsWrapper>
       </div>

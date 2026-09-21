@@ -108,6 +108,7 @@ import {
   generateTournamentCodesForMatch,
   generateAdhocTournamentCodes
 } from "../index";
+import {BracketRound, updateBracketForGameResult} from "../bracketUtils";
 
 const createMockReqRes = (body: unknown) => {
   const req = {
@@ -1455,6 +1456,278 @@ describe("processGameFromNotification Cloud Function", () => {
     expect(setCalls.length).toBe(4); // 2 codes * (matches + adhocTournamentCodes)
     const record = setCalls[0][1] || setCalls[0][0];
     expect(record.skipStandings).toBe(true);
+  });
+
+  it("should not pick a completed match when two matches have the same teams in updateBracketForGameResult", () => {
+    const bracket: BracketRound[] = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 1,
+            team2Id: 4,
+            status: "completed",
+            score: "2-0",
+            winnerId: 1,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: ["ko-old-code-1", "ko-old-code-2"],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+          {
+            id: 2,
+            team1Id: 2,
+            team2Id: 3,
+            status: "completed",
+            score: "2-0",
+            winnerId: 2,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: [],
+            teams: [{id: 2, name: "Team 2"}, {id: 3, name: "Team 3"}],
+          },
+        ],
+      },
+      {
+        title: "Grand Finals",
+        seeds: [
+          {
+            id: 8,
+            team1Id: 1,
+            team2Id: 4,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: ["ko-gf-code-1"],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+        ],
+      },
+    ];
+
+    const currentMatch: any = {
+      id: "ko_8",
+      team1Id: 1,
+      team2Id: 4,
+      isKnockout: true,
+      results: {
+        "ko-gf-code-1": {
+          winnerId: 1,
+          team1Win: 1,
+          team2Win: 0,
+        },
+      },
+      status: "in_progress",
+    };
+
+    // Even if matchId points to 1 (the completed seed), it should pick Seed 8 instead of Seed 1
+    const updated = updateBracketForGameResult(
+      bracket,
+      "ko-gf-code-1",
+      1,
+      1,
+      [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}] as any,
+      [],
+      currentMatch
+    );
+
+    const seed1 = updated[0].seeds.find((s) => s.id === 1)!;
+    const seed8 = updated[1].seeds.find((s) => s.id === 8)!;
+
+    // Seed 1 must remain completed with 2-0 score and unchanged winnerId
+    expect(seed1.status).toBe("completed");
+    expect(seed1.score).toBe("2-0");
+    expect(seed1.winnerId).toBe(1);
+
+    // Seed 8 must be updated to in_progress with 1-0 score
+    expect(seed8.status).toBe("in_progress");
+    expect(seed8.score).toBe("1-0");
+    expect(seed8.tournamentCodes).toContain("ko-gf-code-1");
+  });
+
+  it("should update upcoming match instead of completed match when two matches have the same teams in updateStandings", async () => {
+    const notificationPayload = {
+      startTime: 12345678,
+      shortCode: "ko-gf-code-1",
+      gameId: 987654323,
+      region: "NA",
+    };
+
+    // 1. match_lock check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 2. match_results check
+    mockGet.mockResolvedValueOnce({exists: false});
+    // 3. Riot API
+    mockedAxios.get.mockResolvedValueOnce({data: {}});
+    // 4. match doc exists with matchId: "ko_1" (accidentally or historically pointing to match 1)
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({division: "gold", matchId: "ko_1", isKnockout: true}),
+    });
+    // 5. division teams doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        teams: [
+          {id: 1, name: "Team 1", players: [10]},
+          {id: 4, name: "Team 4", players: [20]},
+        ],
+      }),
+    });
+    // 6. division players doc
+    mockGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        players: [
+          {id: 10, name: "Player1"},
+          {id: 20, name: "Player2"},
+        ],
+      }),
+    });
+    // 7. match_results duplicate check
+    mockGet.mockResolvedValueOnce({exists: false});
+
+    const initialBracket = [
+      {
+        title: "Winners Semifinals",
+        seeds: [
+          {
+            id: 1,
+            team1Id: 1,
+            team2Id: 4,
+            status: "completed",
+            score: "2-0",
+            winnerId: 1,
+            isKnockout: true,
+            weekPlayed: 1,
+            tournamentCodes: ["ko-old-code-1", "ko-old-code-2"],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+        ],
+      },
+      {
+        title: "Grand Finals",
+        seeds: [
+          {
+            id: 8,
+            team1Id: 1,
+            team2Id: 4,
+            status: "upcoming",
+            score: "",
+            winnerId: null,
+            isKnockout: true,
+            weekPlayed: 5,
+            tournamentCodes: [],
+            teams: [{id: 1, name: "Team 1"}, {id: 4, name: "Team 4"}],
+          },
+        ],
+      },
+    ];
+
+    const mockTxUpdate = jest.fn();
+    mockRunTransaction.mockImplementationOnce(async (updateFn) => {
+      const mockTx = {
+        getAll: jest.fn().mockResolvedValueOnce([
+          {
+            exists: true,
+            data: () => ({
+              matches: [
+                {
+                  id: "ko_1",
+                  team1Id: 1,
+                  team2Id: 4,
+                  status: "completed",
+                  score: "2-0",
+                  winnerId: 1,
+                  isKnockout: true,
+                  tournamentCodes: ["ko-old-code-1", "ko-old-code-2"],
+                  results: {
+                    "ko-old-code-1": {winnerId: 1, team1Win: 1, team2Win: 0},
+                    "ko-old-code-2": {winnerId: 1, team1Win: 1, team2Win: 0},
+                  },
+                },
+                {
+                  id: "ko_8",
+                  team1Id: 1,
+                  team2Id: 4,
+                  status: "upcoming",
+                  score: "",
+                  winnerId: null,
+                  isKnockout: true,
+                  tournamentCodes: [],
+                  results: {},
+                },
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              teams: [
+                {id: 1, name: "Team 1", gameWins: 2, gameLosses: 0, wins: 1, losses: 0, record: "1-0", gameRecord: "2-0"},
+                {id: 4, name: "Team 4", gameWins: 0, gameLosses: 2, wins: 0, losses: 1, record: "0-1", gameRecord: "0-2"},
+              ],
+            }),
+          },
+          {
+            exists: true,
+            data: () => ({
+              bracket: initialBracket,
+            }),
+          },
+        ]),
+        update: mockTxUpdate,
+      };
+      return await updateFn(mockTx);
+    });
+
+    const {req, res} = createMockReqRes(notificationPayload);
+    await gameNotificationEndpoint(req as any, res as any);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+
+    // Verify bracket update call
+    const bracketUpdateCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].bracket !== undefined
+    );
+    expect(bracketUpdateCall).toBeDefined();
+    const updatedBracket = bracketUpdateCall[1].bracket;
+
+    const seed1 = updatedBracket[0].seeds.find((s: any) => s.id === 1);
+    const seed8 = updatedBracket[1].seeds.find((s: any) => s.id === 8);
+
+    // Seed 1 must remain untouched (completed, 2-0)
+    expect(seed1.status).toBe("completed");
+    expect(seed1.score).toBe("2-0");
+    expect(seed1.winnerId).toBe(1);
+
+    // Seed 8 must be updated to in_progress (1-0)
+    expect(seed8.status).toBe("in_progress");
+    expect(seed8.score).toBe("1-0");
+    expect(seed8.tournamentCodes).toContain("ko-gf-code-1");
+
+    // Verify matches update call
+    const matchesUpdateCall = mockTxUpdate.mock.calls.find(
+      (call: any[]) => call[1] && call[1].matches !== undefined
+    );
+    expect(matchesUpdateCall).toBeDefined();
+    const updatedMatches = matchesUpdateCall[1].matches;
+
+    const match1 = updatedMatches.find((m: any) => m.id === "ko_1");
+    const match8 = updatedMatches.find((m: any) => m.id === "ko_8");
+
+    // Match 1 must remain completed with 2-0
+    expect(match1.status).toBe("completed");
+    expect(match1.score).toBe("2-0");
+    expect(match1.winnerId).toBe(1);
+
+    // Match 8 must be updated to in_progress with 1-0
+    expect(match8.status).toBe("in_progress");
+    expect(match8.score).toBe("1-0");
+    expect(match8.tournamentCodes).toContain("ko-gf-code-1");
   });
 });
 
